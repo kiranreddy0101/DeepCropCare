@@ -321,12 +321,12 @@ with tab1:
     colA, colB = st.columns(2)
 
     with colA:
-        if st.button("📁 Upload", use_container_width=True):
+        if st.button("📁 Upload", width="stretch"):
             st.session_state.source_mode = "Upload"
             st.session_state.open_camera = False
 
     with colB:
-        if st.button("📷 Camera", use_container_width=True):
+        if st.button("📷 Camera", width="stretch"):
             st.session_state.source_mode = "Camera"
             st.session_state.open_camera = False
 
