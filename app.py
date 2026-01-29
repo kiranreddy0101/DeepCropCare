@@ -9,13 +9,16 @@ import base64
 from io import BytesIO
 import cv2
 
+
+# ---------------------- GRAD-CAM FUNCTIONS ---------------------- #
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
     grad_model = tf.keras.models.Model(
         [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
     )
+
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        predictions = tf.squeeze(predictions)  # [num_classes]
+        predictions = tf.squeeze(predictions)
         if pred_index is None:
             pred_index = tf.argmax(predictions)
         class_channel = predictions[pred_index]
@@ -27,8 +30,12 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
 
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    heatmap = tf.maximum(heatmap, 0)
+    denom = tf.reduce_max(heatmap)
+    heatmap = tf.cond(denom > 0, lambda: heatmap / denom, lambda: heatmap)
+
     return heatmap.numpy()
+
 
 def overlay_gradcam(original_img, heatmap, alpha=0.4):
     original_img = np.array(original_img)
@@ -38,10 +45,14 @@ def overlay_gradcam(original_img, heatmap, alpha=0.4):
     overlay_img = cv2.addWeighted(original_img, 1 - alpha, heatmap_color, alpha, 0)
     return overlay_img
 
-# Streamlit page config
+
+def prettify_label(label):
+    return label.replace("___", " - ").replace("__", " - ").replace("_", " ")
+
+
+# ---------------------- STREAMLIT PAGE CONFIG ---------------------- #
 st.set_page_config(page_title="Plant Disease Detection", layout="wide")
 
-# Custom CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
@@ -91,18 +102,20 @@ st.markdown("""
     h1, h3, p {
         text-align: center;
     }
-   
     </style>
 """, unsafe_allow_html=True)
 
-# Load model
+
+# ---------------------- LOAD MODEL ---------------------- #
 @st.cache_resource
 def load_trained_model():
     return load_model("plant_disease_model_final4.h5")
 
+
 model = load_trained_model()
 
-# Class labels and fertilizer advice
+
+# ---------------------- CLASS LABELS ---------------------- #
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
     'Background_without_leaves', 'Bitter Gourd__Downy_mildew', 'Bitter Gourd__Fusarium_wilt',
@@ -131,9 +144,9 @@ class_names = [
     'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus',
     'Tomato___healthy', 'Wheat_Healthy', 'Wheat_leaf_leaf_stripe_rust', 'Wheatleaf_septoria'
 ]
-  
 
 
+# ---------------------- FERTILIZER MAP ---------------------- #
 fertilizer_map = {
     'Apple___Apple_scab': 'Use copper-based fungicides',
     'Apple___Black_rot': 'Apply sulfur sprays or captan',
@@ -210,14 +223,54 @@ fertilizer_map = {
 }
 
 
-# Sidebar
+# ---------------------- DISEASE INFO (ALL CLASSES AUTO) ---------------------- #
+# This will automatically provide info for every label.
+# If a label is not mapped specifically, it gives generic symptoms/prevention.
+disease_info = {}
+
+for cls in class_names:
+    if "healthy" in cls.lower():
+        disease_info[cls] = {
+            "symptoms": "No symptoms detected. Leaf appears healthy.",
+            "prevention": "Maintain balanced irrigation, fertilization, and pest monitoring."
+        }
+    elif "background" in cls.lower():
+        disease_info[cls] = {
+            "symptoms": "No plant leaf detected clearly.",
+            "prevention": "Upload a clear close-up leaf image with good lighting."
+        }
+    else:
+        disease_info[cls] = {
+            "symptoms": "Leaf may show spots, discoloration, wilting, curling or fungal growth depending on disease type.",
+            "prevention": "Avoid overhead watering, ensure airflow, remove infected leaves, follow crop rotation, and use recommended fungicide/insecticide if required."
+        }
+
+# (Optional) Override Important diseases with specific data
+disease_info.update({
+    "Apple___Apple_scab": {
+        "symptoms": "Olive-green/dark spots on leaves and fruits; leaves may curl and fall early.",
+        "prevention": "Remove infected leaves, prune for airflow, apply copper fungicide early season."
+    },
+    "Tomato___Late_blight": {
+        "symptoms": "Water-soaked lesions, black patches, white mold underside; fruit rot possible.",
+        "prevention": "Avoid wet leaves, maintain spacing, apply mancozeb/copper fungicide early."
+    },
+    "Potato___Late_blight": {
+        "symptoms": "Rapid browning of leaves, black edges, tubers may rot.",
+        "prevention": "Use healthy seed tubers, avoid moist conditions, apply metalaxyl-M fungicide."
+    }
+})
+
+
+# ---------------------- SIDEBAR ---------------------- #
 st.sidebar.title("🌿 Plant Guardian")
 st.sidebar.markdown(
     "<p style='font-size:16px;'>Upload a leaf image on the Detection tab to identify diseases and get fertilizer advice.</p>",
     unsafe_allow_html=True
 )
 
-# Tabs
+
+# ---------------------- TABS ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
 with tab1:
@@ -238,7 +291,8 @@ with tab1:
                 <img src="data:image/png;base64,{img_data}" alt="Uploaded Leaf" width="300"/>
                 <p class='sidebar-text' style='font-size: 16px;'>Uploaded Image</p>
             </div>
-            """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True
+        )
 
         # Prepare image
         img = image.resize((224, 224))
@@ -250,23 +304,50 @@ with tab1:
         predicted_class = class_names[np.argmax(prediction)]
         confidence = np.max(prediction) * 100
 
-        # Display prediction and confidence
-        st.markdown(f"<div class='prediction-card'>🔎 <strong>Prediction:</strong> {predicted_class}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='prediction-card'>🎯 <strong>Confidence:</strong> {confidence:.2f}%</div>", unsafe_allow_html=True)
+        pretty_label = prettify_label(predicted_class)
+
+        st.markdown(
+            f"<div class='prediction-card'>🔎 <strong>Prediction:</strong> {pretty_label}</div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"<div class='prediction-card'>🎯 <strong>Confidence:</strong> {confidence:.2f}%</div>",
+            unsafe_allow_html=True
+        )
 
         # Fertilizer suggestion
         if predicted_class in fertilizer_map:
             tip = fertilizer_map[predicted_class]
-            st.markdown(f"<div class='prediction-card'>💡 <strong>Fertilizer Tip:</strong> {tip}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='prediction-card'>💡 <strong>Fertilizer/Treatment Tip:</strong> {tip}</div>",
+                unsafe_allow_html=True
+            )
         else:
-            st.success("? This plant appears healthy. No treatment needed!")
+            st.markdown(
+                "<div class='prediction-card'>✅ This plant appears healthy. No treatment needed!</div>",
+                unsafe_allow_html=True
+            )
+
+        # Disease Description
+        if predicted_class in disease_info:
+            st.markdown("### 🩺 Disease Description")
+            st.markdown(
+                f"""
+                <div class='prediction-card'>
+                ✅ <strong>Symptoms:</strong> {disease_info[predicted_class]['symptoms']} <br><br>
+                🛡️ <strong>Prevention:</strong> {disease_info[predicted_class]['prevention']}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         # Grad-CAM Visualization
+        st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
         heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
         overlay_img = overlay_gradcam(img, heatmap)
-        st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", use_container_width=True)
-        
+
+
 with tab2:
     st.markdown("## 📘 About This App")
     st.markdown("""
@@ -275,8 +356,12 @@ with tab2:
 
     **Features:**
     - Deep learning–based leaf disease classification  
-    - Custom fertilizer recommendations  
-    - Grad-CAM for explainable AI  
+    - Fertilizer/Treatment recommendations  
+    - Symptoms + Prevention guide  
+    - Grad-CAM (Explainable AI)  
     - Mobile-friendly responsive layout  
-    - Dark mode UI with instant toggle (via system preference)
+    - Dark mode UI (uses system preference)
     """)
+
+
+''')
