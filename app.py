@@ -273,7 +273,7 @@ st.sidebar.markdown(
 # ---------------------- TABS ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
-with tab1:
+
 with tab1:
     st.markdown("## 🌿 Plant Disease Detection")
 
