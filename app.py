@@ -277,11 +277,13 @@ with tab1:
     st.markdown("## 🌿 Plant Disease Detection")
     col1, col2 = st.columns(2)
 
-with col1:
-    uploaded_file = st.file_uploader("📁 Browse leaf image", type=["jpg", "jpeg", "png"])
+    with col1:
+        uploaded_file = st.file_uploader("📁 Browse leaf image", type=["jpg", "jpeg", "png"])
 
-with col2:
-    camera_file = st.camera_input("📷 Capture leaf image")
+    with col2:
+        camera_file = st.camera_input("📷 Capture leaf image")
+
+    file_source = uploaded_file if uploaded_file is not None else camera_file
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
