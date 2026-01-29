@@ -346,44 +346,40 @@ with tab1:
             label_visibility="visible"
         )
 
-    # -------------------- CAMERA MODE -------------------- #
+    # -------------------- CAMERA MODE (NO EMPTY RECTANGLE) -------------------- #
     if st.session_state.source_mode == "Camera":
 
         st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
         st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>", unsafe_allow_html=True)
 
-        # ✅ Perfectly centered button
+        # ✅ Open camera button centered
         left, center, right = st.columns([3, 2, 3])
         with center:
             st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
-            if st.button("📸 Open Camera", use_container_width=True):
+            if st.button("📸 Open Camera", width="stretch"):
                 st.session_state.open_camera = True
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # ✅ Camera widget only after open_camera = True
+        # ✅ Show camera only after click
         if st.session_state.open_camera:
-            st.markdown("<div class='cam-card'>", unsafe_allow_html=True)
-
             st.info("✅ Camera opened. Take a clear leaf photo in good light.")
-            camera_file = st.camera_input("Camera", label_visibility="collapsed")
 
-            st.markdown("</div>", unsafe_allow_html=True)
+            # ✅ NO HTML wrapper -> prevents empty rectangle
+            camera_file = st.camera_input("Camera", label_visibility="collapsed")
 
             colb1, colb2 = st.columns(2)
             with colb1:
-                if st.button("❌ Close Camera", use_container_width=True):
+                if st.button("❌ Close Camera", width="stretch"):
                     st.session_state.open_camera = False
-
             with colb2:
-                if st.button("🔄 Reset Camera", use_container_width=True):
+                if st.button("🔄 Reset Camera", width="stretch"):
                     st.session_state.open_camera = True
 
-            # ✅ Auto-close after capture
+            # ✅ Auto close after capture
             if camera_file is not None:
                 st.session_state.open_camera = False
-
         else:
             st.success("Camera is ready. Press **Open Camera** to capture leaf image.")
 
@@ -460,7 +456,9 @@ with tab1:
         st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
         heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
         overlay_img = overlay_gradcam(img, heatmap)
-        st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", use_container_width=True)
+
+        st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", width="stretch")
+
 
 
 
