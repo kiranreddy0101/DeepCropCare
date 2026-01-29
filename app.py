@@ -274,19 +274,33 @@ st.sidebar.markdown(
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
 with tab1:
-    st.markdown("## 🌿 Plant Disease Detection")
-    col1, col2 = st.columns(2)
+st.markdown("## 🌿 Plant Disease Detection")
 
-    with col1:
-        uploaded_file = st.file_uploader("📁 Browse leaf image", type=["jpg", "jpeg", "png"])
+col1, col2 = st.columns(2)
 
-    with col2:
-        camera_file = st.camera_input("📷 Capture leaf image")
+with col1:
+    uploaded_file = st.file_uploader("📁 Browse leaf image", type=["jpg", "jpeg", "png"])
 
-    file_source = uploaded_file if uploaded_file is not None else camera_file
+with col2:
+    if "open_camera" not in st.session_state:
+        st.session_state.open_camera = False
 
-    if uploaded_file:
-        image = Image.open(uploaded_file).convert('RGB')
+    if st.button("📷 Capture"):
+        st.session_state.open_camera = True
+
+    if st.session_state.open_camera:
+        if st.button("❌ Close Camera"):
+            st.session_state.open_camera = False
+
+camera_file = None
+if st.session_state.open_camera:
+    camera_file = st.camera_input("📷 Camera")
+
+file_source = uploaded_file if uploaded_file is not None else camera_file
+
+if file_source:
+    image = Image.open(file_source).convert("RGB")
+    # continue prediction code...
 
         # Display uploaded image
         buffered = BytesIO()
