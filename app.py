@@ -134,30 +134,6 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
-/* Base style for ONLY the two toggle buttons */
-button[kind="secondary"][data-testid="baseButton-secondaryFormSubmit"][aria-label="toggle_upload"],
-button[kind="secondary"][data-testid="baseButton-secondaryFormSubmit"][aria-label="toggle_camera"] {
-    height: 70px !important;
-    border-radius: 22px !important;
-    font-size: 20px !important;
-    font-weight: 800 !important;
-    border: 1px solid rgba(255,255,255,0.18) !important;
-    background: rgba(255,255,255,0.05) !important;
-}
-
-/* ✅ Active glow for Upload */
-button[kind="secondary"][aria-label="toggle_upload"].active-toggle-btn {
-    border: 2px solid rgba(0,255,140,0.90) !important;
-    box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
-    background: rgba(0,255,140,0.12) !important;
-}
-
-/* ✅ Active glow for Camera */
-button[kind="secondary"][aria-label="toggle_camera"].active-toggle-btn {
-    border: 2px solid rgba(0,255,140,0.90) !important;
-    box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
-    background: rgba(0,255,140,0.12) !important;
-}
 /* Make radio look like two buttons */
 div[role="radiogroup"] {
     display: flex !important;
@@ -190,9 +166,6 @@ div[role="radiogroup"] input:checked + div {
     padding: 18px 14px !important;
     font-weight: 900 !important;
 }
-
-
-
 
     </style>
 """, unsafe_allow_html=True)
@@ -364,7 +337,6 @@ st.sidebar.markdown(
 
 # ---------------------- TABS ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Disease Detection", "📘 Info"])
-
 with tab1:
     st.markdown("## 🌿 Plant Disease Detection")
 
@@ -378,16 +350,16 @@ with tab1:
     uploaded_file = None
     camera_file = None
 
-   mode = st.radio(
-    "mode",
-    ["📁 Upload", "📷 Camera"],
-    horizontal=True,
-    label_visibility="collapsed",
-    index=0 if st.session_state.source_mode == "Upload" else 1
-)
+    # ✅ Upload/Camera Toggle (radio)
+    mode = st.radio(
+        "mode",
+        ["📁 Upload", "📷 Camera"],
+        horizontal=True,
+        label_visibility="collapsed",
+        index=0 if st.session_state.source_mode == "Upload" else 1
+    )
 
-st.session_state.source_mode = "Upload" if "Upload" in mode else "Camera"
-st.session_state.open_camera = False
+    st.session_state.source_mode = "Upload" if "Upload" in mode else "Camera"
 
     st.markdown(
         f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
@@ -396,6 +368,7 @@ st.session_state.open_camera = False
 
     # -------------------- UPLOAD MODE -------------------- #
     if st.session_state.source_mode == "Upload":
+        st.session_state.open_camera = False  # ✅ ensure closed camera
         uploaded_file = st.file_uploader(
             "Choose leaf image",
             type=["jpg", "jpeg", "png"]
@@ -406,7 +379,7 @@ st.session_state.open_camera = False
         st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
         st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>", unsafe_allow_html=True)
 
-        # ✅ centered open camera button
+        # centered open camera button
         left, center, right = st.columns([3, 2, 3])
         with center:
             st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
@@ -428,7 +401,6 @@ st.session_state.open_camera = False
                 if st.button("🔄 Reset Camera", width="stretch", key="reset_camera_btn"):
                     st.session_state.open_camera = True
 
-            # ✅ auto close after capture
             if camera_file is not None:
                 st.session_state.open_camera = False
         else:
@@ -477,7 +449,6 @@ st.session_state.open_camera = False
             unsafe_allow_html=True
         )
 
-        # Fertilizer
         if predicted_class in fertilizer_map:
             tip = fertilizer_map[predicted_class]
             st.markdown(
@@ -485,7 +456,6 @@ st.session_state.open_camera = False
                 unsafe_allow_html=True
             )
 
-        # Disease info
         if predicted_class in disease_info:
             st.markdown("### 🩺 Disease Description")
             st.markdown(
@@ -498,16 +468,11 @@ st.session_state.open_camera = False
                 unsafe_allow_html=True
             )
 
-        # GradCAM
         st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
         heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
         overlay_img = overlay_gradcam(img, heatmap)
 
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", width="stretch")
-
-
-
-
 
 
 with tab2:
