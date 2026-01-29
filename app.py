@@ -134,23 +134,63 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
-/* Toggle buttons base style */
-.toggle-btn button {
+/* Base style for ONLY the two toggle buttons */
+button[kind="secondary"][data-testid="baseButton-secondaryFormSubmit"][aria-label="toggle_upload"],
+button[kind="secondary"][data-testid="baseButton-secondaryFormSubmit"][aria-label="toggle_camera"] {
     height: 70px !important;
     border-radius: 22px !important;
     font-size: 20px !important;
     font-weight: 800 !important;
     border: 1px solid rgba(255,255,255,0.18) !important;
     background: rgba(255,255,255,0.05) !important;
-    transition: 0.25s ease;
 }
 
-/* Active glow effect */
-.toggle-active button {
+/* ✅ Active glow for Upload */
+button[kind="secondary"][aria-label="toggle_upload"].active-toggle-btn {
     border: 2px solid rgba(0,255,140,0.90) !important;
     box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
     background: rgba(0,255,140,0.12) !important;
 }
+
+/* ✅ Active glow for Camera */
+button[kind="secondary"][aria-label="toggle_camera"].active-toggle-btn {
+    border: 2px solid rgba(0,255,140,0.90) !important;
+    box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
+    background: rgba(0,255,140,0.12) !important;
+}
+/* Make radio look like two buttons */
+div[role="radiogroup"] {
+    display: flex !important;
+    gap: 18px !important;
+}
+
+div[role="radiogroup"] label {
+    flex: 1 !important;
+    border-radius: 22px !important;
+    padding: 18px 14px !important;
+    text-align: center !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    background: rgba(255,255,255,0.05) !important;
+    cursor: pointer !important;
+}
+
+/* hide circle */
+div[role="radiogroup"] label > div:first-child {
+    display: none !important;
+}
+
+/* ✅ Active glow: THIS works */
+div[role="radiogroup"] input:checked + div {
+    border: 2px solid rgba(0,255,140,0.90) !important;
+    box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
+    background: rgba(0,255,140,0.12) !important;
+    border-radius: 22px !important;
+    padding: 18px 14px !important;
+    font-weight: 900 !important;
+}
+
 
 
 
@@ -338,30 +378,16 @@ with tab1:
     uploaded_file = None
     camera_file = None
 
-    # ---------- Upload / Camera Toggle (Guaranteed Glow) ----------
-    colA, colB = st.columns(2)
+   mode = st.radio(
+    "mode",
+    ["📁 Upload", "📷 Camera"],
+    horizontal=True,
+    label_visibility="collapsed",
+    index=0 if st.session_state.source_mode == "Upload" else 1
+)
 
-    # ✅ UPLOAD button
-    with colA:
-        upload_class = "toggle-active" if st.session_state.source_mode == "Upload" else ""
-        st.markdown(f"<div class='toggle-btn {upload_class}'>", unsafe_allow_html=True)
-
-        if st.button("📁 Upload", width="stretch", key="toggle_upload"):
-            st.session_state.source_mode = "Upload"
-            st.session_state.open_camera = False
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # ✅ CAMERA button
-    with colB:
-        camera_class = "toggle-active" if st.session_state.source_mode == "Camera" else ""
-        st.markdown(f"<div class='toggle-btn {camera_class}'>", unsafe_allow_html=True)
-
-        if st.button("📷 Camera", width="stretch", key="toggle_camera"):
-            st.session_state.source_mode = "Camera"
-            st.session_state.open_camera = False
-
-        st.markdown("</div>", unsafe_allow_html=True)
+st.session_state.source_mode = "Upload" if "Upload" in mode else "Camera"
+st.session_state.open_camera = False
 
     st.markdown(
         f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
