@@ -127,43 +127,33 @@ h1, h3, p {
     font-weight: 800 !important;
 }
 
-/* ===== Upload/Camera Radio Toggle Buttons (Streamlit Cloud working) ===== */
-div[role="radiogroup"] {
-    display: flex !important;
-    gap: 18px !important;
+/* ---------------- Toggle Glow (Guaranteed) ---------------- */
+.toggle-card {
+    padding: 18px 14px;
+    border-radius: 22px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 800;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.05);
+    transition: 0.25s ease;
 }
 
-/* Hide circle */
-div[role="radiogroup"] label > div:first-child {
-    display: none !important;
-}
-
-/* Make radio labels look like buttons */
-div[role="radiogroup"] label {
-    flex: 1 !important;
-    padding: 18px 14px !important;
-    border-radius: 22px !important;
-    text-align: center !important;
-    font-size: 20px !important;
-    font-weight: 800 !important;
-    border: 1px solid rgba(255,255,255,0.18) !important;
-    background: rgba(255,255,255,0.05) !important;
-    cursor: pointer !important;
-    transition: 0.25s ease !important;
-}
-
-div[role="radiogroup"] label:hover {
-    border: 1px solid rgba(255,255,255,0.35) !important;
-}
-
-/* ✅ Active glow */
-div[role="radiogroup"] label[data-checked="true"] {
+.toggle-active {
     border: 2px solid rgba(0,255,140,0.90) !important;
-    box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
+    box-shadow: 0 0 22px rgba(0,255,140,0.40) !important;
     background: rgba(0,255,140,0.12) !important;
+}
+
+/* Make the real Streamlit buttons nice */
+div.stButton > button {
+    height: 44px !important;
+    border-radius: 14px !important;
+    font-weight: 700 !important;
 }
 </style>
 """, unsafe_allow_html=True)
+
 
  
 
@@ -349,26 +339,35 @@ with tab1:
     uploaded_file = None
     camera_file = None
 
-    # ✅ Toggle (Upload/Camera)
-    mode = st.radio(
-        "mode",
-        ["📁 Upload", "📷 Camera"],
-        horizontal=True,
-        label_visibility="collapsed",
-        index=0 if st.session_state.source_mode == "Upload" else 1
-    )
+    # ---------- Toggle (GUARANTEED glow + side-by-side) ----------
+    colA, colB = st.columns(2)
 
-    st.session_state.source_mode = "Upload" if "Upload" in mode else "Camera"
+    with colA:
+        st.markdown(
+            f"<div class='toggle-card {'toggle-active' if st.session_state.source_mode=='Upload' else ''}'>📁 Upload</div>",
+            unsafe_allow_html=True
+        )
+        if st.button("Use Upload", width="stretch", key="use_upload"):
+            st.session_state.source_mode = "Upload"
+            st.session_state.open_camera = False
+
+    with colB:
+        st.markdown(
+            f"<div class='toggle-card {'toggle-active' if st.session_state.source_mode=='Camera' else ''}'>📷 Camera</div>",
+            unsafe_allow_html=True
+        )
+        if st.button("Use Camera", width="stretch", key="use_camera"):
+            st.session_state.source_mode = "Camera"
+            st.session_state.open_camera = False
 
     st.markdown(
-        f"<p style='text-align:center; font-size:15px;'>Selected mode: "
-        f"<b>{st.session_state.source_mode}</b></p>",
+        f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
         unsafe_allow_html=True
     )
 
     # -------------------- UPLOAD MODE -------------------- #
     if st.session_state.source_mode == "Upload":
-        st.session_state.open_camera = False  # ensure camera closed
+        st.session_state.open_camera = False
         uploaded_file = st.file_uploader(
             "Choose leaf image",
             type=["jpg", "jpeg", "png"]
@@ -380,7 +379,6 @@ with tab1:
         st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>",
                     unsafe_allow_html=True)
 
-        # centered open camera button
         left, center, right = st.columns([3, 2, 3])
         with center:
             st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
@@ -415,7 +413,6 @@ with tab1:
 
         source_text = "Captured Image" if camera_file is not None else "Uploaded Image"
 
-        # Show uploaded/captured image (your HTML style)
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
@@ -451,7 +448,7 @@ with tab1:
             unsafe_allow_html=True
         )
 
-        # Fertilizer / treatment
+        # Fertilizer
         if predicted_class in fertilizer_map:
             tip = fertilizer_map[predicted_class]
             st.markdown(
@@ -478,6 +475,7 @@ with tab1:
         overlay_img = overlay_gradcam(img, heatmap)
 
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", width="stretch")
+
 
 
 
