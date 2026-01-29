@@ -297,7 +297,7 @@ disease_info.update({
 
 
 # ---------------------- SIDEBAR ---------------------- #
-st.sidebar.title("🌿 Plant Guardian")
+st.sidebar.title("🌿 DeepCropCare")
 st.sidebar.markdown(
     "<p style='font-size:16px;'>Upload a leaf image on the Detection tab to identify diseases and get fertilizer advice.</p>",
     unsafe_allow_html=True
@@ -305,7 +305,7 @@ st.sidebar.markdown(
 
 
 # ---------------------- TABS ---------------------- #
-tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
+tab1, tab2 = st.tabs(["🌱 Disease Detection", "📘 Info"])
 
 with tab1:
     st.markdown("## 🌿 Plant Disease Detection")
