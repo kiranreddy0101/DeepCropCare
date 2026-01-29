@@ -54,54 +54,56 @@ def prettify_label(label):
 st.set_page_config(page_title="Plant Disease Detection", layout="wide")
 
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Light Mode */
+@media (prefers-color-scheme: light) {
+    body, html, [class*="css"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
     }
-
-    /* Light Mode */
-    @media (prefers-color-scheme: light) {
-        body, html, [class*="css"] {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }
-        .prediction-card {
-            background-color: #f0f0f0;
-            color: #000000;
-        }
-        .sidebar-text {
-            color: #000000 !important;
-        }
-    }
-
-    /* Dark Mode */
-    @media (prefers-color-scheme: dark) {
-        body, html, [class*="css"] {
-            background-color: #121212 !important;
-            color: #ffffff !important;
-        }
-        .prediction-card {
-            background-color: #1e1e1e;
-            color: #ffffff;
-        }
-        .sidebar-text {
-            color: #ffffff !important;
-        }
-    }
-
     .prediction-card {
-        padding: 12px;
-        border-radius: 10px;
-        margin-top: 10px;
-        font-size: 16px;
-        text-align: center;
+        background-color: #f0f0f0;
+        color: #000000;
     }
+    .sidebar-text {
+        color: #000000 !important;
+    }
+}
 
-    h1, h3, p {
-        text-align: center;
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    body, html, [class*="css"] {
+        background-color: #121212 !important;
+        color: #ffffff !important;
     }
+    .prediction-card {
+        background-color: #1e1e1e;
+        color: #ffffff;
+    }
+    .sidebar-text {
+        color: #ffffff !important;
+    }
+}
+
+.prediction-card {
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+    text-align: center;
+}
+
+h1, h3, p {
+    text-align: center;
+}
+
+/* ---------------- Camera UI ---------------- */
 .cam-title {
     text-align: center;
     font-size: 28px;
@@ -117,16 +119,6 @@ st.markdown("""
     margin-bottom: 18px;
 }
 
-.cam-card {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 18px;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.03);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-}
-
 .cam-btn button {
     width: 100% !important;
     height: 56px !important;
@@ -134,48 +126,46 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
-/* ===== Radio as toggle buttons (Streamlit Cloud working) ===== */
 
-/* Put Upload + Camera side by side */
-div[role="radiogroup"]{
-    display:flex !important;
-    gap:18px !important;
+/* ===== Upload/Camera Radio Toggle Buttons (Streamlit Cloud working) ===== */
+div[role="radiogroup"] {
+    display: flex !important;
+    gap: 18px !important;
 }
 
-/* Hide the small circle */
-div[role="radiogroup"] label > div:first-child{
-    display:none !important;
+/* Hide circle */
+div[role="radiogroup"] label > div:first-child {
+    display: none !important;
 }
 
-/* Button look */
-div[role="radiogroup"] label{
-    flex:1 !important;
-    padding:18px 14px !important;
-    border-radius:22px !important;
-    text-align:center !important;
-    font-size:20px !important;
-    font-weight:800 !important;
-    border:1px solid rgba(255,255,255,0.18) !important;
-    background:rgba(255,255,255,0.05) !important;
-    cursor:pointer !important;
+/* Make radio labels look like buttons */
+div[role="radiogroup"] label {
+    flex: 1 !important;
+    padding: 18px 14px !important;
+    border-radius: 22px !important;
+    text-align: center !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    background: rgba(255,255,255,0.05) !important;
+    cursor: pointer !important;
     transition: 0.25s ease !important;
 }
 
-/* Hover effect */
-div[role="radiogroup"] label:hover{
-    border:1px solid rgba(255,255,255,0.35) !important;
+div[role="radiogroup"] label:hover {
+    border: 1px solid rgba(255,255,255,0.35) !important;
 }
 
-/* ✅ Active glow (Streamlit Cloud supports this) */
-div[role="radiogroup"] label[data-checked="true"]{
-    border:2px solid rgba(0,255,140,0.90) !important;
-    box-shadow:0 0 20px rgba(0,255,140,0.35) !important;
-    background:rgba(0,255,140,0.12) !important;
+/* ✅ Active glow */
+div[role="radiogroup"] label[data-checked="true"] {
+    border: 2px solid rgba(0,255,140,0.90) !important;
+    box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
+    background: rgba(0,255,140,0.12) !important;
 }
-
-
-    </style>
+</style>
 """, unsafe_allow_html=True)
+
+ 
 
 
 # ---------------------- LOAD MODEL ---------------------- #
@@ -344,6 +334,8 @@ st.sidebar.markdown(
 
 # ---------------------- TABS ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Disease Detection", "📘 Info"])
+
+
 with tab1:
     st.markdown("## 🌿 Plant Disease Detection")
 
@@ -357,7 +349,7 @@ with tab1:
     uploaded_file = None
     camera_file = None
 
-    # ✅ Upload/Camera Toggle (radio)
+    # ✅ Toggle (Upload/Camera)
     mode = st.radio(
         "mode",
         ["📁 Upload", "📷 Camera"],
@@ -369,13 +361,14 @@ with tab1:
     st.session_state.source_mode = "Upload" if "Upload" in mode else "Camera"
 
     st.markdown(
-        f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
+        f"<p style='text-align:center; font-size:15px;'>Selected mode: "
+        f"<b>{st.session_state.source_mode}</b></p>",
         unsafe_allow_html=True
     )
 
     # -------------------- UPLOAD MODE -------------------- #
     if st.session_state.source_mode == "Upload":
-        st.session_state.open_camera = False  # ✅ ensure closed camera
+        st.session_state.open_camera = False  # ensure camera closed
         uploaded_file = st.file_uploader(
             "Choose leaf image",
             type=["jpg", "jpeg", "png"]
@@ -384,7 +377,8 @@ with tab1:
     # -------------------- CAMERA MODE -------------------- #
     if st.session_state.source_mode == "Camera":
         st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>", unsafe_allow_html=True)
+        st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>",
+                    unsafe_allow_html=True)
 
         # centered open camera button
         left, center, right = st.columns([3, 2, 3])
@@ -421,6 +415,7 @@ with tab1:
 
         source_text = "Captured Image" if camera_file is not None else "Uploaded Image"
 
+        # Show uploaded/captured image (your HTML style)
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
@@ -456,6 +451,7 @@ with tab1:
             unsafe_allow_html=True
         )
 
+        # Fertilizer / treatment
         if predicted_class in fertilizer_map:
             tip = fertilizer_map[predicted_class]
             st.markdown(
@@ -463,23 +459,26 @@ with tab1:
                 unsafe_allow_html=True
             )
 
+        # Disease info
         if predicted_class in disease_info:
             st.markdown("### 🩺 Disease Description")
             st.markdown(
                 f"""
                 <div class='prediction-card'>
-                ✅ <strong>Symptoms:</strong> {disease_info[predicted_class]['symptoms']} <br><br>
-                🛡️ <strong>Prevention:</strong> {disease_info[predicted_class]['prevention']}
+                    ✅ <strong>Symptoms:</strong> {disease_info[predicted_class]['symptoms']} <br><br>
+                    🛡️ <strong>Prevention:</strong> {disease_info[predicted_class]['prevention']}
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
+        # Grad-CAM
         st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
         heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
         overlay_img = overlay_gradcam(img, heatmap)
 
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", width="stretch")
+
 
 
 with tab2:
