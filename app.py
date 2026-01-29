@@ -157,14 +157,11 @@ div[role="radiogroup"] label > div:first-child {
     display: none !important;
 }
 
-/* ✅ Active glow: THIS works */
-div[role="radiogroup"] input:checked + div {
+/* ✅ Active glow */
+div[role="radiogroup"] label:has(input:checked) {
     border: 2px solid rgba(0,255,140,0.90) !important;
     box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
     background: rgba(0,255,140,0.12) !important;
-    border-radius: 22px !important;
-    padding: 18px 14px !important;
-    font-weight: 900 !important;
 }
 
     </style>
