@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -127,32 +128,40 @@ h1, h3, p {
     font-weight: 800 !important;
 }
 
-/* ---------------- Toggle Glow (Guaranteed) ---------------- */
-.toggle-card {
-    padding: 18px 14px;
-    border-radius: 22px;
-    text-align: center;
-    font-size: 20px;
-    font-weight: 800;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(255,255,255,0.05);
-    transition: 0.25s ease;
+/* ===== Card Toggle (Upload/Camera) ===== */
+.card-toggle-wrap{
+    display:flex;
+    gap:18px;
+    margin: 10px 0 16px 0;
 }
 
-.toggle-active {
-    border: 2px solid rgba(0,255,140,0.90) !important;
-    box-shadow: 0 0 22px rgba(0,255,140,0.40) !important;
-    background: rgba(0,255,140,0.12) !important;
+.card-toggle{
+    flex:1;
+    padding:18px 14px;
+    border-radius:22px;
+    text-align:center;
+    font-size:20px;
+    font-weight:800;
+    border:1px solid rgba(255,255,255,0.18);
+    background:rgba(255,255,255,0.05);
+    cursor:pointer;
+    transition:0.25s ease;
+    user-select:none;
 }
 
-/* Make the real Streamlit buttons nice */
-div.stButton > button {
-    height: 44px !important;
-    border-radius: 14px !important;
-    font-weight: 700 !important;
+.card-toggle:hover{
+    border:1px solid rgba(255,255,255,0.35);
+    transform: translateY(-1px);
+}
+
+.card-toggle.active{
+    border:2px solid rgba(0,255,140,0.90) !important;
+    box-shadow:0 0 22px rgba(0,255,140,0.45) !important;
+    background:rgba(0,255,140,0.12) !important;
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
  
@@ -339,26 +348,36 @@ with tab1:
     uploaded_file = None
     camera_file = None
 
-    # ---------- Toggle (GUARANTEED glow + side-by-side) ----------
-    colA, colB = st.columns(2)
+    # ---------- Clickable Card Toggle (Upload / Camera) ----------
+    active_upload = "active" if st.session_state.source_mode == "Upload" else ""
+    active_camera = "active" if st.session_state.source_mode == "Camera" else ""
 
-    with colA:
-        st.markdown(
-            f"<div class='toggle-card {'toggle-active' if st.session_state.source_mode=='Upload' else ''}'>📁 Upload</div>",
-            unsafe_allow_html=True
-        )
-        if st.button("Use Upload", width="stretch", key="use_upload"):
-            st.session_state.source_mode = "Upload"
-            st.session_state.open_camera = False
+    toggle_html = f"""
+    <div class="card-toggle-wrap">
+        <div class="card-toggle {active_upload}" onclick="sendChoice('Upload')">
+            📁 Upload
+        </div>
+        <div class="card-toggle {active_camera}" onclick="sendChoice('Camera')">
+            📷 Camera
+        </div>
+    </div>
 
-    with colB:
-        st.markdown(
-            f"<div class='toggle-card {'toggle-active' if st.session_state.source_mode=='Camera' else ''}'>📷 Camera</div>",
-            unsafe_allow_html=True
-        )
-        if st.button("Use Camera", width="stretch", key="use_camera"):
-            st.session_state.source_mode = "Camera"
-            st.session_state.open_camera = False
+    <script>
+    function sendChoice(v){{
+        window.parent.postMessage({{type:"streamlit:setComponentValue", value:v}}, "*");
+    }}
+    </script>
+    """
+
+    choice = components.html(toggle_html, height=90)
+
+    if choice == "Upload":
+        st.session_state.source_mode = "Upload"
+        st.session_state.open_camera = False
+
+    elif choice == "Camera":
+        st.session_state.source_mode = "Camera"
+        st.session_state.open_camera = False
 
     st.markdown(
         f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
@@ -413,6 +432,7 @@ with tab1:
 
         source_text = "Captured Image" if camera_file is not None else "Uploaded Image"
 
+        # ✅ HTML image display (your style)
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
@@ -448,7 +468,6 @@ with tab1:
             unsafe_allow_html=True
         )
 
-        # Fertilizer
         if predicted_class in fertilizer_map:
             tip = fertilizer_map[predicted_class]
             st.markdown(
@@ -456,7 +475,6 @@ with tab1:
                 unsafe_allow_html=True
             )
 
-        # Disease info
         if predicted_class in disease_info:
             st.markdown("### 🩺 Disease Description")
             st.markdown(
@@ -475,6 +493,7 @@ with tab1:
         overlay_img = overlay_gradcam(img, heatmap)
 
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", width="stretch")
+
 
 
 
