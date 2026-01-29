@@ -392,14 +392,6 @@ with tab1:
 
         pretty_label = prettify_label(predicted_class)
 
-        st.markdown(
-            f"<div class='prediction-card'>🔎 <strong>Prediction:</strong> {pretty_label}</div>",
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            f"<div class='prediction-card'>🎯 <strong>Confidence:</strong> {confidence:.2f}%</div>",
-            unsafe_allow_html=True
-        )
 
         # Fertilizer suggestion
         if predicted_class in fertilizer_map:
