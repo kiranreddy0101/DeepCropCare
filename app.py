@@ -352,47 +352,45 @@ with tab1:
             label_visibility="visible"
         )
 
-    # ---------- Camera Mode (PREMIUM UI) ----------
-    if st.session_state.source_mode == "Camera":
+    # ---------- Camera Mode (PREMIUM UI) ----------#
+if st.session_state.source_mode == "Camera":
 
-        st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cam-subtitle'>Click Open Camera to start capturing leaf image</div>", unsafe_allow_html=True)
+    st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
+    st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>", unsafe_allow_html=True)
 
+    # ✅ Center Open Camera button properly
+    left, center, right = st.columns([3, 2, 3])
+    with center:
+        st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
+        if st.button("📸 Open Camera", use_container_width=True):
+            st.session_state.open_camera = True
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    camera_file = None
+
+    # ✅ Show camera only after open button click
+    if st.session_state.open_camera:
         st.markdown("<div class='cam-card'>", unsafe_allow_html=True)
+        st.info("✅ Camera opened. Take a clear leaf photo in good light.")
 
-        # Open camera button (center)
-        colx1, colx2, colx3 = st.columns([1, 2, 1])
-        with colx2:
-            st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
-            if st.button("📸 Open Camera"):
-                st.session_state.open_camera = True
-            st.markdown("</div>", unsafe_allow_html=True)
+        camera_file = st.camera_input("Camera", label_visibility="collapsed")
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        # Camera widget shown only after clicking Open Camera
-        if st.session_state.open_camera:
-            st.info("✅ Camera opened. Take a clear leaf photo in good light.")
-            camera_file = st.camera_input("Camera", label_visibility="collapsed")
-
-            # buttons row
-            colb1, colb2 = st.columns(2)
-
-            with colb1:
-                st.markdown("<div class='cam-actions'>", unsafe_allow_html=True)
-                if st.button("❌ Close Camera"):
-                    st.session_state.open_camera = False
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            with colb2:
-                st.markdown("<div class='cam-actions'>", unsafe_allow_html=True)
-                if st.button("🔄 Reset"):
-                    st.session_state.open_camera = True
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            # Auto close after capture
-            if camera_file is not None:
+        colb1, colb2 = st.columns(2)
+        with colb1:
+            if st.button("❌ Close Camera", use_container_width=True):
                 st.session_state.open_camera = False
+        with colb2:
+            if st.button("🔄 Reset Camera", use_container_width=True):
+                st.session_state.open_camera = True
+
+        # ✅ Auto close after capture
+        if camera_file is not None:
+            st.session_state.open_camera = False
+
 
         else:
             st.success("Camera is ready. Press **Open Camera** to capture leaf image.")
