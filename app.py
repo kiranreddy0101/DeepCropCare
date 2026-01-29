@@ -297,32 +297,23 @@ with tab1:
             st.session_state.source_mode = "Camera"
             st.session_state.open_camera = False
 
-    st.markdown(f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
-                unsafe_allow_html=True)
+    st.markdown(
+        f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
+        unsafe_allow_html=True
+    )
 
     uploaded_file = None
     camera_file = None
 
-    # ---------- Upload mode ----------
+    # ✅ Upload mode (NO camera icon beside uploader)
     if st.session_state.source_mode == "Upload":
-        col1, col2 = st.columns([4, 1])
+        uploaded_file = st.file_uploader(
+            "Choose leaf image",
+            type=["jpg", "jpeg", "png"],
+            label_visibility="visible"
+        )
 
-        with col1:
-            uploaded_file = st.file_uploader(
-                "Choose leaf image",
-                type=["jpg", "jpeg", "png"],
-                label_visibility="visible"
-            )
-
-        # Circular camera icon beside uploader
-        with col2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("<div class='circle-btn'>", unsafe_allow_html=True)
-            if st.button("📷", help="Switch to camera mode"):
-                st.session_state.source_mode = "Camera"
-            st.markdown("</div>", unsafe_allow_html=True)
-
-    # ---------- Camera mode ----------
+    # ✅ Camera mode
     if st.session_state.source_mode == "Camera":
         st.markdown("### 📷 Capture Leaf Image")
 
@@ -338,9 +329,7 @@ with tab1:
         # camera widget shown only after pressing button
         if st.session_state.open_camera:
             st.markdown("<div class='camera-box'>", unsafe_allow_html=True)
-
             camera_file = st.camera_input("Camera", label_visibility="collapsed")
-
             st.markdown("</div>", unsafe_allow_html=True)
 
             # Auto close after capture
@@ -357,7 +346,8 @@ with tab1:
     if file_source:
         image = Image.open(file_source).convert("RGB")
 
-        # ✅ continue your prediction code from here...
+        # ✅ Continue with your existing prediction code...
+
 
 
 
