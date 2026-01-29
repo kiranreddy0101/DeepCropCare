@@ -134,35 +134,45 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
-/* Make radio look like two buttons */
-div[role="radiogroup"] {
-    display: flex !important;
-    gap: 18px !important;
+/* ===== Radio as toggle buttons (Streamlit Cloud working) ===== */
+
+/* Put Upload + Camera side by side */
+div[role="radiogroup"]{
+    display:flex !important;
+    gap:18px !important;
 }
 
-div[role="radiogroup"] label {
-    flex: 1 !important;
-    border-radius: 22px !important;
-    padding: 18px 14px !important;
-    text-align: center !important;
-    font-size: 20px !important;
-    font-weight: 800 !important;
-    border: 1px solid rgba(255,255,255,0.18) !important;
-    background: rgba(255,255,255,0.05) !important;
-    cursor: pointer !important;
+/* Hide the small circle */
+div[role="radiogroup"] label > div:first-child{
+    display:none !important;
 }
 
-/* hide circle */
-div[role="radiogroup"] label > div:first-child {
-    display: none !important;
+/* Button look */
+div[role="radiogroup"] label{
+    flex:1 !important;
+    padding:18px 14px !important;
+    border-radius:22px !important;
+    text-align:center !important;
+    font-size:20px !important;
+    font-weight:800 !important;
+    border:1px solid rgba(255,255,255,0.18) !important;
+    background:rgba(255,255,255,0.05) !important;
+    cursor:pointer !important;
+    transition: 0.25s ease !important;
 }
 
-/* ✅ Active glow */
-div[role="radiogroup"] label:has(input:checked) {
-    border: 2px solid rgba(0,255,140,0.90) !important;
-    box-shadow: 0 0 20px rgba(0,255,140,0.35) !important;
-    background: rgba(0,255,140,0.12) !important;
+/* Hover effect */
+div[role="radiogroup"] label:hover{
+    border:1px solid rgba(255,255,255,0.35) !important;
 }
+
+/* ✅ Active glow (Streamlit Cloud supports this) */
+div[role="radiogroup"] label[data-checked="true"]{
+    border:2px solid rgba(0,255,140,0.90) !important;
+    box-shadow:0 0 20px rgba(0,255,140,0.35) !important;
+    background:rgba(0,255,140,0.12) !important;
+}
+
 
     </style>
 """, unsafe_allow_html=True)
