@@ -54,54 +54,56 @@ def prettify_label(label):
 st.set_page_config(page_title="Plant Disease Detection", layout="wide")
 
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Light Mode */
+@media (prefers-color-scheme: light) {
+    body, html, [class*="css"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
     }
-
-    /* Light Mode */
-    @media (prefers-color-scheme: light) {
-        body, html, [class*="css"] {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }
-        .prediction-card {
-            background-color: #f0f0f0;
-            color: #000000;
-        }
-        .sidebar-text {
-            color: #000000 !important;
-        }
-    }
-
-    /* Dark Mode */
-    @media (prefers-color-scheme: dark) {
-        body, html, [class*="css"] {
-            background-color: #121212 !important;
-            color: #ffffff !important;
-        }
-        .prediction-card {
-            background-color: #1e1e1e;
-            color: #ffffff;
-        }
-        .sidebar-text {
-            color: #ffffff !important;
-        }
-    }
-
     .prediction-card {
-        padding: 12px;
-        border-radius: 10px;
-        margin-top: 10px;
-        font-size: 16px;
-        text-align: center;
+        background-color: #f0f0f0;
+        color: #000000;
     }
+    .sidebar-text {
+        color: #000000 !important;
+    }
+}
 
-    h1, h3, p {
-        text-align: center;
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    body, html, [class*="css"] {
+        background-color: #121212 !important;
+        color: #ffffff !important;
     }
+    .prediction-card {
+        background-color: #1e1e1e;
+        color: #ffffff;
+    }
+    .sidebar-text {
+        color: #ffffff !important;
+    }
+}
+
+.prediction-card {
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+    text-align: center;
+}
+
+h1, h3, p {
+    text-align: center;
+}
+
+/* -------- Camera UI -------- */
 .cam-title {
     text-align: center;
     font-size: 28px;
@@ -117,16 +119,6 @@ st.markdown("""
     margin-bottom: 18px;
 }
 
-.cam-card {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 18px;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.03);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-}
-
 .cam-btn button {
     width: 100% !important;
     height: 56px !important;
@@ -134,12 +126,12 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
-/* Hide default radio circle */
+
+/* -------- Radio Toggle Buttons (Upload/Camera) -------- */
 div[role="radiogroup"] label > div:first-child {
     display: none !important;
 }
 
-/* Make radio labels look like big toggle buttons */
 div[role="radiogroup"] label {
     width: 100% !important;
     border-radius: 20px !important;
@@ -156,15 +148,12 @@ div[role="radiogroup"] label:hover {
     border: 1px solid rgba(255,255,255,0.32) !important;
 }
 
-/* Active (selected) glow */
 div[role="radiogroup"] label[data-checked="true"] {
     border: 2px solid rgba(0,255,140,0.85) !important;
     box-shadow: 0 0 18px rgba(0,255,140,0.25) !important;
     background: rgba(0,255,140,0.10) !important;
 }
-
-
-    </style>
+</style>
 """, unsafe_allow_html=True)
 
 
