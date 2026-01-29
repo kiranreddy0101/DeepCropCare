@@ -357,10 +357,10 @@ with tab1:
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
 
-        st.markdown(
-            f"""
-            
-            /* Source toggle buttons */
+        st.markdown("""
+<style>
+
+/* Source toggle buttons */
 .source-btn {
     display: flex;
     gap: 10px;
@@ -401,8 +401,9 @@ with tab1:
     padding: 0px !important;
 }
 
-            """, unsafe_allow_html=True
-        )
+</style>
+""", unsafe_allow_html=True)
+
 
         # Prepare image
         img = image.resize((224, 224))
