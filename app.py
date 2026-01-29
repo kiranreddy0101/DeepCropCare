@@ -274,33 +274,54 @@ st.sidebar.markdown(
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
 with tab1:
-st.markdown("## 🌿 Plant Disease Detection")
+with tab1:
+    st.markdown("## 🌿 Plant Disease Detection")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    uploaded_file = st.file_uploader("📁 Browse leaf image", type=["jpg", "jpeg", "png"])
-
-with col2:
+    # --- SESSION STATE ---
     if "open_camera" not in st.session_state:
         st.session_state.open_camera = False
 
-    if st.button("📷 Capture"):
-        st.session_state.open_camera = True
+    # --- UPLOAD + CAMERA ICON ---
+    col1, col2 = st.columns([4, 1])
 
+    with col1:
+        uploaded_file = st.file_uploader(
+            "📁 Browse leaf image",
+            type=["jpg", "jpeg", "png"],
+            label_visibility="visible"
+        )
+
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)  # spacing
+        if st.button("📷", help="Capture from camera"):
+            st.session_state.open_camera = True
+
+    # --- MODAL-LIKE CAMERA SECTION ---
+    camera_file = None
     if st.session_state.open_camera:
-        if st.button("❌ Close Camera"):
-            st.session_state.open_camera = False
+        with st.container():
+            st.markdown("### 📷 Camera Capture")
 
-camera_file = None
-if st.session_state.open_camera:
-    camera_file = st.camera_input("📷 Camera")
+            camera_file = st.camera_input("Take a photo", label_visibility="collapsed")
 
-file_source = uploaded_file if uploaded_file is not None else camera_file
+            # Auto-close when captured
+            if camera_file is not None:
+                st.session_state.open_camera = False
 
-if file_source:
-    image = Image.open(file_source).convert("RGB")
-    # continue prediction code...
+            # Manual close button
+            if st.button("❌ Close Camera"):
+                st.session_state.open_camera = False
+
+    # --- SELECT FILE SOURCE ---
+    file_source = uploaded_file if uploaded_file is not None else camera_file
+
+    if file_source:
+        image = Image.open(file_source).convert("RGB")
+
+        # continue your existing prediction code below...
+
+
+
 
         # Display uploaded image
         buffered = BytesIO()
