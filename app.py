@@ -317,7 +317,6 @@ with tab1:
     if st.session_state.source_mode == "Camera":
         st.markdown("### 📷 Capture Leaf Image")
 
-        # Capture button (camera opens only after click)
         colC1, colC2, colC3 = st.columns([2, 2, 2])
 
         with colC2:
@@ -326,7 +325,6 @@ with tab1:
                 st.session_state.open_camera = True
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # camera widget shown only after pressing button
         if st.session_state.open_camera:
             st.markdown("<div class='camera-box'>", unsafe_allow_html=True)
             camera_file = st.camera_input("Camera", label_visibility="collapsed")
@@ -344,65 +342,42 @@ with tab1:
     file_source = uploaded_file if uploaded_file is not None else camera_file
 
     if file_source:
+        # Convert to PIL Image
         image = Image.open(file_source).convert("RGB")
 
-        # ✅ Continue with your existing prediction code...
-
-
-
-
-
-        # Display uploaded image
+        # ✅ Display uploaded/captured image using your HTML block
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
 
-        st.markdown("""
-<style>
+        st.markdown(
+            f"""
+            <div style="text-align: center;">
+                <img src="data:image/png;base64,{img_data}" alt="Uploaded Leaf" width="300"/>
+                <p class='sidebar-text' style='font-size: 16px;'>Uploaded Image</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-/* Source toggle buttons */
-.source-btn {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin: 12px 0 18px 0;
-}
+        # ✅ Continue with prediction code...
+        img = image.resize((224, 224))
+        img_array = img_to_array(img) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-.source-card {
-    padding: 12px 14px;
-    border-radius: 14px;
-    text-align: center;
-    border: 1px solid rgba(255,255,255,0.15);
-    cursor: pointer;
-    font-weight: 600;
-    transition: 0.2s;
-    width: 160px;
-}
+        prediction = model.predict(img_array)
+        predicted_class = class_names[np.argmax(prediction)]
+        confidence = np.max(prediction) * 100
 
-.source-card:hover {
-    transform: translateY(-1px);
-}
+        st.markdown(
+            f"<div class='prediction-card'>🔎 <strong>Prediction:</strong> {predicted_class}</div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"<div class='prediction-card'>🎯 <strong>Confidence:</strong> {confidence:.2f}%</div>",
+            unsafe_allow_html=True
+        )
 
-/* Camera popup card */
-.camera-box {
-    padding: 15px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.12);
-    margin-top: 10px;
-}
-
-/* Circular icon button */
-.circle-btn button {
-    border-radius: 999px !important;
-    width: 52px !important;
-    height: 52px !important;
-    font-size: 20px !important;
-    font-weight: 700 !important;
-    padding: 0px !important;
-}
-
-</style>
-""", unsafe_allow_html=True)
 
 
         # Prepare image
