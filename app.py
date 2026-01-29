@@ -102,7 +102,7 @@ st.markdown("""
     h1, h3, p {
         text-align: center;
     }
-    .cam-title {
+.cam-title {
     text-align: center;
     font-size: 28px;
     font-weight: 800;
@@ -129,17 +129,12 @@ st.markdown("""
 
 .cam-btn button {
     width: 100% !important;
-    height: 60px !important;
+    height: 56px !important;
     border-radius: 16px !important;
     font-size: 20px !important;
     font-weight: 800 !important;
 }
 
-
-.cam-actions button {
-    width: 100% !important;
-    border-radius: 14px !important;
-}
 
     </style>
 """, unsafe_allow_html=True)
@@ -312,7 +307,6 @@ st.sidebar.markdown(
 # ---------------------- TABS ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
-
 with tab1:
     st.markdown("## 🌿 Plant Disease Detection")
 
@@ -344,7 +338,7 @@ with tab1:
     uploaded_file = None
     camera_file = None
 
-    # ---------- Upload Mode ----------
+    # -------------------- UPLOAD MODE -------------------- #
     if st.session_state.source_mode == "Upload":
         uploaded_file = st.file_uploader(
             "Choose leaf image",
@@ -352,63 +346,57 @@ with tab1:
             label_visibility="visible"
         )
 
-    # ---------- Camera Mode (PREMIUM UI) ----------
+    # -------------------- CAMERA MODE -------------------- #
     if st.session_state.source_mode == "Camera":
 
         st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cam-subtitle'>Click Open Camera to start capturing leaf image</div>", unsafe_allow_html=True)
+        st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>", unsafe_allow_html=True)
 
-        st.markdown("<div class='cam-card'>", unsafe_allow_html=True)
-
-        # Open camera button (center)
-        colx1, colx2, colx3 = st.columns([1, 2, 1])
-        with colx2:
+        # ✅ Perfectly centered button
+        left, center, right = st.columns([3, 2, 3])
+        with center:
             st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
-            if st.button("📸 Open Camera"):
+            if st.button("📸 Open Camera", use_container_width=True):
                 st.session_state.open_camera = True
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Camera widget shown only after clicking Open Camera
+        # ✅ Camera widget only after open_camera = True
         if st.session_state.open_camera:
+            st.markdown("<div class='cam-card'>", unsafe_allow_html=True)
+
             st.info("✅ Camera opened. Take a clear leaf photo in good light.")
             camera_file = st.camera_input("Camera", label_visibility="collapsed")
 
-            # buttons row
-            colb1, colb2 = st.columns(2)
+            st.markdown("</div>", unsafe_allow_html=True)
 
+            colb1, colb2 = st.columns(2)
             with colb1:
-                st.markdown("<div class='cam-actions'>", unsafe_allow_html=True)
-                if st.button("❌ Close Camera"):
+                if st.button("❌ Close Camera", use_container_width=True):
                     st.session_state.open_camera = False
-                st.markdown("</div>", unsafe_allow_html=True)
 
             with colb2:
-                st.markdown("<div class='cam-actions'>", unsafe_allow_html=True)
-                if st.button("🔄 Reset"):
+                if st.button("🔄 Reset Camera", use_container_width=True):
                     st.session_state.open_camera = True
-                st.markdown("</div>", unsafe_allow_html=True)
 
-            # Auto close after capture
+            # ✅ Auto-close after capture
             if camera_file is not None:
                 st.session_state.open_camera = False
 
         else:
             st.success("Camera is ready. Press **Open Camera** to capture leaf image.")
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # ---------- Common handler (Upload OR Camera) ----------
+    # -------------------- COMMON HANDLER -------------------- #
     file_source = uploaded_file if uploaded_file is not None else camera_file
 
     if file_source:
         image = Image.open(file_source).convert("RGB")
 
-        # Show source as Uploaded/Captured
+        # Display source caption
         source_text = "Captured Image" if camera_file is not None else "Uploaded Image"
 
-        # Display image using your HTML block
+        # ✅ Display image using your HTML block
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
@@ -424,7 +412,7 @@ with tab1:
             unsafe_allow_html=True
         )
 
-        # ---------- Prediction ----------
+        # -------------------- Prediction -------------------- #
         img = image.resize((224, 224))
         img_array = img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
@@ -442,7 +430,7 @@ with tab1:
             unsafe_allow_html=True
         )
 
-        # ---------- Fertilizer suggestion ----------
+        # -------------------- Fertilizer Suggestion -------------------- #
         if predicted_class in fertilizer_map:
             tip = fertilizer_map[predicted_class]
             st.markdown(
@@ -455,7 +443,7 @@ with tab1:
                 unsafe_allow_html=True
             )
 
-        # ---------- Disease Info ----------
+        # -------------------- Disease Description -------------------- #
         if predicted_class in disease_info:
             st.markdown("### 🩺 Disease Description")
             st.markdown(
@@ -468,11 +456,12 @@ with tab1:
                 unsafe_allow_html=True
             )
 
-        # ---------- Grad-CAM ----------
+        # -------------------- Grad-CAM -------------------- #
         st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
         heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
         overlay_img = overlay_gradcam(img, heatmap)
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", use_container_width=True)
+
 
 
 
