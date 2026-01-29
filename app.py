@@ -277,34 +277,73 @@ tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 with tab1:
     st.markdown("## 🌿 Plant Disease Detection")
 
-    # --- SESSION STATE ---
+    # ---------- Session state ----------
+    if "source_mode" not in st.session_state:
+        st.session_state.source_mode = "Upload"
+
     if "open_camera" not in st.session_state:
         st.session_state.open_camera = False
 
-    # --- UPLOAD + CAMERA ICON ---
-    col1, col2 = st.columns([4, 1])
+    # ---------- Toggle Buttons ----------
+    colA, colB = st.columns(2)
 
-    with col1:
-        uploaded_file = st.file_uploader(
-            "📁 Browse leaf image",
-            type=["jpg", "jpeg", "png"],
-            label_visibility="visible"
-        )
+    with colA:
+        if st.button("📁 Upload", use_container_width=True):
+            st.session_state.source_mode = "Upload"
+            st.session_state.open_camera = False
 
-    with col2:
-        st.markdown("<br>", unsafe_allow_html=True)  # spacing
-        if st.button("📷", help="Capture from camera"):
-            st.session_state.open_camera = True
+    with colB:
+        if st.button("📷 Camera", use_container_width=True):
+            st.session_state.source_mode = "Camera"
+            st.session_state.open_camera = False
 
-    # --- MODAL-LIKE CAMERA SECTION ---
+    st.markdown(f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
+                unsafe_allow_html=True)
+
+    uploaded_file = None
     camera_file = None
-    if st.session_state.open_camera:
-        with st.container():
-            st.markdown("### 📷 Camera Capture")
 
-            camera_file = st.camera_input("Take a photo", label_visibility="collapsed")
+    # ---------- Upload mode ----------
+    if st.session_state.source_mode == "Upload":
+        col1, col2 = st.columns([4, 1])
 
-            # Auto-close when captured
+        with col1:
+            uploaded_file = st.file_uploader(
+                "Choose leaf image",
+                type=["jpg", "jpeg", "png"],
+                label_visibility="visible"
+            )
+
+        # Circular camera icon beside uploader
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div class='circle-btn'>", unsafe_allow_html=True)
+            if st.button("📷", help="Switch to camera mode"):
+                st.session_state.source_mode = "Camera"
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    # ---------- Camera mode ----------
+    if st.session_state.source_mode == "Camera":
+        st.markdown("### 📷 Capture Leaf Image")
+
+        # Capture button (camera opens only after click)
+        colC1, colC2, colC3 = st.columns([2, 2, 2])
+
+        with colC2:
+            st.markdown("<div class='circle-btn'>", unsafe_allow_html=True)
+            if st.button("📸", help="Open camera"):
+                st.session_state.open_camera = True
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # camera widget shown only after pressing button
+        if st.session_state.open_camera:
+            st.markdown("<div class='camera-box'>", unsafe_allow_html=True)
+
+            camera_file = st.camera_input("Camera", label_visibility="collapsed")
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # Auto close after capture
             if camera_file is not None:
                 st.session_state.open_camera = False
 
@@ -312,13 +351,13 @@ with tab1:
             if st.button("❌ Close Camera"):
                 st.session_state.open_camera = False
 
-    # --- SELECT FILE SOURCE ---
+    # ---------- Common handler ----------
     file_source = uploaded_file if uploaded_file is not None else camera_file
 
     if file_source:
         image = Image.open(file_source).convert("RGB")
 
-        # continue your existing prediction code below...
+        # ✅ continue your prediction code from here...
 
 
 
@@ -334,6 +373,47 @@ with tab1:
                 <img src="data:image/png;base64,{img_data}" alt="Uploaded Leaf" width="300"/>
                 <p class='sidebar-text' style='font-size: 16px;'>Uploaded Image</p>
             </div>
+            /* Source toggle buttons */
+.source-btn {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 12px 0 18px 0;
+}
+
+.source-card {
+    padding: 12px 14px;
+    border-radius: 14px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+    width: 160px;
+}
+
+.source-card:hover {
+    transform: translateY(-1px);
+}
+
+/* Camera popup card */
+.camera-box {
+    padding: 15px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+    margin-top: 10px;
+}
+
+/* Circular icon button */
+.circle-btn button {
+    border-radius: 999px !important;
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    padding: 0px !important;
+}
+
             """, unsafe_allow_html=True
         )
 
