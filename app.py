@@ -134,6 +134,23 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
+.toggle-btn {
+    padding: 14px 18px;
+    border-radius: 18px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.05);
+    font-weight: 800;
+    font-size: 18px;
+    margin-bottom: 8px;
+    transition: 0.25s ease;
+}
+
+.toggle-active {
+    border: 2px solid rgba(0,255,140,0.85) !important;
+    box-shadow: 0 0 18px rgba(0,255,140,0.20);
+    background: rgba(0,255,140,0.08) !important;
+}
 
 
     </style>
@@ -317,16 +334,35 @@ with tab1:
     if "open_camera" not in st.session_state:
         st.session_state.open_camera = False
 
-    # ---------- Upload / Camera Toggle ----------
+    # ---------- ACTIVE TOGGLE UI ----------
+    upload_active = st.session_state.source_mode == "Upload"
+    camera_active = st.session_state.source_mode == "Camera"
+
     colA, colB = st.columns(2)
 
     with colA:
-        if st.button("📁 Upload", width="stretch"):
+        st.markdown(
+            f"""
+            <div class="toggle-btn {'toggle-active' if upload_active else ''}">
+                📁 Upload
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("Select Upload", width="stretch", key="btn_upload_select"):
             st.session_state.source_mode = "Upload"
             st.session_state.open_camera = False
 
     with colB:
-        if st.button("📷 Camera", width="stretch"):
+        st.markdown(
+            f"""
+            <div class="toggle-btn {'toggle-active' if camera_active else ''}">
+                📷 Camera
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("Select Camera", width="stretch", key="btn_camera_select"):
             st.session_state.source_mode = "Camera"
             st.session_state.open_camera = False
 
@@ -346,40 +382,40 @@ with tab1:
             label_visibility="visible"
         )
 
-    # -------------------- CAMERA MODE (NO EMPTY RECTANGLE) -------------------- #
+    # -------------------- CAMERA MODE -------------------- #
     if st.session_state.source_mode == "Camera":
 
         st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
         st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>", unsafe_allow_html=True)
 
-        # ✅ Open camera button centered
+        # ✅ Centered Open Camera button
         left, center, right = st.columns([3, 2, 3])
         with center:
             st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
-            if st.button("📸 Open Camera", width="stretch"):
+            if st.button("📸 Open Camera", width="stretch", key="open_camera_btn"):
                 st.session_state.open_camera = True
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # ✅ Show camera only after click
+        # ✅ Camera widget shows only after button click
         if st.session_state.open_camera:
             st.info("✅ Camera opened. Take a clear leaf photo in good light.")
-
-            # ✅ NO HTML wrapper -> prevents empty rectangle
             camera_file = st.camera_input("Camera", label_visibility="collapsed")
 
             colb1, colb2 = st.columns(2)
             with colb1:
-                if st.button("❌ Close Camera", width="stretch"):
+                if st.button("❌ Close Camera", width="stretch", key="close_camera_btn"):
                     st.session_state.open_camera = False
+
             with colb2:
-                if st.button("🔄 Reset Camera", width="stretch"):
+                if st.button("🔄 Reset Camera", width="stretch", key="reset_camera_btn"):
                     st.session_state.open_camera = True
 
-            # ✅ Auto close after capture
+            # ✅ Auto-close after capture
             if camera_file is not None:
                 st.session_state.open_camera = False
+
         else:
             st.success("Camera is ready. Press **Open Camera** to capture leaf image.")
 
@@ -389,7 +425,7 @@ with tab1:
     if file_source:
         image = Image.open(file_source).convert("RGB")
 
-        # Display source caption
+        # caption
         source_text = "Captured Image" if camera_file is not None else "Uploaded Image"
 
         # ✅ Display image using your HTML block
@@ -402,7 +438,9 @@ with tab1:
             <div style="text-align: center;">
                 <img src="data:image/png;base64,{img_data}" alt="Leaf Image" width="320"
                     style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.12);"/>
-                <p class='sidebar-text' style='font-size: 16px; margin-top:10px;'><b>{source_text}</b></p>
+                <p class='sidebar-text' style='font-size: 16px; margin-top:10px;'>
+                    <b>{source_text}</b>
+                </p>
             </div>
             """,
             unsafe_allow_html=True
@@ -458,6 +496,7 @@ with tab1:
         overlay_img = overlay_gradcam(img, heatmap)
 
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", width="stretch")
+
 
 
 
