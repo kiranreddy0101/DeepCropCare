@@ -134,6 +134,24 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
+.toggle-btn {
+    padding: 14px 18px;
+    border-radius: 18px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.05);
+    font-weight: 800;
+    font-size: 18px;
+    margin-bottom: 8px;
+    transition: 0.25s ease;
+}
+
+.toggle-active {
+    border: 2px solid rgba(0,255,140,0.85) !important;
+    box-shadow: 0 0 18px rgba(0,255,140,0.20);
+    background: rgba(0,255,140,0.08) !important;
+}
+
 /* Highlight Upload/Camera buttons based on selected mode */
 div.stButton > button {
     height: 60px !important;
