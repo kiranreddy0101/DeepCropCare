@@ -369,10 +369,7 @@ with tab1:
 
         st.markdown(
             f"""
-            <div style="text-align: center;">
-                <img src="data:image/png;base64,{img_data}" alt="Uploaded Leaf" width="300"/>
-                <p class='sidebar-text' style='font-size: 16px;'>Uploaded Image</p>
-            </div>
+            
             /* Source toggle buttons */
 .source-btn {
     display: flex;
