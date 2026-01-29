@@ -134,21 +134,33 @@ st.markdown("""
     font-size: 20px !important;
     font-weight: 800 !important;
 }
-/* Make buttons look premium */
-div.stButton > button {
-    height: 64px !important;
+/* Hide default radio circle */
+div[role="radiogroup"] label > div:first-child {
+    display: none !important;
+}
+
+/* Make radio labels look like big toggle buttons */
+div[role="radiogroup"] label {
+    width: 100% !important;
     border-radius: 20px !important;
+    padding: 18px 14px !important;
+    text-align: center !important;
     font-size: 20px !important;
     font-weight: 800 !important;
     border: 1px solid rgba(255,255,255,0.18) !important;
     background: rgba(255,255,255,0.05) !important;
+    cursor: pointer !important;
 }
 
-/* Active toggle glow */
-.active-btn button {
+div[role="radiogroup"] label:hover {
+    border: 1px solid rgba(255,255,255,0.32) !important;
+}
+
+/* Active (selected) glow */
+div[role="radiogroup"] label[data-checked="true"] {
     border: 2px solid rgba(0,255,140,0.85) !important;
     box-shadow: 0 0 18px rgba(0,255,140,0.25) !important;
-    background: rgba(0,255,140,0.08) !important;
+    background: rgba(0,255,140,0.10) !important;
 }
 
 
@@ -336,30 +348,16 @@ with tab1:
     uploaded_file = None
     camera_file = None
 
-    # ---------- Upload / Camera Toggle (Active Highlight) ----------
-    colA, colB = st.columns(2)
+    # ✅ BEST toggle (radio styled as buttons)
+    mode = st.radio(
+        "Select mode",
+        ["📁 Upload", "📷 Camera"],
+        horizontal=True,
+        label_visibility="collapsed",
+        index=0 if st.session_state.source_mode == "Upload" else 1
+    )
 
-    with colA:
-        if st.session_state.source_mode == "Upload":
-            st.markdown("<div class='active-btn'>", unsafe_allow_html=True)
-
-        if st.button("📁 Upload", width="stretch", key="upload_mode_btn"):
-            st.session_state.source_mode = "Upload"
-            st.session_state.open_camera = False
-
-        if st.session_state.source_mode == "Upload":
-            st.markdown("</div>", unsafe_allow_html=True)
-
-    with colB:
-        if st.session_state.source_mode == "Camera":
-            st.markdown("<div class='active-btn'>", unsafe_allow_html=True)
-
-        if st.button("📷 Camera", width="stretch", key="camera_mode_btn"):
-            st.session_state.source_mode = "Camera"
-            st.session_state.open_camera = False
-
-        if st.session_state.source_mode == "Camera":
-            st.markdown("</div>", unsafe_allow_html=True)
+    st.session_state.source_mode = "Upload" if "Upload" in mode else "Camera"
 
     st.markdown(
         f"<p style='text-align:center; font-size:15px;'>Selected mode: <b>{st.session_state.source_mode}</b></p>",
@@ -379,7 +377,6 @@ with tab1:
         st.markdown("<div class='cam-title'>📷 Camera Capture</div>", unsafe_allow_html=True)
         st.markdown("<div class='cam-subtitle'>Click <b>Open Camera</b> to start capturing leaf image</div>", unsafe_allow_html=True)
 
-        # ✅ centered open camera button
         left, center, right = st.columns([3, 2, 3])
         with center:
             st.markdown("<div class='cam-btn'>", unsafe_allow_html=True)
@@ -389,7 +386,6 @@ with tab1:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # ✅ show camera only after open
         if st.session_state.open_camera:
             st.info("✅ Camera opened. Take a clear leaf photo in good light.")
             camera_file = st.camera_input("Camera", label_visibility="collapsed")
@@ -402,7 +398,6 @@ with tab1:
                 if st.button("🔄 Reset Camera", width="stretch", key="reset_camera_btn"):
                     st.session_state.open_camera = True
 
-            # ✅ auto close after capture
             if camera_file is not None:
                 st.session_state.open_camera = False
         else:
@@ -414,10 +409,8 @@ with tab1:
     if file_source:
         image = Image.open(file_source).convert("RGB")
 
-        # caption
         source_text = "Captured Image" if camera_file is not None else "Uploaded Image"
 
-        # ✅ Display image using your HTML block
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
@@ -433,7 +426,7 @@ with tab1:
             unsafe_allow_html=True
         )
 
-        # -------------------- Prediction -------------------- #
+        # Prediction
         img = image.resize((224, 224))
         img_array = img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
@@ -451,20 +444,13 @@ with tab1:
             unsafe_allow_html=True
         )
 
-        # -------------------- Fertilizer Suggestion -------------------- #
         if predicted_class in fertilizer_map:
             tip = fertilizer_map[predicted_class]
             st.markdown(
                 f"<div class='prediction-card'>💡 <strong>Fertilizer/Treatment Tip:</strong> {tip}</div>",
                 unsafe_allow_html=True
             )
-        else:
-            st.markdown(
-                "<div class='prediction-card'>✅ This plant appears healthy. No treatment needed!</div>",
-                unsafe_allow_html=True
-            )
 
-        # -------------------- Disease Description -------------------- #
         if predicted_class in disease_info:
             st.markdown("### 🩺 Disease Description")
             st.markdown(
@@ -477,12 +463,11 @@ with tab1:
                 unsafe_allow_html=True
             )
 
-        # -------------------- Grad-CAM -------------------- #
         st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
         heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
         overlay_img = overlay_gradcam(img, heatmap)
-
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", width="stretch")
+
 
 
 
