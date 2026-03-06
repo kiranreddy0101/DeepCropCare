@@ -20,7 +20,6 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
         if pred_index is None:
             pred_index = tf.argmax(predictions)
         class_channel = predictions[pred_index]
-
     grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
     conv_outputs = conv_outputs[0]
@@ -46,25 +45,8 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-.prediction-card {
-    padding: 15px;
-    border-radius: 12px;
-    margin-top: 10px;
-    font-size: 16px;
-    text-align: center;
-    border: 1px solid rgba(255,255,255,0.1);
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-.fertilizer-card {
-    padding: 15px;
-    border-radius: 12px;
-    margin-top: 15px;
-    text-align: center;
-    background: rgba(0, 255, 140, 0.1);
-    border: 2px solid rgba(0, 255, 140, 0.4);
-    color: #ffffff;
-}
+.prediction-card { padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); background-color: #1e1e1e; color: #ffffff; }
+.fertilizer-card { padding: 15px; border-radius: 12px; margin-top: 15px; text-align: center; background: rgba(0, 255, 140, 0.1); border: 2px solid rgba(0, 255, 140, 0.4); color: #ffffff; }
 h1, h2, h3, p { text-align: center; }
 </style>
 """, unsafe_allow_html=True)
@@ -160,54 +142,63 @@ fertilizer_map = {
     'Wheatleaf_septoria': 'Spray fungicide with chlorothalonil or tebuconazole'
 }
 
+
 # ---------------------- MAIN APP ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Disease Detection", "📘 Info"])
 
 with tab1:
     st.markdown("## 🌿 Plant Disease Analysis")
-    uploaded_file = st.file_uploader("Upload leaf image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    
+    # Toggle for Mode
+    mode = st.radio("Select Input Source:", ["Upload Image", "Use Camera"], horizontal=True, label_visibility="collapsed")
 
-    if uploaded_file:
-        image = Image.open(uploaded_file).convert("RGB")
+    file_source = None
+    if mode == "Upload Image":
+        file_source = st.file_uploader("Upload leaf image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    else:
+        file_source = st.camera_input("Capture leaf image")
+
+    if file_source:
+        image = Image.open(file_source).convert("RGB")
         
-        # Display Image
+        # Display Image (Small Preview)
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
-        st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{img_data}" width="350" style="border-radius: 15px;"/></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{img_data}" width="300" style="border-radius: 15px; border: 1px solid #00ff8c;"/></div>', unsafe_allow_html=True)
 
-        # Inference
+        # Preprocessing & Inference
         img_resized = image.resize((224, 224))
         img_array = img_to_array(img_resized) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
-        with st.spinner('Analyzing...'):
+        with st.spinner('AI analyzing leaf patterns...'):
             prediction = model.predict(img_array)
             idx = np.argmax(prediction)
             predicted_class = class_names[idx]
             confidence = np.max(prediction) * 100
 
-        # Display Results
+        # UI Results
         col1, col2 = st.columns(2)
         with col1:
             st.markdown(f"<div class='prediction-card'>🔎 <b>Result:</b><br>{predicted_class.replace('___', ' - ')}</div>", unsafe_allow_html=True)
         with col2:
             st.markdown(f"<div class='prediction-card'>🎯 <b>Confidence:</b><br>{confidence:.2f}%</div>", unsafe_allow_html=True)
 
-        # Fertilizer Advisory Logic
+        # Selective Advisory logic
         if "healthy" in predicted_class.lower():
-            st.success("✅ The leaf is healthy. Continue standard care and maintenance!")
+            st.success("✅ Healthy Leaf Detected! No fertilizer treatment needed.")
         elif predicted_class in fertilizer_map:
             st.markdown(f"<div class='fertilizer-card'>🧪 <b>Fertilizer Advisory:</b><br>{fertilizer_map[predicted_class]}</div>", unsafe_allow_html=True)
         else:
-            st.warning("⚠️ No specific fertilizer recommendation found for this condition.")
+            st.warning("⚠️ Disease detected, but no specific fertilizer tip is mapped.")
 
         # Grad-CAM
         st.markdown("### 📊 Grad-CAM Visualization")
         heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
         overlay_img = overlay_gradcam(img_resized, heatmap)
-        st.image(overlay_img, caption="AI focus area for diagnosis", use_container_width=True)
+        st.image(overlay_img, caption="Red areas show where the AI detected symptoms", use_container_width=True)
 
 with tab2:
     st.markdown("## 📘 System Information")
-    st.write("DeepCropCare bridges the gap between diagnosis and prevention through high-accuracy AI models and real-time advisory logic.")
+    st.write("This tool uses deep learning to help farmers diagnose plant issues in real-time.")
