@@ -8,6 +8,9 @@ from tensorflow.keras.preprocessing.image import img_to_array
 import base64
 from io import BytesIO
 import cv2
+import joblib
+import requests
+import os
 
 # ---------------------- GRAD-CAM FUNCTIONS ---------------------- #
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
@@ -213,19 +216,8 @@ with tab2:
     st.write("DeepCropCare bridges the gap between diagnosis and prevention through high-accuracy AI models and real-time advisory logic.")
 
 
-
 with tab3:
-import streamlit as st
-import joblib
-import numpy as np
-import requests
-import os
-
-# --- 1. BOILERPLATE & INITIALIZATION ---
-st.set_page_config(page_title="Crop Recommendation", layout="wide")
-
-# Initialize Session State early to prevent widget rendering errors
-if "weather_temp" not in st.session_state: 
+      if "weather_temp" not in st.session_state: 
     st.session_state.weather_temp = 25.0
 if "weather_hum" not in st.session_state: 
     st.session_state.weather_hum = 70.0
@@ -483,3 +475,5 @@ if st.button("🌱 Recommend Optimal Crop", use_container_width=True):
             st.error(f"Prediction error: {e}")
     else:
         st.error("Model not loaded. Ensure 'rf_crop_recommendation.joblib' is in the app directory.")
+
+    
