@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import numpy as np
 from PIL import Image
 import tensorflow as tf
@@ -9,54 +8,99 @@ import base64
 from io import BytesIO
 import cv2
 
-# ---------------------- GRAD-CAM FUNCTIONS ---------------------- #
-def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
+# ---------------------- INITIAL SETUP ---------------------- #
+st.set_page_config(page_title="DeepCropCare AI", layout="centered", initial_sidebar_state="collapsed")
+
+# ---------------------- MODERN UI CUSTOMIZATION ---------------------- #
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Dark Theme Background */
+    .stApp {
+        background-color: #0f1116;
+        color: #e6edf3;
+    }
+
+    /* Modern Action Buttons */
+    .stButton>button {
+        width: 100%;
+        border-radius: 16px;
+        height: 80px;
+        background-color: #161b22;
+        color: #ffffff;
+        border: 1px solid #30363d;
+        font-size: 18px;
+        font-weight: 600;
+        transition: 0.3s all ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stButton>button:hover {
+        border-color: #00ff8c;
+        background-color: #00ff8c10;
+        transform: translateY(-2px);
+    }
+
+    /* Results Dashboard */
+    .dashboard-card {
+        background: #161b22;
+        padding: 24px;
+        border-radius: 24px;
+        border: 1px solid #30363d;
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .status-healthy { color: #00ff8c; font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+    .status-disease { color: #ff4b4b; font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+    
+    .advisory-card {
+        background: rgba(0, 255, 140, 0.08);
+        border-left: 6px solid #00ff8c;
+        padding: 16px;
+        border-radius: 12px;
+        text-align: left;
+        margin-top: 15px;
+    }
+
+    /* Hide standard Streamlit elements for a cleaner look */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------- CORE ML FUNCTIONS ---------------------- #
+@st.cache_resource
+def load_trained_model():
+    return load_model("plant_disease_model_final4.h5")
+
+def get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1"):
     grad_model = tf.keras.models.Model(
         [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
     )
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        predictions = tf.squeeze(predictions)
-        if pred_index is None:
-            pred_index = tf.argmax(predictions)
-        class_channel = predictions[pred_index]
+        class_channel = predictions[:, tf.argmax(predictions[0])]
+    
     grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-    conv_outputs = conv_outputs[0]
-    heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
+    heatmap = conv_outputs[0] @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
-    heatmap = tf.maximum(heatmap, 0)
-    denom = tf.reduce_max(heatmap)
-    heatmap = tf.cond(denom > 0, lambda: heatmap / denom, lambda: heatmap)
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
 
-def overlay_gradcam(original_img, heatmap, alpha=0.4):
-    original_img = np.array(original_img)
-    heatmap = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
+def overlay_heatmap(original_img, heatmap):
+    heatmap = cv2.resize(heatmap, (original_img.size[0], original_img.size[1]))
     heatmap = np.uint8(255 * heatmap)
-    heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    overlay_img = cv2.addWeighted(original_img, 1 - alpha, heatmap_color, alpha, 0)
-    return overlay_img
-
-# ---------------------- STREAMLIT PAGE CONFIG ---------------------- #
-st.set_page_config(page_title="DeepCropCare - Disease Detection", layout="wide")
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-.prediction-card { padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); background-color: #1e1e1e; color: #ffffff; }
-.fertilizer-card { padding: 15px; border-radius: 12px; margin-top: 15px; text-align: center; background: rgba(0, 255, 140, 0.1); border: 2px solid rgba(0, 255, 140, 0.4); color: #ffffff; }
-h1, h2, h3, p { text-align: center; }
-</style>
-""", unsafe_allow_html=True)
-
-# ---------------------- DATA & MODELS ---------------------- #
-@st.cache_resource
-def load_trained_model():
-    return load_model("plant_disease_model_final4.h5")
-
-model = load_trained_model()
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    superimposed_img = cv2.addWeighted(np.array(original_img), 0.6, heatmap, 0.4, 0)
+    return superimposed_img
 
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
@@ -142,63 +186,78 @@ fertilizer_map = {
     'Wheatleaf_septoria': 'Spray fungicide with chlorothalonil or tebuconazole'
 }
 
+# ---------------------- MAIN APP UI ---------------------- #
+model = load_trained_model()
 
-# ---------------------- MAIN APP ---------------------- #
-tab1, tab2 = st.tabs(["🌱 Disease Detection", "📘 Info"])
+st.markdown("<h1 style='text-align: center;'>🌿 DeepCropCare AI</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; opacity: 0.7;'>Instant Plant Disease Diagnosis & Fertilizer Advisory</p>", unsafe_allow_html=True)
 
-with tab1:
-    st.markdown("## 🌿 Plant Disease Analysis")
+# Interaction Hub
+if 'active_mode' not in st.session_state:
+    st.session_state.active_mode = None
+
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("📁 Upload Leaf"):
+        st.session_state.active_mode = 'upload'
+with col2:
+    if st.button("📷 Scan with Camera"):
+        st.session_state.active_mode = 'camera'
+
+# Image Input Logic
+file_source = None
+if st.session_state.active_mode == 'upload':
+    file_source = st.file_uploader("Select image file", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+elif st.session_state.active_mode == 'camera':
+    file_source = st.camera_input("Capture leaf photo", label_visibility="collapsed")
+
+# ---------------------- ANALYSIS ENGINE ---------------------- #
+if file_source:
+    raw_img = Image.open(file_source).convert("RGB")
     
-    # Toggle for Mode
-    mode = st.radio("Select Input Source:", ["Upload Image", "Use Camera"], horizontal=True, label_visibility="collapsed")
+    # Pre-process
+    target_size = (224, 224)
+    img_resized = raw_img.resize(target_size)
+    img_array = img_to_array(img_resized) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
 
-    file_source = None
-    if mode == "Upload Image":
-        file_source = st.file_uploader("Upload leaf image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    # Prediction
+    with st.spinner("🧠 AI is analyzing the specimen..."):
+        preds = model.predict(img_array)
+        pred_idx = np.argmax(preds)
+        result = class_names[pred_idx]
+        score = np.max(preds) * 100
+
+    st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+    
+    if "healthy" in result.lower():
+        st.markdown(f"<div class='status-healthy'>✅ Healthy Specimen</div>", unsafe_allow_html=True)
+        st.write(f"The model is {score:.1f}% confident that this {result.split('___')[0]} leaf is healthy.")
+        st.balloons()
     else:
-        file_source = st.camera_input("Capture leaf image")
-
-    if file_source:
-        image = Image.open(file_source).convert("RGB")
+        st.markdown(f"<div class='status-disease'>🚨 {result.replace('___', ' - ')} Detected</div>", unsafe_allow_html=True)
         
-        # Display Image (Small Preview)
-        buffered = BytesIO()
-        image.save(buffered, format="PNG")
-        img_data = base64.b64encode(buffered.getvalue()).decode()
-        st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{img_data}" width="300" style="border-radius: 15px; border: 1px solid #00ff8c;"/></div>', unsafe_allow_html=True)
-
-        # Preprocessing & Inference
-        img_resized = image.resize((224, 224))
-        img_array = img_to_array(img_resized) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
-
-        with st.spinner('AI analyzing leaf patterns...'):
-            prediction = model.predict(img_array)
-            idx = np.argmax(prediction)
-            predicted_class = class_names[idx]
-            confidence = np.max(prediction) * 100
-
-        # UI Results
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"<div class='prediction-card'>🔎 <b>Result:</b><br>{predicted_class.replace('___', ' - ')}</div>", unsafe_allow_html=True)
-        with col2:
-            st.markdown(f"<div class='prediction-card'>🎯 <b>Confidence:</b><br>{confidence:.2f}%</div>", unsafe_allow_html=True)
-
-        # Selective Advisory logic
-        if "healthy" in predicted_class.lower():
-            st.success("✅ Healthy Leaf Detected! No fertilizer treatment needed.")
-        elif predicted_class in fertilizer_map:
-            st.markdown(f"<div class='fertilizer-card'>🧪 <b>Fertilizer Advisory:</b><br>{fertilizer_map[predicted_class]}</div>", unsafe_allow_html=True)
+        # Advisory Logic
+        if result in fertilizer_map:
+            st.markdown(f"""
+            <div class='advisory-card'>
+                <span style='color: #00ff8c; font-weight: 800;'>🧪 FERTILIZER ADVISORY</span><br>
+                <p style='margin-top: 8px;'>{fertilizer_map[result]}</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.warning("⚠️ Disease detected, but no specific fertilizer tip is mapped.")
+            st.info("Treatment data for this specific class is currently being updated.")
 
-        # Grad-CAM
-        st.markdown("### 📊 Grad-CAM Visualization")
-        heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
-        overlay_img = overlay_gradcam(img_resized, heatmap)
-        st.image(overlay_img, caption="Red areas show where the AI detected symptoms", use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-with tab2:
-    st.markdown("## 📘 System Information")
-    st.write("This tool uses deep learning to help farmers diagnose plant issues in real-time.")
+    # Visualization Section
+    st.divider()
+    v_col1, v_col2 = st.columns(2)
+    with v_col1:
+        st.image(raw_img, caption="Source Image", use_container_width=True)
+    with v_col2:
+        heatmap = get_gradcam_heatmap(model, img_array)
+        grad_cam_img = overlay_heatmap(img_resized, heatmap)
+        st.image(grad_cam_img, caption="AI Symptom Localization (Grad-CAM)", use_container_width=True)
+
+st.markdown("<br><p style='text-align: center; opacity: 0.4; font-size: 12px;'>© 2026 DeepCropCare Systems</p>", unsafe_allow_html=True)
