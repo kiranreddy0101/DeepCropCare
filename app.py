@@ -1,4 +1,3 @@
-
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -218,7 +217,7 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# Tabs
+# --- FINAL APP SECTION ---
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
 with tab1:
@@ -237,49 +236,39 @@ with tab1:
             f"""
             <div style="text-align: center;">
                 <img src="data:image/png;base64,{img_data}" alt="Uploaded Leaf" width="300"/>
-                <p class='sidebar-text' style='font-size: 16px;'>Uploaded Image</p>
+                <p style='font-size: 16px;'>Uploaded Image</p>
             </div>
             """, unsafe_allow_html=True)
 
         # Prepare image
-        img = image.resize((224, 224))
-        img_array = img_to_array(img) / 255.0
+        img_resized = image.resize((224, 224))
+        img_array = img_to_array(img_resized) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
         # Predict
         prediction = model.predict(img_array)
-        predicted_class = class_names[np.argmax(prediction)]
+        idx = np.argmax(prediction)
+        predicted_class = class_names[idx]
         confidence = np.max(prediction) * 100
 
-        # Display prediction and confidence
+        # Display results
         st.markdown(f"<div class='prediction-card'>🔎 <strong>Prediction:</strong> {predicted_class}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='prediction-card'>🎯 <strong>Confidence:</strong> {confidence:.2f}%</div>", unsafe_allow_html=True)
 
-        # Fertilizer suggestion
+        # Fertilizer
         if predicted_class in fertilizer_map:
-            tip = fertilizer_map[predicted_class]
-            st.markdown(f"<div class='prediction-card'>💡 <strong>Fertilizer Tip:</strong> {tip}</div>", unsafe_allow_html=True)
-        else:
-            st.success("✅ This plant appears healthy. No treatment needed!")
+            st.markdown(f"<div class='fertilizer-card'>💡 <strong>Tip:</strong> {fertilizer_map[predicted_class]}</div>", unsafe_allow_html=True)
+        elif "healthy" in predicted_class.lower():
+            st.success("✅ Plant is healthy!")
 
-        # Grad-CAM Visualization
+        # Grad-CAM
         try:
             heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
-            overlay_img = overlay_gradcam(img, heatmap)
-            st.markdown("### 📊 Grad-CAM: Model Focus Visualization")
-            st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", use_container_width=True)
+            overlay_img = overlay_gradcam(img_resized, heatmap)
+            st.image(overlay_img, caption="AI Diagnosis Heatmap", use_container_width=True)
         except Exception as e:
-            st.error(f"Grad-CAM display error: {e}")
+            st.error(f"Visualization Error: {e}")
 
 with tab2:
     st.markdown("## 📘 About This App")
-    st.markdown("""
-    This application helps farmers and gardeners detect plant diseases from leaf images 
-    and recommends suitable fertilizers or treatments.
-
-    **Features:**
-    - Deep learning–based leaf disease classification  
-    - Custom fertilizer recommendations  
-    - Grad-CAM for explainable AI  
-    - Mobile-friendly responsive layout 
-    """)
+    st.write("DeepCropCare uses CNNs to identify crop diseases and provide instant treatment advice.")
