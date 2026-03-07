@@ -164,7 +164,7 @@ fertilizer_map = {
 }
 
 # ---------------------- MAIN APP ---------------------- #
-tab1, tab2, tab3= st.tabs(["🌱 Disease Detection", "📘 Info","🌱 CropRecommendation"])
+tab1, tab2= st.tabs(["🌱 Disease Detection", "📘 Info"])
 
 with tab1:
     st.markdown("## 🌿 Plant Disease Analysis")
