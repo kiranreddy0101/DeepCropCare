@@ -216,8 +216,7 @@ st.sidebar.markdown(
     "<p style='font-size:16px;'>Upload a leaf image on the Detection tab to identify diseases and get fertilizer advice.</p>",
     unsafe_allow_html=True
 )
-
-# --- FINAL APP SECTION ---
+# ---------------------- FINAL APP LAYOUT ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
 with tab1:
@@ -227,7 +226,7 @@ with tab1:
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
 
-        # Display uploaded image
+        # Convert image to base64 for display
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_data = base64.b64encode(buffered.getvalue()).decode()
@@ -235,40 +234,47 @@ with tab1:
         st.markdown(
             f"""
             <div style="text-align: center;">
-                <img src="data:image/png;base64,{img_data}" alt="Uploaded Leaf" width="300"/>
-                <p style='font-size: 16px;'>Uploaded Image</p>
+                <img src="data:image/png;base64,{img_data}" alt="Uploaded Leaf" width="300" style="border-radius: 10px;"/>
+                <p style='font-size: 16px; margin-top: 10px;'>Uploaded Image</p>
             </div>
             """, unsafe_allow_html=True)
 
-        # Prepare image
+        # Image Preprocessing
         img_resized = image.resize((224, 224))
         img_array = img_to_array(img_resized) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
-        # Predict
-        prediction = model.predict(img_array)
-        idx = np.argmax(prediction)
-        predicted_class = class_names[idx]
-        confidence = np.max(prediction) * 100
+        # Prediction Logic
+        with st.spinner('Analyzing Leaf Health...'):
+            prediction = model.predict(img_array)
+            idx = np.argmax(prediction)
+            predicted_class = class_names[idx]
+            confidence = np.max(prediction) * 100
 
-        # Display results
-        st.markdown(f"<div class='prediction-card'>🔎 <strong>Prediction:</strong> {predicted_class}</div>", unsafe_allow_html=True)
+        # Display Results
+        st.markdown(f"<div class='prediction-card'>🔎 <strong>Prediction:</strong> {predicted_class.replace('___', ' - ')}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='prediction-card'>🎯 <strong>Confidence:</strong> {confidence:.2f}%</div>", unsafe_allow_html=True)
 
-        # Fertilizer
+        # Fertilizer/Treatment Advice
         if predicted_class in fertilizer_map:
-            st.markdown(f"<div class='fertilizer-card'>💡 <strong>Tip:</strong> {fertilizer_map[predicted_class]}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='fertilizer-card'>🧪 <strong>Treatment:</strong> {fertilizer_map[predicted_class]}</div>", unsafe_allow_html=True)
         elif "healthy" in predicted_class.lower():
-            st.success("✅ Plant is healthy!")
+            st.success("✅ This plant looks healthy! No chemical treatment required.")
 
-        # Grad-CAM
+        # Grad-CAM Explainability
+        st.divider()
+        st.markdown("### 📊 AI Focus Area (Grad-CAM)")
         try:
+            # Note: Ensure "Conv_1" is the correct internal name for your model's last conv layer
             heatmap = get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1")
             overlay_img = overlay_gradcam(img_resized, heatmap)
-            st.image(overlay_img, caption="AI Diagnosis Heatmap", use_container_width=True)
+            st.image(overlay_img, caption="The red areas show where the AI detected the disease.", use_container_width=True)
         except Exception as e:
-            st.error(f"Visualization Error: {e}")
+            st.info("Visual explanation (Grad-CAM) is currently unavailable for this model architecture.")
 
 with tab2:
-    st.markdown("## 📘 About This App")
-    st.write("DeepCropCare uses CNNs to identify crop diseases and provide instant treatment advice.")
+    st.markdown("## 📘 About DeepCropCare")
+    st.write("""
+    This tool uses a Deep Convolutional Neural Network (CNN) to identify 70+ plant diseases. 
+    By analyzing leaf textures and patterns, the AI can suggest immediate agricultural interventions.
+    """)
