@@ -222,6 +222,7 @@ st.sidebar.markdown(
 tab1, tab2 = st.tabs(["🌱 Detection", "📘 Info"])
 
 with tab1:
+    
     st.markdown("## 🌿 Plant Disease Detection")
     uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
 
@@ -269,6 +270,7 @@ with tab1:
         st.image(overlay_img, caption="Grad-CAM: Highlighted Disease Regions", use_container_width=True)
         
 with tab2:
+    
     st.markdown("## 📘 About This App")
     st.markdown("""
     This application helps farmers and gardeners detect plant diseases from leaf images 
