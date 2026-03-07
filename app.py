@@ -1,4 +1,4 @@
-import streamlit as st
+
 import streamlit.components.v1 as components
 import numpy as np
 from PIL import Image
@@ -163,7 +163,6 @@ fertilizer_map = {
     'Wheatleaf_septoria': 'Spray fungicide with chlorothalonil or tebuconazole'
 }
 
-# ... (rest of your code above)
 
 # ---------------------- MAIN APP ---------------------- #
 tab1, tab2 = st.tabs(["🌱 Disease Detection", "📘 Info"])
@@ -218,5 +217,5 @@ with tab1:
             st.error(f"Grad-CAM error: {e}. Check if 'Conv_1' is the correct layer name.")
 
 with tab2:
-    st.markdown("## 📘 System Information")
-    st.write("DeepCropCare bridges the gap between diagnosis and prevention through high-accuracy AI models and real-time advisory logic.")
+     st.markdown("## 📘 System Information")
+     st.write("DeepCropCare bridges the gap between diagnosis and prevention through high-accuracy AI models and real-time advisory logic.")
