@@ -320,52 +320,39 @@ def get_weather(city_name):
         return data["main"]["temp"], data["main"]["humidity"], data.get("rain", {}).get("1h", 0), None
     return None, None, None, "City not found"
 
-def get_gradcam_heatmap(model, img_array):
-    # Step 1: Find the target layer, even if nested
-    target_layer = None
-    
-    # Check top-level layers first
-    for layer in reversed(model.layers):
-        if hasattr(layer, 'output_shape') and len(layer.output_shape) == 4:
-            target_layer = layer
-            break
-            
-    # Step 2: If not found, look inside nested models (Transfer Learning)
-    if not target_layer:
-        for layer in model.layers:
-            if hasattr(layer, 'layers'): # Check if layer itself is a model
-                for sub_layer in reversed(layer.layers):
-                    if len(sub_layer.output_shape) == 4:
-                        target_layer = sub_layer
-                        # We need the parent layer name to access it
-                        model = layer 
-                        break
-    
-    if not target_layer:
-        raise ValueError("No spatial layer found. Ensure your model contains Conv2D layers.")
-
-    # Step 3: Create the Grad-Model
+# ---------------------- GRAD-CAM FUNCTIONS (REVERTED) ---------------------- #
+def get_gradcam_heatmap(model, img_array, last_conv_layer_name="Conv_1", pred_index=None):
     grad_model = tf.keras.models.Model(
-        [model.inputs], [target_layer.output, model.output]
+        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
     )
-    
+
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        if isinstance(predictions, list):
-            predictions = predictions[0]
-        
-        pred_index = tf.argmax(predictions[0])
-        class_channel = predictions[:, pred_index]
+        predictions = tf.squeeze(predictions)
+        if pred_index is None:
+            pred_index = tf.argmax(predictions)
+        class_channel = predictions[pred_index]
 
     grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-    
     conv_outputs = conv_outputs[0]
+
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
-    
-    heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-10)
+
+    heatmap = tf.maximum(heatmap, 0)
+    denom = tf.reduce_max(heatmap)
+    heatmap = tf.cond(denom > 0, lambda: heatmap / denom, lambda: heatmap)
+
     return heatmap.numpy()
+
+def overlay_gradcam(original_img, heatmap, alpha=0.4):
+    original_img = np.array(original_img)
+    heatmap = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
+    heatmap = np.uint8(255 * heatmap)
+    heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    overlay_img = cv2.addWeighted(original_img, 1 - alpha, heatmap_color, alpha, 0)
+    return overlay_img
 
 # --- MAIN UI ---
 tab1, tab2, tab3 = st.tabs(["🌱 Detection", "🌾 Recommendation", "📘 Info"])
@@ -377,11 +364,13 @@ with tab1:
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
         
-        # Centered Image Display
+        # Centered Image and Button Display
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.image(image, caption="Uploaded Leaf", use_container_width=True)
-            if st.button("Run Diagnostic Analysis"):
+            
+            # THE BUTTON IS NOW CENTERED
+            if st.button("Run Diagnostic Analysis", use_container_width=True):
                 img_resized = image.resize((224, 224))
                 img_arr = img_to_array(img_resized) / 255.0
                 img_arr = np.expand_dims(img_arr, axis=0)
@@ -402,11 +391,13 @@ with tab1:
                 advice = fertilizer_map.get(p_class, "No specific treatment found.")
                 st.markdown(f"<div class='fertilizer-card'>💡 Treatment: {advice}</div>", unsafe_allow_html=True)
 
-                # Grad-CAM logic
+                # Grad-CAM logic (Using your verified working code)
                 if "healthy" not in p_class.lower() and "background" not in p_class.lower():
+                    st.divider()
                     st.markdown("### 📊 AI Diagnostic Map (Grad-CAM)")
                     try:
-                        heatmap = get_gradcam_heatmap(disease_model, img_arr)
+                        # We pass "Conv_1" which is standard for MobileNetV2
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, last_conv_layer_name="Conv_1")
                         overlay = overlay_gradcam(img_resized, heatmap)
                         st.image(overlay, caption="Red areas show disease markers", use_container_width=True)
                     except Exception as e:
