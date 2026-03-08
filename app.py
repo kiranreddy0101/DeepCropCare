@@ -48,18 +48,23 @@ st.markdown("""
 # --- MODEL LOADING ---
 @st.cache_resource
 def load_resources():
+    # Load Disease Model
     d_model = load_model("plant_disease_model_final4.h5", compile=False)
-    # Automatically identify the last 4D spatial layer
+    
+    # NEW SAFER SEARCH: Identify the last 4D spatial layer
     last_conv = None
     for layer in reversed(d_model.layers):
-        if len(layer.output_shape) == 4:
+        # We check the class name for 'Conv' or 'Spatial' to avoid attribute errors
+        if "Conv" in layer.__class__.__name__ or "Pool" in layer.__class__.__name__:
             last_conv = layer.name
             break
-    
+            
+    # Load Crop Model
     try:
         c_model = joblib.load("rf_crop_recommendation.joblib")
     except:
         c_model = None
+        
     return d_model, c_model, last_conv
 
 disease_model, crop_model, detected_conv_name = load_resources()
