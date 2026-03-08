@@ -377,42 +377,81 @@ with tab1:
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
     
+    # 1. Initialize session state for weather integration
     if "temp" not in st.session_state: st.session_state.temp = 25.0
     if "hum" not in st.session_state: st.session_state.hum = 70.0
-    if "rain" not in st.session_state: st.session_state.rain = 0.0
+    if "rain" not in st.session_state: st.session_state.rain = 100.0
 
+    # 2. Input Section
     col_soil, col_weather = st.columns([2, 1])
     
     with col_weather:
         st.write("### 🌦️ Local Weather")
-        city = st.text_input("City", "Hyderabad")
-        if st.button("Fetch Live Data"):
+        city = st.text_input("Enter City", "Hyderabad")
+        if st.button("Fetch Live Weather"):
             t, h, r, err = get_weather(city)
             if not err:
                 st.session_state.temp, st.session_state.hum, st.session_state.rain = t, h, r
-                st.rerun()
+                st.rerun() 
+            else: 
+                st.error(err)
+        
         st.metric("Temperature", f"{st.session_state.temp}°C")
         st.metric("Humidity", f"{st.session_state.hum}%")
 
     with col_soil:
-        st.write("### 🧪 Soil Parameters")
-        n_c, p_c, k_c = st.columns(3)
-        N = n_c.number_input("Nitrogen (N)", 0, 150, 50)
-        P = p_c.number_input("Phosphorus (P)", 0, 150, 50)
-        K = k_c.number_input("Potassium (K)", 0, 150, 50)
-        ph = st.slider("Soil pH", 0.0, 14.0, 6.5)
+        st.write("### 🧪 Soil & Environment")
+        n_col, p_col, k_col = st.columns(3)
+        N = n_col.number_input("Nitrogen (N)", 0, 200, 50)
+        P = p_col.number_input("Phosphorus (P)", 0, 200, 50)
+        K = k_col.number_input("Potassium (K)", 0, 200, 50)
         
+        ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
+        
+        # Link inputs to weather session state
+        temp = st.number_input("Temperature (°C)", -10.0, 50.0, float(st.session_state.temp))
+        hum = st.number_input("Humidity (%)", 0.0, 100.0, float(st.session_state.hum))
+        rain = st.number_input("Rainfall (mm)", 0.0, 500.0, float(st.session_state.rain))
+
+    # 3. Prediction & Display Logic
     st.write("---")
-    _, rb_col, _ = st.columns([1, 1, 1])
-    with rb_col:
-        if st.button("Identify Ideal Crop"):
-            if crop_model:
-                features = np.array([[N, P, K, st.session_state.temp, st.session_state.hum, ph, st.session_state.rain]])
-                crop_idx = crop_model.predict(features)[0]
-                crop_name = label_mapping[int(crop_idx)]
-                st.balloons()
-                st.markdown(f"<div class='prediction-card'><h2>Best Crop: {crop_name.capitalize()}</h2></div>", unsafe_allow_html=True)
-            else: st.error("Model file not found.")
+    _, btn_col, _ = st.columns([1, 1, 1])
+    
+    with btn_col:
+        predict_btn = st.button("Recommend Best Crop")
+
+    if predict_btn:
+        if crop_model:
+            # Generate Prediction
+            features = np.array([[N, P, K, temp, hum, ph, rain]])
+            prediction = crop_model.predict(features)
+            crop = label_mapping[int(prediction[0])]
+            
+            # Display Results
+            st.balloons()
+            st.markdown(f"""
+                <div class='prediction-card'>
+                    <h2 style='color: #2e7d32;'>🌱 Recommended Crop: {crop.capitalize()}</h2>
+                    <p>Optimized for your specific soil and weather conditions</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Look up information from your dictionaries
+            col_info, col_fert = st.columns(2)
+            
+            with col_info:
+                if crop in crop_info:
+                    st.subheader("📖 Crop Info")
+                    st.write(crop_info[crop]['description'])
+                    st.info(f"**Ideal Conditions:** {crop_info[crop]['conditions']}")
+                    st.success(f"**Pro Tip:** {crop_info[crop]['tips']}")
+            
+            with col_fert:
+                if crop in fertilizer_advice:
+                    st.subheader("🧪 Fertilizer Advice")
+                    st.warning(fertilizer_advice[crop])
+        else:
+            st.error("Crop Recommendation Model not loaded. Check your joblib file.")
 
 with tab3:
     st.markdown("## 📘 Architecture Details")
