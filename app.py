@@ -49,13 +49,20 @@ st.markdown("""
 @st.cache_resource
 def load_resources():
     d_model = load_model("plant_disease_model_final4.h5", compile=False)
+    # Automatically identify the last 4D spatial layer
+    last_conv = None
+    for layer in reversed(d_model.layers):
+        if len(layer.output_shape) == 4:
+            last_conv = layer.name
+            break
+    
     try:
         c_model = joblib.load("rf_crop_recommendation.joblib")
     except:
         c_model = None
-    return d_model, c_model
+    return d_model, c_model, last_conv
 
-disease_model, crop_model = load_resources()
+disease_model, crop_model, detected_conv_name = load_resources()
 
 # --- 🎯 YOUR WORKING GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
@@ -369,18 +376,19 @@ tab1, tab2, tab3 = st.tabs(["🌱 Disease Detection", "🌾 Crop Recommendation"
 
 with tab1:
     st.markdown("## 🌿 Plant Disease Analysis")
-    uploaded_file = st.file_uploader("Upload leaf image...", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Upload leaf image", type=["jpg", "png"])
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
         
-        # Center the Image Display
-        col1, col_img, col3 = st.columns([1, 2, 1])
-        with col_img:
-            st.image(image, caption="Target Image", use_container_width=True)
+        # Center column layout
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            # Replaced use_container_width with responsive column width
+            st.image(image, caption="Uploaded Leaf", use_column_width="always")
             
-            # --- CENTERED BUTTON ---
-            if st.button("Run Diagnostic Analysis", use_container_width=True):
+            # CENTERED BUTTON
+            if st.button("Run Diagnostic Analysis"):
                 img_resized = image.resize((224, 224))
                 img_arr = img_to_array(img_resized) / 255.0
                 img_arr = np.expand_dims(img_arr, axis=0)
@@ -388,29 +396,19 @@ with tab1:
                 prediction = disease_model.predict(img_arr)
                 idx = np.argmax(prediction)
                 p_class = class_names[idx]
-                conf = np.max(prediction) * 100
-
-                st.markdown(f"""
-                    <div class='prediction-card'>
-                        <h2>{p_class.replace('___', ' - ')}</h2>
-                        <p>AI Confidence: {conf:.2f}%</p>
-                    </div>
-                """, unsafe_allow_html=True)
-
-                advice = fertilizer_map.get(p_class, "General Care: Ensure balanced NPK and proper watering.")
-                st.markdown(f"<div class='fertilizer-card'>💡 {advice}</div>", unsafe_allow_html=True)
-
-                # Grad-CAM Visualization
-                if "healthy" not in p_class.lower() and "background" not in p_class.lower():
+                
+                st.markdown(f"<div class='prediction-card'><h2>{p_class.replace('___', ' ')}</h2></div>", unsafe_allow_html=True)
+                
+                # Using your verified Grad-CAM logic
+                if "healthy" not in p_class.lower():
                     st.write("---")
-                    st.subheader("📊 Disease Localization (Grad-CAM)")
+                    st.subheader("📊 AI Visual Map")
                     try:
-                        # Use "Conv_1" or your model's specific final conv layer name
-                        heatmap = get_gradcam_heatmap(disease_model, img_arr, last_conv_layer_name="Conv_1")
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
                         overlay = overlay_gradcam(img_resized, heatmap)
-                        st.image(overlay, caption="Heatmap: Red areas indicate suspected infection sites", use_container_width=True)
+                        st.image(overlay, caption="Infection Markers", use_column_width="always")
                     except Exception as e:
-                        st.error(f"Visualization failed: {e}. Check if 'Conv_1' is the correct layer name.")
+                        st.error(f"Visualization failed: {e}")
 
 with tab2:
     st.markdown("## 🌾 Crop Recommendation System")
