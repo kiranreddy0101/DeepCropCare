@@ -321,39 +321,36 @@ def get_weather(city_name):
     return None, None, None, "City not found"
 
 def get_gradcam_heatmap(model, img_array):
-    # Search for the LAST layer that produces a 4D output
-    last_conv_layer_name = None
+    # Step 1: Find the target layer, even if nested
+    target_layer = None
     
-    # We iterate backwards through the model layers
+    # Check top-level layers first
     for layer in reversed(model.layers):
-        # Check if the layer has a 4D output (required for heatmaps)
-        try:
-            shape = layer.output_shape
-            if len(shape) == 4:
-                last_conv_layer_name = layer.name
-                break
-        except:
-            continue
+        if hasattr(layer, 'output_shape') and len(layer.output_shape) == 4:
+            target_layer = layer
+            break
             
-    # If it's still not found, it might be nested (common in MobileNet/ResNet)
-    if not last_conv_layer_name:
+    # Step 2: If not found, look inside nested models (Transfer Learning)
+    if not target_layer:
         for layer in model.layers:
-            if hasattr(layer, 'layers'): # Check nested layers
+            if hasattr(layer, 'layers'): # Check if layer itself is a model
                 for sub_layer in reversed(layer.layers):
                     if len(sub_layer.output_shape) == 4:
-                        last_conv_layer_name = sub_layer.name
+                        target_layer = sub_layer
+                        # We need the parent layer name to access it
+                        model = layer 
                         break
     
-    if not last_conv_layer_name:
-        raise ValueError("AI could not find a spatial layer for visualization.")
+    if not target_layer:
+        raise ValueError("No spatial layer found. Ensure your model contains Conv2D layers.")
 
+    # Step 3: Create the Grad-Model
     grad_model = tf.keras.models.Model(
-        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
+        [model.inputs], [target_layer.output, model.output]
     )
     
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        # Handle cases where model output might be a list
         if isinstance(predictions, list):
             predictions = predictions[0]
         
@@ -367,7 +364,6 @@ def get_gradcam_heatmap(model, img_array):
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
     
-    # Normalize with safety epsilon
     heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-10)
     return heatmap.numpy()
 
