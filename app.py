@@ -23,15 +23,16 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MODELS & DATA MAPS ---
 @st.cache_resource
 def load_resources():
-    d_model = load_model("plant_disease_model_final4.h5")
     try:
+        # Using compile=False often bypasses version-specific loading errors
+        d_model = load_model("plant_disease_model_final4.h5", compile=False)
         c_model = joblib.load("rf_crop_recommendation.joblib")
-    except:
-        c_model = None
-    return d_model, c_model
+        return d_model, c_model
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+        return None, None
 
 disease_model, crop_model = load_resources()
 
