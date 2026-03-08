@@ -15,27 +15,43 @@ st.set_page_config(page_title="Plant Guardian Pro", layout="wide")
 
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 20px; background-color: #2e7d32; color: white; }
-    .prediction-card { padding: 20px; border-radius: 15px; background-color: #ffffff; border: 1px solid #e0e0e0; text-align: center; margin-bottom: 10px; }
-    .fertilizer-card { padding: 15px; border-radius: 10px; background-color: #e8f5e9; border-left: 5px solid #2e7d32; color: #1b5e20; font-size: 18px; }
-    h1, h2, h3 { color: #1b5e20; text-align: center; }
+    .stApp { background-color: #0e1117; color: white; }
+    .prediction-card { 
+        padding: 20px; 
+        border-radius: 15px; 
+        background-color: white; 
+        color: #1f1f1f; 
+        text-align: center; 
+        margin: 10px 0px;
+    }
+    .fertilizer-card { 
+        padding: 15px; 
+        border-radius: 10px; 
+        background-color: #d4edda; 
+        border-left: 5px solid #28a745; 
+        color: #155724; 
+        font-weight: bold;
+    }
+    .stButton>button { width: 100%; border-radius: 10px; background-color: #28a745; color: white; border: none; }
+    h1, h2, h3 { text-align: center; }
     </style>
 """, unsafe_allow_html=True)
 
+# --- MODEL LOADING ---
 @st.cache_resource
 def load_resources():
+    # Load Disease Model (CNN)
+    d_model = load_model("plant_disease_model_final4.h5", compile=False)
+    # Load Crop Model (Random Forest)
     try:
-        # Using compile=False often bypasses version-specific loading errors
-        d_model = load_model("plant_disease_model_final4.h5", compile=False)
         c_model = joblib.load("rf_crop_recommendation.joblib")
-        return d_model, c_model
-    except Exception as e:
-        st.error(f"Error loading models: {e}")
-        return None, None
+    except:
+        c_model = None
+    return d_model, c_model
 
 disease_model, crop_model = load_resources()
 
+# --- DATA DICTIONARIES ---
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
     'Background_without_leaves', 'Bitter Gourd__Downy_mildew', 'Bitter Gourd__Fusarium_wilt',
@@ -140,7 +156,6 @@ fertilizer_map = {
     'Wheatleaf_septoria': 'Spray Tebuconazole or Chlorothalonil'
 }
 
-# Label Mapping
 label_mapping = {
     0: "rice", 1: "wheat", 2: "maize", 3: "chickpea", 4: "kidneybeans",
     5: "pigeonpeas", 6: "mothbeans", 7: "mungbean", 8: "blackgram", 9: "lentil",
@@ -149,7 +164,6 @@ label_mapping = {
     20: "cotton", 21: "jute", 22: "coffee"
 }
 
-# Fertilizer Advice
 fertilizer_advice = {
     "rice": "Apply Urea, DAP, and MOP in split doses; ensure timely irrigation.",
     "wheat": "Use nitrogen-rich fertilizer (urea) and phosphorus (DAP) before sowing; top-dress nitrogen at tillering stage.",
@@ -296,11 +310,29 @@ crop_info = {
 }
 
 # --- UTILITY FUNCTIONS ---
-def get_gradcam_heatmap(model, img_array, last_conv_layer_name):
+def get_weather(city_name):
+    API_KEY = "8c3a497f31607fe66be1f23c65538904"
+    BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+    params = {"q": city_name, "appid": API_KEY, "units": "metric"}
+    response = requests.get(BASE_URL, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        return data["main"]["temp"], data["main"]["humidity"], data.get("rain", {}).get("1h", 0), None
+    return None, None, None, "City not found"
+
+def get_gradcam_heatmap(model, img_array):
+    # Dynamically find the last conv layer
+    last_conv_layer_name = None
+    for layer in reversed(model.layers):
+        if len(layer.output_shape) == 4:
+            last_conv_layer_name = layer.name
+            break
+    
     grad_model = tf.keras.models.Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
         loss = predictions[:, tf.argmax(predictions[0])]
+    
     grads = tape.gradient(loss, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
     conv_outputs = conv_outputs[0]
@@ -310,72 +342,101 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name):
     return heatmap.numpy()
 
 def overlay_gradcam(original_img, heatmap):
-    original_img = np.array(original_img)
-    heatmap = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
+    img = np.array(original_img)
+    heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
     heatmap = np.uint8(255 * heatmap)
     heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    return cv2.addWeighted(original_img, 0.6, heatmap_color, 0.4, 0)
+    return cv2.addWeighted(img, 0.6, heatmap_color, 0.4, 0)
 
-# --- APP LAYOUT ---
-tab1, tab2, tab3 = st.tabs(["🌱 Disease Detection", "🌾 Crop Recommendation", "📘 Info"])
+# --- MAIN UI ---
+tab1, tab2, tab3 = st.tabs(["🌱 Detection", "🌾 Recommendation", "📘 Info"])
 
-# --- TAB 1: DISEASE DETECTION ---
 with tab1:
-    st.markdown("## 🔎 Plant Disease Diagnosis")
-    uploaded_file = st.file_uploader("Upload a leaf image", type=["jpg", "png", "jpeg"])
+    st.markdown("## 🌿 Plant Disease Detection")
+    uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
         
-        # DISPLAY IMAGE IN MIDDLE
+        # Centered Image Display
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.image(image, caption="Uploaded Leaf Image", use_container_width=True)
-
-        # Preprocessing
-        img_resized = image.resize((224, 224))
-        img_array = img_to_array(img_resized) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
-
-        if st.button("Run Diagnostic Analysis"):
-            with st.spinner('AI is analyzing...'):
-                prediction = disease_model.predict(img_array)
-                idx = np.argmax(prediction)
-                predicted_class = class_names[idx]
-                confidence = np.max(prediction) * 100
-
-                st.markdown(f"<div class='prediction-card'><h3>Result: {predicted_class.replace('___', ' - ')}</h3><h4>Confidence: {confidence:.2f}%</h4></div>", unsafe_allow_html=True)
-
-                # Fertilizer Advice
-                advice = fertilizer_map.get(predicted_class, "No specific advice found.")
-                st.markdown(f"<div class='fertilizer-card'>💡 <b>Treatment/Advice:</b> {advice}</div>", unsafe_allow_html=True)
-
-                # GRAD-CAM Logic: Only for diseased leaves
-                is_healthy = "healthy" in predicted_class.lower() or "background" in predicted_class.lower()
+            st.image(image, caption="Uploaded Leaf", use_container_width=True)
+            if st.button("Run Diagnostic Analysis"):
+                img_resized = image.resize((224, 224))
+                img_arr = img_to_array(img_resized) / 255.0
+                img_arr = np.expand_dims(img_arr, axis=0)
                 
-                if not is_healthy:
-                    st.divider()
+                prediction = disease_model.predict(img_arr)
+                idx = np.argmax(prediction)
+                p_class = class_names[idx]
+                conf = np.max(prediction) * 100
+
+                # Result Cards
+                st.markdown(f"""
+                    <div class='prediction-card'>
+                        <h2 style='color:#1f1f1f'>Result: {p_class.replace('___', ' - ')}</h2>
+                        <h3 style='color:#555'>Confidence: {conf:.2f}%</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                advice = fertilizer_map.get(p_class, "No specific treatment found.")
+                st.markdown(f"<div class='fertilizer-card'>💡 Treatment: {advice}</div>", unsafe_allow_html=True)
+
+                # Grad-CAM logic
+                if "healthy" not in p_class.lower() and "background" not in p_class.lower():
                     st.markdown("### 📊 AI Diagnostic Map (Grad-CAM)")
-                    st.info("The heatmap below highlights the pathological regions detected by the AI.")
                     try:
-                        heatmap = get_gradcam_heatmap(disease_model, img_array, "Conv_1")
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr)
                         overlay = overlay_gradcam(img_resized, heatmap)
-                        
-                        col_a, col_b, col_c = st.columns([1, 2, 1])
-                        with col_b:
-                            st.image(overlay, caption="Red zones indicate detected infection/disease", use_container_width=True)
-                    except:
-                        st.warning("Heatmap generation failed for this specific image.")
-                else:
-                    st.success("✨ This plant appears healthy. Grad-CAM visualization is not required.")
+                        st.image(overlay, caption="Red areas show disease markers", use_container_width=True)
+                    except Exception as e:
+                        st.error(f"Visualization failed: {e}")
 
-# --- TAB 2: CROP RECOMMENDATION ---
 with tab2:
-    # ... Paste your crop recommendation UI logic here ...
-    st.markdown("## 🚜 Crop Recommendation System")
-    # (Include your City Input, Weather Fetching, and Soil Input logic here)
+    st.markdown("## 🌾 Crop Recommendation System")
+    
+    # Initialize session state for weather
+    if "temp" not in st.session_state: st.session_state.temp = 25.0
+    if "hum" not in st.session_state: st.session_state.hum = 70.0
+    if "rain" not in st.session_state: st.session_state.rain = 100.0
 
-# --- TAB 3: INFO ---
+    c1, c2 = st.columns([2, 1])
+    with c2:
+        st.subheader("🌦️ Live Weather")
+        city = st.text_input("Enter City", "Hyderabad")
+        if st.button("Fetch Weather"):
+            t, h, r, err = get_weather(city)
+            if not err:
+                st.session_state.temp, st.session_state.hum, st.session_state.rain = t, h, r
+                st.success("Weather Updated!")
+            else: st.error(err)
+
+    with c1:
+        st.subheader("🧪 Soil Data")
+        N = st.number_input("Nitrogen (N)", 0, 200, 50)
+        P = st.number_input("Phosphorus (P)", 0, 200, 50)
+        K = st.number_input("Potassium (K)", 0, 200, 50)
+        ph = st.number_input("Soil pH", 0.0, 14.0, 6.5)
+        temp = st.number_input("Temperature", 0.0, 50.0, float(st.session_state.temp))
+        hum = st.number_input("Humidity", 0.0, 100.0, float(st.session_state.hum))
+        rain = st.number_input("Rainfall", 0.0, 500.0, float(st.session_state.rain))
+
+    if st.button("Recommend Crop"):
+        if crop_model:
+            features = np.array([[N, P, K, temp, hum, ph, rain]])
+            pred = crop_model.predict(features)
+            crop = label_mapping[int(pred[0])]
+            st.success(f"### Recommended Crop: {crop.capitalize()}")
+            
+            # Show Info
+            if crop in crop_info:
+                st.info(f"**Description:** {crop_info[crop]['description']}\n\n**Tips:** {crop_info[crop]['tips']}")
+            if crop in fertilizer_advice:
+                st.warning(f"**Fertilizer Advice:** {fertilizer_advice[crop]}")
+        else:
+            st.error("Crop model file not found.")
+
 with tab3:
-    st.markdown("## 📖 About the Project")
-    st.write("This integrated platform uses Artificial Intelligence to support farmers in two ways...")
+    st.markdown("## 📘 About the System")
+    st.write("Integrated Deep Learning and Machine Learning for Agriculture.")
