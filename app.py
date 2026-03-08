@@ -321,19 +321,31 @@ def get_weather(city_name):
     return None, None, None, "City not found"
 
 def get_gradcam_heatmap(model, img_array):
-    # Search for the LAST 4D layer (usually the last Conv2D layer)
+    # Search for the LAST layer that produces a 4D output
     last_conv_layer_name = None
+    
+    # We iterate backwards through the model layers
     for layer in reversed(model.layers):
-        # We check the length of the weight/input shape to ensure it's a 4D spatial layer
-        if hasattr(layer, 'input_shape') and len(layer.input_shape) == 4:
-            last_conv_layer_name = layer.name
-            break
-        elif hasattr(layer, 'output_shape') and len(layer.output_shape) == 4:
-            last_conv_layer_name = layer.name
-            break
-
+        # Check if the layer has a 4D output (required for heatmaps)
+        try:
+            shape = layer.output_shape
+            if len(shape) == 4:
+                last_conv_layer_name = layer.name
+                break
+        except:
+            continue
+            
+    # If it's still not found, it might be nested (common in MobileNet/ResNet)
     if not last_conv_layer_name:
-        raise ValueError("Could not find a 4D convolutional layer.")
+        for layer in model.layers:
+            if hasattr(layer, 'layers'): # Check nested layers
+                for sub_layer in reversed(layer.layers):
+                    if len(sub_layer.output_shape) == 4:
+                        last_conv_layer_name = sub_layer.name
+                        break
+    
+    if not last_conv_layer_name:
+        raise ValueError("AI could not find a spatial layer for visualization.")
 
     grad_model = tf.keras.models.Model(
         [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
@@ -341,16 +353,21 @@ def get_gradcam_heatmap(model, img_array):
     
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        loss = predictions[:, tf.argmax(predictions[0])]
-    
-    grads = tape.gradient(loss, conv_outputs)
+        # Handle cases where model output might be a list
+        if isinstance(predictions, list):
+            predictions = predictions[0]
+        
+        pred_index = tf.argmax(predictions[0])
+        class_channel = predictions[:, pred_index]
+
+    grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
     
     conv_outputs = conv_outputs[0]
-    # Heatmap calculation
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
-    # Normalize with small epsilon to avoid division by zero
+    
+    # Normalize with safety epsilon
     heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-10)
     return heatmap.numpy()
 
