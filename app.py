@@ -48,18 +48,23 @@ st.markdown("""
 # --- MODEL LOADING ---
 @st.cache_resource
 def load_resources():
-    # Load Disease Model
     d_model = load_model("plant_disease_model_final4.h5", compile=False)
     
-    # NEW SAFER SEARCH: Identify the last 4D spatial layer
+    # SEARCH FOR 4D SPATIAL LAYER ONLY
     last_conv = None
     for layer in reversed(d_model.layers):
-        # We check the class name for 'Conv' or 'Spatial' to avoid attribute errors
-        if "Conv" in layer.__class__.__name__ or "Pool" in layer.__class__.__name__:
-            last_conv = layer.name
-            break
-            
-    # Load Crop Model
+        # We check if it's a 4D tensor (Batch, Height, Width, Channels)
+        # and ensure it's not a Dense/Flatten layer
+        try:
+            if len(layer.output_shape) == 4:
+                last_conv = layer.name
+                break
+        except (AttributeError, TypeError):
+            # Some layers don't have output_shape until built
+            if "Conv" in layer.__class__.__name__:
+                last_conv = layer.name
+                break
+    
     try:
         c_model = joblib.load("rf_crop_recommendation.joblib")
     except:
