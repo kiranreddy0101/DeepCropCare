@@ -50,27 +50,30 @@ st.markdown("""
 def load_resources():
     d_model = load_model("plant_disease_model_final4.h5", compile=False)
     
-    # SEARCH FOR 4D SPATIAL LAYER ONLY
-    last_conv = None
+    # NEW ROBUST SEARCH: Specifically looks for 4D spatial layers
+    detected_name = None
     for layer in reversed(d_model.layers):
-        # We check if it's a 4D tensor (Batch, Height, Width, Channels)
-        # and ensure it's not a Dense/Flatten layer
         try:
+            # A valid spatial layer MUST have 4 dimensions: (Batch, Height, Width, Channels)
             if len(layer.output_shape) == 4:
-                last_conv = layer.name
+                detected_name = layer.name
                 break
-        except (AttributeError, TypeError):
-            # Some layers don't have output_shape until built
+        except:
+            continue
+            
+    # If the above fails (common in some Keras 3 models), fallback to type checking
+    if not detected_name:
+        for layer in reversed(d_model.layers):
             if "Conv" in layer.__class__.__name__:
-                last_conv = layer.name
+                detected_name = layer.name
                 break
-    
+
     try:
         c_model = joblib.load("rf_crop_recommendation.joblib")
     except:
         c_model = None
         
-    return d_model, c_model, last_conv
+    return d_model, c_model, detected_name
 
 disease_model, crop_model, detected_conv_name = load_resources()
 
