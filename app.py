@@ -371,17 +371,71 @@ with tab1:
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
     
-    # Weather Integration
-    col1, col2 = st.columns([2, 1])
-    with col2:
+    # Initialize session state for weather so values persist
+    if "temp" not in st.session_state: st.session_state.temp = 25.0
+    if "hum" not in st.session_state: st.session_state.hum = 70.0
+    if "rain" not in st.session_state: st.session_state.rain = 100.0
+
+    # Weather & Soil Input Section
+    col_soil, col_weather = st.columns([2, 1])
+    
+    with col_weather:
         st.write("### 🌦️ Local Weather")
         city = st.text_input("Enter City", "Hyderabad")
+        # Buttons in 2026 are responsive by default
         if st.button("Fetch Live Weather"):
             t, h, r, err = get_weather(city)
             if not err:
                 st.session_state.temp, st.session_state.hum, st.session_state.rain = t, h, r
-                st.success(f"Weather updated for {city}!")
-            else: st.error(err)
+                st.rerun() # Refresh to update sliders with new weather data
+            else: 
+                st.error(err)
+        
+        st.metric("Temperature", f"{st.session_state.temp}°C")
+        st.metric("Humidity", f"{st.session_state.hum}%")
+
+    with col_soil:
+        st.write("### 🧪 Soil & Environmental Conditions")
+        n_col, p_col, k_col = st.columns(3)
+        N = n_col.number_input("Nitrogen (N)", 0, 150, 50)
+        P = p_col.number_input("Phosphorus (P)", 0, 150, 50)
+        K = k_col.number_input("Potassium (K)", 0, 150, 50)
+        
+        ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
+        
+        # Environmental inputs linked to session state
+        temp = st.number_input("Temperature (°C)", -10.0, 50.0, float(st.session_state.temp))
+        hum = st.number_input("Humidity (%)", 0.0, 100.0, float(st.session_state.hum))
+        rain = st.number_input("Rainfall (mm)", 0.0, 500.0, float(st.session_state.rain))
+
+    # --- CENTERED RECOMMENDATION BUTTON ---
+    st.write("---")
+    rb1, rb2, rb3 = st.columns([1, 1, 1])
+    with rb2:
+        if st.button("Identify Ideal Crop"):
+            if crop_model:
+                features = np.array([[N, P, K, temp, hum, ph, rain]])
+                prediction = crop_model.predict(features)
+                crop = label_mapping[int(prediction[0])]
+                
+                st.balloons()
+                st.markdown(f"""
+                    <div class='prediction-card'>
+                        <h2>Best Crop: {crop.capitalize()}</h2>
+                        <p>Based on current soil and weather data</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # Display Crop-Specific Advice
+                if crop in crop_info:
+                    with st.expander("📖 Crop Details & Growing Conditions"):
+                        st.write(crop_info[crop]['description'])
+                        st.info(crop_info[crop]['conditions'])
+                
+                if crop in fertilizer_advice:
+                    st.success(f"**Fertilizer Advice:** {fertilizer_advice[crop]}")
+            else:
+                st.error("Crop Recommendation Model not loaded. Check your joblib file.")
 
     with col1:
         st.write("### 🧪 Soil & Environment")
