@@ -62,9 +62,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- TABS ---
-tab1, tab2, tab3 = st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "📘 Project Info"])
-
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
