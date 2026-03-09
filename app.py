@@ -537,58 +537,47 @@ with tab2:
             st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
 
 with tab3:
-    st.markdown("## 📘 Project Information & Technology Stack")
+    st.markdown("## 📘 About DeepCropCare")
     
-    # 1. Overview Section
     st.markdown("""
-    ### 🌟 Overview
-    **Agri-Smart Hub Pro** is an AI-powered agricultural decision support system designed to help farmers 
-    and researchers. It combines computer vision for disease diagnosis with machine learning for 
-    crop suitability analysis.
+    ### 🚀 The Mission
+    **DeepCropCare** is a cutting-edge agricultural platform designed to empower farmers with data-driven insights. 
+    By merging **Deep Learning** (for leaf diagnostics) and **Machine Learning** (for crop suitability), 
+    we provide a 360-degree view of your farm's potential and health.
     """)
-
-    # 2. Tech Details
-    col_tech1, col_tech2 = st.columns(2)
-    
-    with col_tech1:
-        st.markdown("#### 🧠 Disease Detection (Computer Vision)")
-        st.write("""
-        - **Model:** Deep Convolutional Neural Network (CNN) based on MobileNetV2/ResNet architecture.
-        - **Dataset:** Trained on 70,000+ images of plant leaves across 38+ species and disease categories.
-        - **XAI (Explainable AI):** Uses **Grad-CAM** (Gradient-weighted Class Activation Mapping) to highlight 
-          the exact pixels that led the model to its conclusion.
-        """)
-        
-    with col_tech2:
-        st.markdown("#### 📈 Crop Recommendation (Predictive Analytics)")
-        st.write("""
-        - **Model:** Random Forest Classifier.
-        - **Logic:** Analyzes Nitrogen, Phosphorus, Potassium, pH, Rainfall, and live Weather data.
-        - **Accuracy:** Optimized to provide high-precision recommendations for 22 different crop types.
-        """)
 
     st.divider()
 
-    # 3. How to Interpret Grad-CAM
-    st.markdown("### 🎯 How to read the AI Heatmap")
-    
-    # 
+    col_cv, col_ml = st.columns(2)
+    with col_cv:
+        st.markdown("#### 🧠 Computer Vision")
+        st.write("""
+        Using **Convolutional Neural Networks (CNN)**, the system analyzes leaf texture and 
+        patterns to detect 38 different plant-disease states.
+        """)
+        
+    with col_ml:
+        st.markdown("#### 📈 Predictive Analytics")
+        st.write("""
+        Our **Random Forest** engine processes soil NPK levels and weather data to 
+        recommend the ideal crop for your land.
+        """)
 
-    st.info(f"""
-    The **Diagnostic Layer** currently being analyzed is: `{detected_conv_name}`. 
-    
-    - **Red/Yellow Zones:** High influence. These areas contain the visual markers (spots, blights, or molds) 
-      that the AI identified as "diseased."
-    - **Blue/Green Zones:** Low influence. These are parts of the leaf the AI considers normal or irrelevant 
-      to the specific diagnosis.
-    """)
+    # Soil Chemistry Guide
+    with st.expander("🧪 Understanding Soil Parameters (N-P-K)"):
+        st.write("""
+        - **Nitrogen (N):** Essential for leaf growth and green color.
+        - **Phosphorus (P):** Critical for root development and flower/seed production.
+        - **Potassium (K):** Helps with overall plant health and disease resistance.
+        """)
+        
 
-    # 4. Developer Notes
-    with st.expander("🛠️ System Logs & Metadata"):
-        st.json({
-            "Model Version": "v4.2.1",
-            "Framework": "TensorFlow 2.x / Streamlit",
-            "Input Shape": "(224, 224, 3)",
-            "Weather API": "OpenWeatherMap",
-            "Target Conv Layer": detected_conv_name
-        })
+    st.divider()
+
+    # Grad-CAM explanation
+    st.markdown("### 🎯 Interpretability: How the AI 'Sees'")
+    
+    
+    st.info(f"**Target Diagnostic Layer:** `{detected_conv_name}`. The heatmap highlights areas the AI identified as diseased.")
+
+    st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
