@@ -131,7 +131,7 @@ with header_col2:
 st.markdown(f"""
     <div class="top-header">
         <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0; text-align: center;">🌱 {L['title']}</h1>
-        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px;">Precision AI for Plant Health & Smarter Yields</p>
+        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; text-align: center;">Precision AI for Plant Health & Smarter Yields</p>
     </div>
 """, unsafe_allow_html=True)
 
