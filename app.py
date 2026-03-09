@@ -535,6 +535,7 @@ with tab2:
             st.markdown("### 🧪 Fertilizer & Care Advice")
             st.warning(fertilizer_advice[crop])
             st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
+        st.success("✅ Analysis Complete", icon="🎯")
 
 with tab3:
     st.markdown("## 📘 About DeepCropCare")
