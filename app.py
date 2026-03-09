@@ -483,18 +483,18 @@ with tab2:
         rain = st.number_input("Annual Rainfall (mm)", 0.0, 1000.0, 100.0)
 
   with col_weather:
-    st.write("### 🌦️ Local Weather")
-    # Change the hint text to encourage village-level input
-    city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
+      st.write("### 🌦️ Local Weather")
+      # Change the hint text to encourage village-level input
+      city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
     
-    if st.button("Fetch Live Weather", use_container_width=True):
-        t, h, err = get_weather(city)
-        if not err:
-            st.session_state.weather_temp = t
-            st.session_state.weather_hum = h
-            st.success(f"📍 Data fetched for {city}")
-        else:
-            st.error("Village not found. Try 'District, State'")
+      if st.button("Fetch Live Weather", use_container_width=True):
+          t, h, err = get_weather(city)
+          if not err:
+               st.session_state.weather_temp = t
+               st.session_state.weather_hum = h
+               st.success(f"📍 Data fetched for {city}")
+          else:
+               st.error("Village not found. Try 'District, State'")
         
         # 1. Fetch Button
         if st.button("Fetch Live Weather", use_container_width=True):
