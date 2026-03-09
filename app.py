@@ -26,6 +26,8 @@ st.markdown("""
         background-color: #28a745; color: white; 
         font-weight: bold; height: 3em;
     }
+    /* Centering specific buttons */
+    div.stButton > button:first-child { margin: 0 auto; display: block; width: 50%; }
     h1, h2, h3 { text-align: center; }
     </style>
 """, unsafe_allow_html=True)
@@ -43,7 +45,6 @@ def load_resources():
     if d_model:
         for layer in reversed(d_model.layers):
             try:
-                # Using .output.shape is more robust for Keras/TF versions
                 if len(layer.output.shape) == 4:
                     if not any(x in layer.name.lower() for x in ['flatten', 'gap', 'pool']):
                         detected_name = layer.name
@@ -64,7 +65,6 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
     grad_model = tf.keras.models.Model(
         [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
     )
-
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
         predictions = tf.squeeze(predictions)
@@ -75,14 +75,11 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
     grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
     conv_outputs = conv_outputs[0]
-
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
-
     heatmap = tf.maximum(heatmap, 0)
     denom = tf.reduce_max(heatmap)
     heatmap = tf.cond(denom > 0, lambda: heatmap / denom, lambda: heatmap)
-
     return heatmap.numpy()
 
 def overlay_gradcam(original_img, heatmap, alpha=0.4):
@@ -91,7 +88,6 @@ def overlay_gradcam(original_img, heatmap, alpha=0.4):
     heatmap = np.uint8(255 * heatmap)
     heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
     overlay_img = cv2.addWeighted(original_img, 1 - alpha, heatmap_color, alpha, 0)
-    # CRITICAL: Convert BGR to RGB so the colors display correctly in Streamlit
     return cv2.cvtColor(overlay_img, cv2.COLOR_BGR2RGB)
 
 def get_weather(city_name):
@@ -99,10 +95,10 @@ def get_weather(city_name):
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
     try:
         res = requests.get(url).json()
-        return res["main"]["temp"], res["main"]["humidity"], res.get("rain", {}).get("1h", 0), None
-    except: return 25.0, 70.0, 0.0, "Weather service unavailable"
+        return res["main"]["temp"], res["main"]["humidity"], None
+    except: return 25.0, 70.0, "Weather service unavailable"
 
-# --- DATA DICTIONARIES (Truncated for brevity in example) ---
+# --- DATA DICTIONARIES (Truncated for readability, ensure your full lists are present) ---
 # --- DATA DICTIONARIES ---
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
@@ -370,72 +366,107 @@ with tab1:
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
-        col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
-        with col_img2:
+        
+        # UI FIX: Smaller image display
+        col_space1, col_img, col_space2 = st.columns([1.5, 1, 1.5])
+        with col_img:
             st.image(image, caption="Uploaded Specimen", use_column_width=True)
-            if st.button("Run Diagnostic Analysis"):
-                if disease_model:
-                    img_resized = image.resize((224, 224))
-                    img_arr = img_to_array(img_resized) / 255.0
-                    img_arr = np.expand_dims(img_arr, axis=0)
-                    
-                    prediction = disease_model.predict(img_arr)
-                    idx = np.argmax(prediction)
-                    confidence = np.max(prediction) * 100
-                    full_class_name = class_names[idx]
-                    p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
-                    
-                    # Confidence Display Added Here
-                    st.markdown(f"""
-                        <div class='prediction-card'>
-                            <h2 style='margin:0;'>{p_class_display}</h2>
-                            <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if full_class_name in fertilizer_map:
-                        st.success(f"**Recommended Action:** {fertilizer_map[full_class_name]}")
-                    
-                    # Grad-CAM Visualization
-                    if "healthy" not in full_class_name.lower() and detected_conv_name:
-                        st.divider()
-                        try:
-                            heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                            overlay = overlay_gradcam(img_resized, heatmap)
-                            st.image(overlay, caption="AI Heatmap: Detected Infection Zones", use_column_width=True)
-                        except Exception as e:
-                            st.error(f"Visualization error: {e}")
-                else:
-                    st.error("Disease model not loaded.")
+        
+        # UI FIX: Centered Button
+        if st.button("Run Diagnostic Analysis"):
+            if disease_model:
+                img_resized = image.resize((224, 224))
+                img_arr = img_to_array(img_resized) / 255.0
+                img_arr = np.expand_dims(img_arr, axis=0)
+                
+                prediction = disease_model.predict(img_arr)
+                idx = np.argmax(prediction)
+                confidence = np.max(prediction) * 100
+                full_class_name = class_names[idx]
+                p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
+                
+                st.markdown(f"""
+                    <div class='prediction-card'>
+                        <h2 style='margin:0;'>{p_class_display}</h2>
+                        <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # Grad-CAM Visualization
+                if "healthy" not in full_class_name.lower() and detected_conv_name:
+                    st.divider()
+                    st.markdown("### 🎯 AI Heatmap: Infection Focus Zones") # ADDED TITLE
+                    try:
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                        overlay = overlay_gradcam(img_resized, heatmap)
+                        st.image(overlay, caption="Red zones indicate high probability of disease", use_column_width=True)
+                    except Exception as e:
+                        st.error(f"Visualization error: {e}")
+            else:
+                st.error("Disease model not loaded.")
 
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
-    # Weather Logic... (kept as per your original)
+    
+    # Session state for weather
+    if "weather_temp" not in st.session_state: st.session_state.weather_temp = 25.0
+    if "weather_hum" not in st.session_state: st.session_state.weather_hum = 70.0
+
     col_soil, col_weather = st.columns([2, 1])
+    
     with col_weather:
-        city = st.text_input("Enter City", "Hyderabad", key="crop_city")
-        # Metric display...
+        st.write("### 🌦️ Local Weather")
+        city = st.text_input("Enter City", "Hyderabad")
+        # UI FIX: Get Weather Button
+        if st.button("Fetch Live Weather"):
+            t, h, err = get_weather(city)
+            if not err:
+                st.session_state.weather_temp = t
+                st.session_state.weather_hum = h
+                st.success(f"Updated for {city}")
+            else:
+                st.error(err)
+        
+        st.metric("Temperature", f"{st.session_state.weather_temp}°C")
+        st.metric("Humidity", f"{st.session_state.weather_hum}%")
+
     with col_soil:
-        # Input numbers...
-        N = st.number_input("Nitrogen (N)", 0, 200, 50)
-        P = st.number_input("Phosphorus (P)", 0, 200, 50)
-        K = st.number_input("Potassium (K)", 0, 200, 50)
+        st.write("### 🧪 Soil Parameters")
+        n1, p1, k1 = st.columns(3)
+        N = n1.number_input("Nitrogen (N)", 0, 200, 50)
+        P = p1.number_input("Phosphorus (P)", 0, 200, 50)
+        K = k1.number_input("Potassium (K)", 0, 200, 50)
         ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
-        rain = st.number_input("Rainfall (mm)", 0.0, 500.0, 100.0)
+        rain = st.number_input("Annual Rainfall (mm)", 0.0, 500.0, 100.0)
 
     if st.button("Recommend Best Crop"):
         if crop_model:
-            # Predict
-            features = np.array([[N, P, K, 25.0, 70.0, ph, rain]]) # Example placeholders
+            # Using weather data from session state
+            features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
             prediction = crop_model.predict(features)
             crop = label_mapping[int(prediction[0])]
             
-            # Balloons removed here
             st.markdown(f"<div class='prediction-card'><h2 style='color: #2e7d32;'>🌱 Recommended: {crop.upper()}</h2></div>", unsafe_allow_html=True)
-            # Info Display...
+            
+            # UI FIX: Display Description, Advice, and Fertilizer
+            col_info1, col_info2 = st.columns(2)
+            with col_info1:
+                if crop in crop_info:
+                    st.subheader("📖 Crop Description")
+                    st.write(crop_info[crop]['description'])
+                    st.info(f"**Ideal Conditions:** {crop_info[crop]['conditions']}")
+            
+            with col_info2:
+                st.subheader("🧪 Fertilizer & Care Advice")
+                if crop in fertilizer_advice:
+                    st.warning(fertilizer_advice[crop])
+                if crop in crop_info:
+                    st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
         else:
             st.error("Crop model not loaded.")
 
 with tab3:
     st.markdown("## 📘 System Architecture")
+    st.write("This platform integrates Convolutional Neural Networks (CNN) for image recognition and Random Forest classifiers for environmental analysis.")
+    
     st.info(f"Target Diagnostic Layer for Grad-CAM: `{detected_conv_name}`")
