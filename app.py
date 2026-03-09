@@ -13,60 +13,59 @@ st.set_page_config(page_title="DeepCropCare", layout="wide")
 
 st.markdown("""
     <style>
-    /* 1. REMOVE STREAMLIT PADDING & PULL CONTENT UP */
+    /* 1. CLEAN TOP SPACING */
     header {visibility: hidden;}
     .stAppDeployButton {display:none;}
     
     .block-container {
-        padding-top: 1rem !important; /* Minimal safe space */
-        margin-top: -4.5rem !important; /* Pull up branding */
-        padding-bottom: 0rem !important;
+        padding-top: 1.5rem !important; /* Balanced padding */
+        margin-top: -4rem !important; 
+        max-width: 95%; /* Better use of screen width */
     }
 
-    /* 2. BRANDING CONTAINER */
-    .top-branding {
+    /* 2. LOGO HEADER */
+    .top-header {
         text-align: center;
-        margin-bottom: 0rem;
-        padding-bottom: 0.5rem;
+        padding-bottom: 1rem;
     }
 
     .stApp { background-color: #0e1117; color: white; }
-    h1, h2, h3 { text-align: center; }
 
-    /* 3. FIX OVERFLOWING BUTTONS (TAB 2) */
-    div.stButton > button:first-child {
-        width: 100%;
-        white-space: nowrap; /* Prevent text wrapping inside buttons */
-        overflow: hidden;
-        text-overflow: ellipsis;
-        border-radius: 10px;
-        background-color: #28a745;
-        color: white;
-        font-weight: bold;
+    /* 3. BUTTON FIX - Prevent Text Wrapping */
+    div.stButton > button {
+        width: 100% !important;
+        white-space: nowrap !important; /* Forces text onto one line */
+        font-weight: bold !important;
+        background-color: #28a745 !important;
+        color: white !important;
+        border-radius: 10px !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 1rem !important;
     }
 
-    /* Prediction Card Styling */
+    /* 4. PREDICTION CARDS */
     .prediction-card { 
-        padding: 20px; border-radius: 15px; 
+        padding: 25px; border-radius: 15px; 
         background-color: white; color: #1f1f1f; 
-        text-align: center; margin: 10px 0px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-        border-bottom: 5px solid #28a745;
+        text-align: center; margin: 15px 0px;
+        box-shadow: 0px 6px 15px rgba(0,0,0,0.4);
+        border-bottom: 6px solid #28a745;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # --- MAIN UI HEADER ---
 st.markdown("""
-    <div class="top-branding">
-        <h1 style="font-size: 3.8rem; color: #28a745; margin-bottom: 0; line-height: 1.1;">
+    <div class="top-header">
+        <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">
             🌱 DeepCropCare
         </h1>
-        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -10px; font-weight: 300; font-style: italic;">
+        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300;">
             Precision AI for Plant Health & Smarter Yields
         </p>
     </div>
 """, unsafe_allow_html=True)
+
 
 
 
