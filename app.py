@@ -529,7 +529,7 @@ with tab2:
         inf1, inf2 = st.columns(2)
         with inf1:
             st.markdown("### 📖 Crop Description")
-            st.write(crop_info[crop]["description"])
+            st.info(f"**Description:** {crop_info[crop]['description']}")
             st.info(f"**Conditions:** {crop_info[crop]['conditions']}")
         with inf2:
             st.markdown("### 🧪 Fertilizer & Care Advice")
