@@ -128,14 +128,23 @@ def load_resources():
 
 disease_model, crop_model, detected_conv_name = load_resources()
 
-# --- HELPER FUNCTIONS ---
 def get_weather(city_name):
+    # Free API Key (Keep using yours)
     API_KEY = "8c3a497f31607fe66be1f23c65538904"
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
+    
+    # We add "India" to the search to make it more specific for villages
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name},IN&appid={API_KEY}&units=metric"
+    
     try:
         res = requests.get(url).json()
-        return res["main"]["temp"], res["main"]["humidity"], None
-    except: return 25.0, 70.0, "Weather service unavailable"
+        if res.get("cod") != 200:
+            return 25.0, 70.0, f"Error: {res.get('message', 'Location not found')}"
+            
+        temp = res["main"]["temp"]
+        hum = res["main"]["humidity"]
+        return temp, hum, None
+    except Exception as e:
+        return 25.0, 70.0, "Weather service offline"
 
 # --- DATA DICTIONARIES ---
 class_names = [
@@ -474,8 +483,18 @@ with tab2:
         rain = st.number_input("Annual Rainfall (mm)", 0.0, 1000.0, 100.0)
 
     with col_weather:
-        st.write("### 🌦️ Local Weather")
-        city = st.text_input("Enter City", "Hyderabad")
+    st.write("### 🌦️ Local Weather")
+    # Change the hint text to encourage village-level input
+    city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
+    
+    if st.button("Fetch Live Weather", use_container_width=True):
+        t, h, err = get_weather(city)
+        if not err:
+            st.session_state.weather_temp = t
+            st.session_state.weather_hum = h
+            st.success(f"📍 Data fetched for {city}")
+        else:
+            st.error("Village not found. Try 'District, State'")
         
         # 1. Fetch Button
         if st.button("Fetch Live Weather", use_container_width=True):
