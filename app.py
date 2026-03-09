@@ -482,7 +482,7 @@ with tab2:
         ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
         rain = st.number_input("Annual Rainfall (mm)", 0.0, 1000.0, 100.0)
 
-    with col_weather:
+  with col_weather:
     st.write("### 🌦️ Local Weather")
     # Change the hint text to encourage village-level input
     city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
