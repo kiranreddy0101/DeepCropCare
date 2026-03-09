@@ -500,17 +500,19 @@ with tab2:
         predict_btn = st.button("Recommend Best Crop", use_container_width=True)
 
     if predict_btn:
-        # Mock prediction logic (replace with your model inference if ready)
-        crop = "papaya" 
+       if crop_model:
+          # 1. Organize input data into a 2D array for the model
+          # The order must match exactly how the model was trained (usually N, P, K, temp, hum, ph, rain)
+          features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
         
-        st.markdown(f"""
-            <div class='prediction-card'>
-                <h2 style='color: #28a745; margin:0;'>🌱 Recommended: {crop.upper()}</h2>
-            </div>
-        """, unsafe_allow_html=True)
+          # 2. Get the numeric prediction
+          prediction_idx = crop_model.predict(features)[0]
         
-        # Display Info Sections
-        inf1, inf2 = st.columns(2)
+          # 3. Map the number to the crop name using your label_mapping
+          crop = label_mapping[prediction_idx]
+      else:
+          st.error("Crop model not loaded! Defaulting to demo mode.")
+          crop = "rice" # Fallback
         
         with inf1:
             st.markdown("### 📖 Description")
