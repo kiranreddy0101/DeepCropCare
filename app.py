@@ -198,9 +198,7 @@ st.markdown(f"""
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
-    grad_model = tf.keras.models.Model(
-        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
-    )
+    grad_model = tf.keras.models.Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
 
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
