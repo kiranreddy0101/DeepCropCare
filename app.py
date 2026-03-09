@@ -52,6 +52,37 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
+    """Computes the Grad-CAM heatmap for a given image and layer."""
+    grad_model = tf.keras.models.Model(
+        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
+    )
+
+    with tf.GradientTape() as tape:
+        conv_outputs, predictions = grad_model(img_array)
+        if pred_index is None:
+            pred_index = tf.argmax(predictions[0])
+        class_channel = predictions[:, pred_index]
+
+    grads = tape.gradient(class_channel, conv_outputs)
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    
+    conv_outputs = conv_outputs[0]
+    heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
+
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    return heatmap.numpy()
+
+def overlay_gradcam(original_img, heatmap, alpha=0.4):
+    """Overlays the heatmap onto the original image."""
+    original_img = np.array(original_img)
+    heatmap = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
+    heatmap = np.uint8(255 * heatmap)
+    heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    overlay_img = cv2.addWeighted(original_img, 1 - alpha, heatmap_color, alpha, 0)
+    return cv2.cvtColor(overlay_img, cv2.COLOR_BGR2RGB)
+
 # --- MODEL LOADING (Remains the same) ---
 @st.cache_resource
 def load_resources():
