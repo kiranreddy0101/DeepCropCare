@@ -13,27 +13,26 @@ st.set_page_config(page_title="DeepCropCare", layout="wide")
 
 st.markdown("""
     <style>
-    /* 1. FORCE REMOVAL OF TOP BLANK SPACES */
-    header {visibility: hidden;} /* Hides the top toolbar entirely */
-    .stAppDeployButton {display:none;} /* Hides the deploy button */
+    /* 1. HIDE TOOLBARS BUT KEEP CONTENT VISIBLE */
+    header {visibility: hidden;}
+    .stAppDeployButton {display:none;}
     
-    /* 2. PULL CONTENT TO THE ABSOLUTE TOP */
+    /* 2. BALANCED TOP PULL */
     .block-container {
         padding-top: 0rem !important;
-        margin-top: -6rem !important; /* Aggressive pull */
-        padding-bottom: 0rem !important;
+        margin-top: -3.5rem !important; /* Adjusted from -6rem to prevent clipping */
     }
 
-    /* 3. ENSURE TABS ARE TIGHT */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        margin-top: -10px;
+    /* 3. CENTER & TIGHTEN BRANDING */
+    .top-branding {
+        text-align: center;
+        margin-bottom: 0.5rem;
     }
 
     .stApp { background-color: #0e1117; color: white; }
     h1, h2, h3 { text-align: center; }
 
-    /* Prediction Card Styling */
+    /* Prediction Card */
     .prediction-card { 
         padding: 20px; border-radius: 15px; 
         background-color: white; color: #1f1f1f; 
@@ -42,7 +41,7 @@ st.markdown("""
         border-bottom: 5px solid #28a745;
     }
 
-    /* Button Styling */
+    /* Buttons */
     .stButton>button {
         border-radius: 10px;
         background-color: #28a745;
@@ -53,13 +52,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- MAIN UI HEADER ---
-# Using minimal padding to keep it at the top
 st.markdown("""
-    <div style="text-align: center; padding: 0px 0px 10px 0px;">
-        <h1 style="font-size: 4rem; color: #28a745; margin-bottom: 0;">
+    <div class="top-branding">
+        <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0; line-height: 1;">
             🌱 DeepCropCare
         </h1>
-        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -15px; font-weight: 300;">
+        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: 5px; font-weight: 300;">
             Precision AI for Plant Health & Smarter Yields
         </p>
     </div>
