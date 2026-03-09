@@ -128,23 +128,14 @@ def load_resources():
 
 disease_model, crop_model, detected_conv_name = load_resources()
 
+# --- HELPER FUNCTIONS ---
 def get_weather(city_name):
-    # Free API Key (Keep using yours)
     API_KEY = "8c3a497f31607fe66be1f23c65538904"
-    
-    # We add "India" to the search to make it more specific for villages
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name},IN&appid={API_KEY}&units=metric"
-    
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
     try:
         res = requests.get(url).json()
-        if res.get("cod") != 200:
-            return 25.0, 70.0, f"Error: {res.get('message', 'Location not found')}"
-            
-        temp = res["main"]["temp"]
-        hum = res["main"]["humidity"]
-        return temp, hum, None
-    except Exception as e:
-        return 25.0, 70.0, "Weather service offline"
+        return res["main"]["temp"], res["main"]["humidity"], None
+    except: return 25.0, 70.0, "Weather service unavailable"
 
 # --- DATA DICTIONARIES ---
 class_names = [
