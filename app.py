@@ -458,7 +458,7 @@ with tab1:
         
         if run_btn: 
             # 1. Visual Progress Feedback
-            progress_bar = st.progress(50)
+            progress_bar = st.progress(90)
             for percent_complete in range(100):
                 time.sleep(0.001) # Subtle delay for UX
                 progress_bar.progress(percent_complete + 1)
@@ -510,6 +510,7 @@ with tab1:
                 else:
                     progress_bar.empty()
                     st.error("Disease model not loaded.")
+            
 
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
