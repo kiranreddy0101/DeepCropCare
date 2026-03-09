@@ -445,7 +445,7 @@ with tab1:
                 
                 # Grad-CAM Visualization
                 if "healthy" not in full_class_name.lower() and detected_conv_name:
-                    st.markdown("### 🎯 AI Heatmap: Detected Infection Zones")
+                    st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
                     try:
                         heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
                         overlay = overlay_gradcam(img_resized, heatmap)
