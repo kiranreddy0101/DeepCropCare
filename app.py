@@ -396,7 +396,6 @@ with tab1:
                             st.error(f"Visualization error: {e}")
                 else:
                     st.error("Disease model not loaded.")
-      
 
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
