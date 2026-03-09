@@ -62,7 +62,7 @@ lang_dict = {
 }
 
 # --- 2. CONFIG & STYLING ---
-st.set_page_config(page_title="DeepCropCare", layout="wide")
+st.set_page_config(page_title="DeepCropCare", layout="wide",initial_sidebar_state="expanded")
 
 # Sidebar Language Selection
 with st.sidebar:
