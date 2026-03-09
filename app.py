@@ -458,10 +458,11 @@ with tab1:
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
     
+    # Initialize session state for weather if not present
     if "weather_temp" not in st.session_state: st.session_state.weather_temp = 25.0
     if "weather_hum" not in st.session_state: st.session_state.weather_hum = 70.0
 
-    # Clean layout for inputs
+    # Layout for inputs
     col_soil, col_weather = st.columns([1.5, 1])
     
     with col_soil:
@@ -473,48 +474,24 @@ with tab2:
         ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
         rain = st.number_input("Annual Rainfall (mm)", 0.0, 1000.0, 100.0)
 
-    
     with col_weather:
         st.write("### 🌦️ Local Weather")
-        city = st.text_input("Enter City", "Hyderabad")
-        # Fixed Weather Button Alignment
+        # Village level hint
+        city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
+        
+        # FIXED: Only ONE button here to avoid DuplicateElementId error
         if st.button("Fetch Live Weather", use_container_width=True):
             t, h, err = get_weather(city)
             if not err:
-                st.session_state.weather_temp, st.session_state.weather_hum = t, h
-            else: st.error(err)
-        # 1. Fetch Button
-        if st.button("Fetch Live Weather", use_container_width=True):
-            t, h, err = get_weather(city)
-            if not err:
-                # Update session state so inputs update automatically
                 st.session_state.weather_temp = float(t)
                 st.session_state.weather_hum = float(h)
+                st.success(f"📍 Data fetched for {city}")
             else: 
-                st.error(err)
+                st.error(f"Village not found. Try 'District, State'")
         
-        # 2. Editable Inputs linked to Session State
-        # We use 'key' to tie these widgets directly to st.session_state
-        st.session_state.weather_temp = st.number_input(
-            "Temperature (°C)", 
-            value=float(st.session_state.weather_temp),
-            step=0.1,
-            format="%.1f"
-        )
-        
-        st.session_state.weather_hum = st.number_input(
-            "Humidity (%)", 
-            value=float(st.session_state.weather_hum),
-            min_value=0.0, 
-            max_value=100.0,
-            step=0.1,
-            format="%.1f"
-        )
-
-        # 3. Visual Metrics (Optional: keeps the UI consistent with your previous screenshots)
-        m1, m2 = st.columns(2)
-        m1.metric("Current Temp", f"{st.session_state.weather_temp}°C")
-        m2.metric("Current Hum", f"{st.session_state.weather_hum}%")
+        # Editable Inputs linked to Session State
+        st.session_state.weather_temp = st.number_input("Temp (°C)", value=float(st.session_state.weather_temp), step=0.1)
+        st.session_state.weather_hum = st.number_input("Humidity (%)", value=float(st.session_state.weather_hum), step=0.1)
 
     # CENTERED RECOMMENDATION BUTTON
     st.markdown("<br>", unsafe_allow_html=True)
@@ -523,24 +500,42 @@ with tab2:
         predict_btn = st.button("Recommend Best Crop", use_container_width=True)
 
     if predict_btn:
-        # Mock prediction for Papaya based on your image
+        # Mock prediction logic (replace with your model inference if ready)
         crop = "papaya" 
+        
         st.markdown(f"""
             <div class='prediction-card'>
-                <h2 style='color: #28a745;'>🌱 Recommended: {crop.upper()}</h2>
+                <h2 style='color: #28a745; margin:0;'>🌱 Recommended: {crop.upper()}</h2>
             </div>
         """, unsafe_allow_html=True)
         
         # Display Info Sections
         inf1, inf2 = st.columns(2)
+        
         with inf1:
-            st.markdown("### 📖 Crop Description")
-            st.info(f"**Description:** {crop_info[crop]['description']}")
-            st.info(f"**Conditions:** {crop_info[crop]['conditions']}")
+            st.markdown("### 📖 Description")
+            # STYLED DESCRIPTION CONTAINER
+            st.markdown(f"""
+                <div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin-bottom: 15px;">
+                    <p style="margin:0; font-size: 1.1rem; line-height: 1.6; color: white;">
+                        {crop_info[crop]['description']}
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # STYLED CONDITIONS BOX (BLUE)
+            st.markdown(f"""
+                <div style="background-color: #0e2433; padding: 15px; border-radius: 10px; border: 1px solid #1c83e1;">
+                    <p style="margin:0; color: #5dade2; font-weight: bold;">🔍 Optimal Conditions:</p>
+                    <p style="margin:0; color: #85c1e9;">{crop_info[crop]['conditions']}</p>
+                </div>
+            """, unsafe_allow_html=True)
+
         with inf2:
             st.markdown("### 🧪 Fertilizer & Care Advice")
             st.warning(fertilizer_advice[crop])
             st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
+            
         st.markdown("<br><h3 style='text-align: center;'>✅ Analysis Complete</h3>", unsafe_allow_html=True)
 
 with tab3:
