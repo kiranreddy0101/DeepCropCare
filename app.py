@@ -360,42 +360,47 @@ with tab1:
         # CENTERED BUTTON FIX
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
+            # We assign the result of the button to run_btn
             run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
         
-        if run_btn("Run Diagnostic Analysis"):
-                if disease_model:
-                    img_resized = image.resize((224, 224))
-                    img_arr = img_to_array(img_resized) / 255.0
-                    img_arr = np.expand_dims(img_arr, axis=0)
-                    
-                    prediction = disease_model.predict(img_arr)
-                    idx = np.argmax(prediction)
-                    confidence = np.max(prediction) * 100
-                    full_class_name = class_names[idx]
-                    p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
-                    
-                    # Confidence Display Added Here
-                    st.markdown(f"""
-                        <div class='prediction-card'>
-                            <h2 style='margin:0;'>{p_class_display}</h2>
-                            <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if full_class_name in fertilizer_map:
-                        st.success(f"**Recommended Action:** {fertilizer_map[full_class_name]}")
-                    
-                    # Grad-CAM Visualization
-                    if "healthy" not in full_class_name.lower() and detected_conv_name:
-                        st.divider()
-                        try:
-                            heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                            overlay = overlay_gradcam(img_resized, heatmap)
-                            st.image(overlay, caption="AI Heatmap: Detected Infection Zones", use_column_width=True)
-                        except Exception as e:
-                            st.error(f"Visualization error: {e}")
-                else:
-                    st.error("Disease model not loaded.")
+        # FIX: Just check if run_btn is True. Do NOT use run_btn()
+        if run_btn: 
+            if disease_model:
+                # Processing
+                img_resized = image.resize((224, 224))
+                img_arr = img_to_array(img_resized) / 255.0
+                img_arr = np.expand_dims(img_arr, axis=0)
+                
+                # Inference
+                prediction = disease_model.predict(img_arr)
+                idx = np.argmax(prediction)
+                confidence = np.max(prediction) * 100
+                full_class_name = class_names[idx]
+                p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
+                
+                # Confidence Display
+                st.markdown(f"""
+                    <div class='prediction-card'>
+                        <h2 style='margin:0;'>{p_class_display}</h2>
+                        <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # Action recommendation
+                if full_class_name in fertilizer_map:
+                    st.success(f"**Recommended Action:** {fertilizer_map[full_class_name]}")
+                
+                # Grad-CAM Visualization
+                if "healthy" not in full_class_name.lower() and detected_conv_name:
+                    st.markdown("### 🎯 AI Heatmap: Detected Infection Zones")
+                    try:
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                        overlay = overlay_gradcam(img_resized, heatmap)
+                        st.image(overlay, caption="Heatmap highlighting affected areas", use_column_width=True)
+                    except Exception as e:
+                        st.error(f"Visualization error: {e}")
+            else:
+                st.error("Disease model not loaded.")
 
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
