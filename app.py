@@ -13,21 +13,22 @@ st.set_page_config(page_title="DeepCropCare", layout="wide")
 
 st.markdown("""
     <style>
-    /* 1. Pull the entire app content up */
+    /* 1. Eliminate the huge top whitespace */
     .block-container {
-        padding-top: 0.5rem !important; /* Force minimum padding */
-        padding-bottom: 0rem;
-        margin-top: -3.5rem; /* Pull content into the top header area */
+        padding-top: 0rem !important;
+        margin-top: -5rem !important; /* Higher pull to hit the top bar */
     }
     
-    /* 2. Style the header container */
-    .main-header {
-        text-align: center; 
-        padding-top: 0rem; 
-        padding-bottom: 1rem;
+    /* 2. Custom header container for tight spacing */
+    .top-branding {
+        text-align: center;
+        padding: 0rem !important;
+        margin-bottom: 1rem;
     }
 
     .stApp { background-color: #0e1117; color: white; }
+    
+    /* Global center headings */
     h1, h2, h3 { text-align: center; }
 
     /* Prediction Card */
@@ -39,7 +40,7 @@ st.markdown("""
         border-bottom: 5px solid #28a745;
     }
 
-    /* Buttons */
+    /* Green Buttons */
     .stButton>button {
         border-radius: 10px;
         background-color: #28a745;
@@ -50,13 +51,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- MAIN UI HEADER ---
-# Using a custom class "main-header" defined in the CSS above
 st.markdown("""
-    <div class="main-header">
-        <h1 style="font-size: 3.8rem; color: #28a745; margin-bottom: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+    <div class="top-branding">
+        <h1 style="font-size: 3.8rem; color: #28a745; margin-bottom: 0; padding-top: 0;">
             🌱 DeepCropCare
         </h1>
-        <p style="font-size: 1.2rem; color: #a3a3a3; margin-top: -10px; font-style: italic;">
+        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -15px; font-weight: 300;">
             Precision AI for Plant Health & Smarter Yields
         </p>
     </div>
