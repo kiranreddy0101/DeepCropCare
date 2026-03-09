@@ -393,8 +393,8 @@ with tab1:
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    if full_class_name in disease_treatment:
-                        st.success(f"**Recommended Action:** {disease_treatment[full_class_name]}")
+                    if full_class_name in fertilizer_map:
+                        st.success(f"**Recommended Action:** {fertilizer_map[full_class_name]}")
                     
                     # Grad-CAM Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
