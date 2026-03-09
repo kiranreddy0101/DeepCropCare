@@ -482,20 +482,16 @@ with tab2:
         ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
         rain = st.number_input("Annual Rainfall (mm)", 0.0, 1000.0, 100.0)
 
-   with col_weather:
+    
+    with col_weather:
         st.write("### 🌦️ Local Weather")
-        # Village level hint
-        city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
-        
+        city = st.text_input("Enter City", "Hyderabad")
+        # Fixed Weather Button Alignment
         if st.button("Fetch Live Weather", use_container_width=True):
             t, h, err = get_weather(city)
             if not err:
-                st.session_state.weather_temp = float(t)
-                st.session_state.weather_hum = float(h)
-                st.success(f"📍 Data fetched for {city}")
-            else: 
-                st.error(f"Village not found. Try 'District, State'")
-        
+                st.session_state.weather_temp, st.session_state.weather_hum = t, h
+            else: st.error(err)
         # 1. Fetch Button
         if st.button("Fetch Live Weather", use_container_width=True):
             t, h, err = get_weather(city)
