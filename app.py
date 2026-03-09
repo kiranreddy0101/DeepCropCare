@@ -13,25 +13,27 @@ st.set_page_config(page_title="DeepCropCare", layout="wide")
 
 st.markdown("""
     <style>
-    /* 1. Eliminate the huge top whitespace */
+    /* 1. FORCE REMOVAL OF TOP BLANK SPACES */
+    header {visibility: hidden;} /* Hides the top toolbar entirely */
+    .stAppDeployButton {display:none;} /* Hides the deploy button */
+    
+    /* 2. PULL CONTENT TO THE ABSOLUTE TOP */
     .block-container {
         padding-top: 0rem !important;
-        margin-top: -5rem !important; /* Higher pull to hit the top bar */
+        margin-top: -6rem !important; /* Aggressive pull */
+        padding-bottom: 0rem !important;
     }
-    
-    /* 2. Custom header container for tight spacing */
-    .top-branding {
-        text-align: center;
-        padding: 0rem !important;
-        margin-bottom: 1rem;
+
+    /* 3. ENSURE TABS ARE TIGHT */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        margin-top: -10px;
     }
 
     .stApp { background-color: #0e1117; color: white; }
-    
-    /* Global center headings */
     h1, h2, h3 { text-align: center; }
 
-    /* Prediction Card */
+    /* Prediction Card Styling */
     .prediction-card { 
         padding: 20px; border-radius: 15px; 
         background-color: white; color: #1f1f1f; 
@@ -40,7 +42,7 @@ st.markdown("""
         border-bottom: 5px solid #28a745;
     }
 
-    /* Green Buttons */
+    /* Button Styling */
     .stButton>button {
         border-radius: 10px;
         background-color: #28a745;
@@ -51,9 +53,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- MAIN UI HEADER ---
+# Using minimal padding to keep it at the top
 st.markdown("""
-    <div class="top-branding">
-        <h1 style="font-size: 3.8rem; color: #28a745; margin-bottom: 0; padding-top: 0;">
+    <div style="text-align: center; padding: 0px 0px 10px 0px;">
+        <h1 style="font-size: 4rem; color: #28a745; margin-bottom: 0;">
             🌱 DeepCropCare
         </h1>
         <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -15px; font-weight: 300;">
@@ -61,6 +64,7 @@ st.markdown("""
         </p>
     </div>
 """, unsafe_allow_html=True)
+
 
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
