@@ -42,6 +42,10 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
         font-size: 1rem !important;
     }
+    .stApp {
+    background: linear-gradient(135deg, #0e1117 0%, #162210 100%);
+    background-attachment: fixed;
+}
 
     /* 4. PREDICTION CARDS */
     .prediction-card { 
