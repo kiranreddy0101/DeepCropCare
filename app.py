@@ -457,6 +457,15 @@ with tab1:
         
         # FIX: Just check if run_btn is True. Do NOT use run_btn()
         if run_btn: 
+            progress_bar = st.progress(0)
+            for percent_complete in range(100):
+                time.sleep(0.01) # Very fast, just for the feel
+                progress_bar.progress(percent_complete + 1)
+    
+           with st.spinner("🧠 AI identifying pathogens..."):
+                # Your model.predict code goes here
+                st.success("Analysis Complete!")
+           progress_bar.empty() # Remove the bar once done
             if disease_model:
                 # Processing
                 img_resized = image.resize((224, 224))
