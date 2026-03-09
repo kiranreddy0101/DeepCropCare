@@ -16,9 +16,9 @@ st.markdown("""
     .stApp { background-color: #0e1117; color: white; }
     .prediction-card { 
         padding: 20px; border-radius: 15px; 
-        background-color: white; color: #1f1f1f; 
+        background-color: #ffffff; color: #1f1f1f; 
         text-align: center; margin: 10px 0px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        border-left: 5px solid #28a745;
     }
     .stButton>button { 
         width: 100%; border-radius: 10px; 
@@ -32,23 +32,18 @@ st.markdown("""
 # --- MODEL LOADING ---
 @st.cache_resource
 def load_resources():
-    # Load Disease Model
     try:
         d_model = load_model("plant_disease_model_final4.h5", compile=False)
-    except Exception as e:
-        st.error(f"Error loading disease model: {e}")
+    except:
         d_model = None
 
-    # Robust search for the correct 4D spatial layer for Grad-CAM
     detected_name = None
     if d_model:
         for layer in reversed(d_model.layers):
-            if hasattr(layer, 'output_shape') and len(layer.output_shape) == 4:
-                if not any(x in layer.name.lower() for x in ['flatten', 'gap', 'pool']):
-                    detected_name = layer.name
-                    break
+            if len(layer.output_shape) == 4:
+                detected_name = layer.name
+                break
     
-    # Load Crop Model
     try:
         c_model = joblib.load("rf_crop_recommendation.joblib")
     except:
@@ -58,40 +53,51 @@ def load_resources():
 
 disease_model, crop_model, detected_conv_name = load_resources()
 
-# --- HELPER FUNCTIONS ---
+# --- STABLE GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name):
+    # Create a model that maps input to the activations of the last conv layer
     grad_model = tf.keras.models.Model(
         [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
     )
+
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        predictions = tf.squeeze(predictions)  # Force to 1D
-        pred_index = tf.argmax(predictions)
-        class_channel = predictions[pred_index]
+        # Handle batch dimension
+        if len(predictions.shape) > 1:
+            pred_index = tf.argmax(predictions[0])
+            class_channel = predictions[:, pred_index]
+        else:
+            pred_index = tf.argmax(predictions)
+            class_channel = predictions[pred_index]
 
+    # Calculate gradients
     grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
+    # Weighted sum of feature maps
     conv_outputs = conv_outputs[0]
-    
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
-    
-    # ReLU and Normalize
+
+    # Normalize heatmap
     heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-10)
     return heatmap.numpy()
 
 def overlay_gradcam(original_img, heatmap, alpha=0.4):
     img = np.array(original_img)
+    # Ensure uint8
     if img.max() <= 1.0: img = (img * 255).astype("uint8")
     
     heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
     heatmap = np.uint8(255 * heatmap)
     heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
     
-    # Superimpose and convert BGR back to RGB for Streamlit
+    # Superimpose
     overlay = cv2.addWeighted(img, 1 - alpha, heatmap_color, alpha, 0)
+    # Convert BGR (OpenCV) to RGB (Streamlit)
     return cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB)
 
+# --- WEATHER API ---
 def get_weather(city_name):
     API_KEY = "8c3a497f31607fe66be1f23c65538904"
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
@@ -100,6 +106,7 @@ def get_weather(city_name):
         return res["main"]["temp"], res["main"]["humidity"], res.get("rain", {}).get("1h", 0), None
     except: return 25.0, 70.0, 0.0, "Weather service unavailable"
 
+# --- DATA DICTIONARIES (Truncated for brevity, keep your full lists here) ---
 # --- DATA DICTIONARIES ---
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
@@ -130,12 +137,12 @@ class_names = [
     'Tomato___healthy', 'Wheat_Healthy', 'Wheat_leaf_leaf_stripe_rust', 'Wheatleaf_septoria'
 ]
 
-# Disease treatment map
-disease_treatment = {
+fertilizer_map = {
     'Apple___Apple_scab': 'Use copper-based fungicides (Liquid Copper)',
     'Apple___Black_rot': 'Apply sulfur sprays or captan; prune cankers',
     'Apple___Cedar_apple_rust': 'Use myclobutanil or mancozeb during spring',
     'Apple___healthy': 'Maintain soil organic matter with compost',
+    'Background_without_leaves': 'N/A',
     'Bitter Gourd__Downy_mildew': 'Apply Mancozeb or Copper Oxychloride spray',
     'Bitter Gourd__Fusarium_wilt': 'Soil drenching with Carbendazim (0.1%)',
     'Bitter Gourd__Fresh_leaf': 'Apply balanced NPK (10-10-10)',
@@ -239,33 +246,126 @@ fertilizer_advice = {
     "coffee": "Use organic compost and potassium sulfate; apply nitrogen after pruning."
 }
 
+# Crop Info
 crop_info = {
-    "rice": {"description": "Rice is a staple food crop grown in warm, humid climates.", "conditions": "Clayey loam soil, 20–35°C, high humidity.", "tips": "Keep water level consistent."},
-    "wheat": {"description": "Wheat is a major cereal grown in temperate regions.", "conditions": "Cool growth period, dry harvest.", "tips": "Apply N split doses."},
-    "maize": {"description": "Maize (corn) is used as food, fodder, and industrial raw material.", "conditions": "21–27°C, moderate rainfall.", "tips": "Ensure proper spacing."},
-    "chickpea": {"description": "Chickpea is a protein-rich legume.", "conditions": "Well-drained sandy loam, semi-arid.", "tips": "Rotate with cereal crops."},
-    "kidneybeans": {"description": "Kidney beans are rich in protein and fiber.", "conditions": "Warm climate, well-drained soil.", "tips": "Avoid waterlogging."},
-    "pigeonpeas": {"description": "Pigeon peas are drought-resistant pulse crops.", "conditions": "Can grow in poor soils, prefers warm climate.", "tips": "Plant at onset of rain."},
-    "mothbeans": {"description": "Moth beans are drought-tolerant legumes.", "conditions": "Sandy soils, minimal water.", "tips": "Use early-maturing varieties."},
-    "mungbean": {"description": "Mung beans are high in protein and used in many dishes.", "conditions": "Warm climates, moderate rainfall.", "tips": "Rotate with cereals."},
-    "blackgram": {"description": "Black gram is a pulse crop used in traditional dishes.", "conditions": "Warm, humid climates, loamy soil.", "tips": "Avoid excess irrigation."},
-    "lentil": {"description": "Lentils are a major source of protein.", "conditions": "Temperate climate, cool weather.", "tips": "Use disease-resistant seeds."},
-    "pomegranate": {"description": "Pomegranate is valued for its sweet seeds.", "conditions": "Dry climates, sandy loam.", "tips": "Prune regularly."},
-    "banana": {"description": "Bananas require warm, humid climates.", "conditions": "Rich loamy soil, consistent water.", "tips": "Apply potassium weekly."},
-    "mango": {"description": "Mango is the king of fruits, popular for sweetness.", "conditions": "Tropical, well-drained soil.", "tips": "Prune after harvest."},
-    "grapes": {"description": "Grapes are grown for fruit, juice, and wine.", "conditions": "Warm dry summers, well-drained soil.", "tips": "Train vines on trellises."},
-    "watermelon": {"description": "Watermelon is a refreshing summer fruit.", "conditions": "Sandy loam, warm temperatures.", "tips": "Avoid over-irrigation."},
-    "muskmelon": {"description": "Muskmelon is a sweet, fragrant fruit.", "conditions": "Sandy loam, warm dry climate.", "tips": "Maintain spacing."},
-    "apple": {"description": "Apple is a temperate fruit rich in vitamins.", "conditions": "Cold winters, moderate summers.", "tips": "Protect from spring frost."},
-    "orange": {"description": "Oranges are citrus fruits rich in Vitamin C.", "conditions": "Subtropical, well-drained soil.", "tips": "Watch for citrus greening."},
-    "papaya": {"description": "Papaya is a tropical fruit crop.", "conditions": "Warm climate, sandy loam.", "tips": "Need male/female plants."},
-    "coconut": {"description": "Coconut palms are grown for oil and fiber.", "conditions": "Sandy coastal soils, high humidity.", "tips": "Apply manure annually."},
-    "cotton": {"description": "Cotton is a fiber crop used in textiles.", "conditions": "Long frost-free period, sun.", "tips": "Control bollworms."},
-    "jute": {"description": "Jute is used for fiber quality (ropes/sacks).", "conditions": "Warm, humid, alluvial soil.", "tips": "Harvest at flowering stage."},
-    "coffee": {"description": "Coffee is grown in tropical highlands.", "conditions": "Shade, cool temp, well-drained soil.", "tips": "Maintain shade trees."}
+    "rice": {
+        "description": "Rice is a staple food crop grown in warm, humid climates, often in flooded fields.",
+        "conditions": "Grows best in clayey loam soil, temperatures between 20–35°C, and high humidity.",
+        "tips": "Maintain standing water in fields; use pest-resistant high-yield varieties."
+    },
+    "wheat": {
+        "description": "Wheat is a major cereal crop grown in temperate regions worldwide.",
+        "conditions": "Requires cool weather during early growth and dry conditions during harvest.",
+        "tips": "Use certified seeds; apply nitrogen fertilizer in split doses."
+    },
+    "maize": {
+        "description": "Maize (corn) is used as food, fodder, and industrial raw material.",
+        "conditions": "Grows well in temperatures between 21–27°C with moderate rainfall.",
+        "tips": "Ensure proper spacing for sunlight; control weeds early."
+    },
+    "chickpea": {
+        "description": "Chickpea is a protein-rich legume used in many dishes.",
+        "conditions": "Thrives in well-drained sandy loam soil in semi-arid climates.",
+        "tips": "Rotate with cereals to improve soil fertility."
+    },
+    "kidneybeans": {
+        "description": "Kidney beans are rich in protein and fiber, grown mainly in tropical areas.",
+        "conditions": "Grows best in warm climates with well-drained soil.",
+        "tips": "Avoid waterlogging; provide trellis support if needed."
+    },
+    "pigeonpeas": {
+        "description": "Pigeon peas are a drought-resistant pulse crop.",
+        "conditions": "Can grow in poor soils; prefers warm climates with moderate rainfall.",
+        "tips": "Plant at the onset of rains; inter-crop with cereals."
+    },
+    "mothbeans": {
+        "description": "Moth beans are drought-tolerant legumes grown in arid areas.",
+        "conditions": "Survives in sandy soils with minimal water.",
+        "tips": "Use early-maturing varieties in low rainfall areas."
+    },
+    "mungbean": {
+        "description": "Mung beans are high in protein and used in soups, sprouts, and curries.",
+        "conditions": "Grows well in warm climates with moderate rainfall.",
+        "tips": "Avoid waterlogging; rotate with cereals to improve soil health."
+    },
+    "blackgram": {
+        "description": "Black gram is a pulse crop used in various traditional dishes.",
+        "conditions": "Thrives in warm, humid climates and loamy soils.",
+        "tips": "Plant in well-drained soils; avoid excess irrigation."
+    },
+    "lentil": {
+        "description": "Lentils are a major source of protein, especially in vegetarian diets.",
+        "conditions": "Best grown in temperate climates with cool weather.",
+        "tips": "Use disease-resistant varieties to reduce crop loss."
+    },
+    "pomegranate": {
+        "description": "Pomegranate is a fruit crop valued for its sweet, tangy seeds.",
+        "conditions": "Prefers dry climates with sandy loam soils.",
+        "tips": "Prune regularly to maintain fruit quality."
+    },
+    "banana": {
+        "description": "Bananas are tropical fruits grown for fresh consumption and export.",
+        "conditions": "Requires warm, humid climates with rich loamy soil.",
+        "tips": "Irrigate regularly; apply potassium-rich fertilizer."
+    },
+    "mango": {
+        "description": "Mango is known as the king of fruits, popular for its sweetness.",
+        "conditions": "Grows best in tropical/subtropical climates with well-drained soils.",
+        "tips": "Prune after harvest; protect from frost."
+    },
+    "grapes": {
+        "description": "Grapes are grown for fresh fruit, juice, and wine.",
+        "conditions": "Requires warm, dry summers and well-drained soils.",
+        "tips": "Train vines on trellises; manage pests like mealybugs."
+    },
+    "watermelon": {
+        "description": "Watermelon is a refreshing summer fruit rich in water and vitamins.",
+        "conditions": "Grows best in sandy loam soils with warm temperatures.",
+        "tips": "Avoid over-irrigation; harvest when tendril near fruit turns brown."
+    },
+    "muskmelon": {
+        "description": "Muskmelon is a sweet, fragrant fruit.",
+        "conditions": "Prefers sandy loam soil and warm, dry climate.",
+        "tips": "Ensure proper spacing; avoid waterlogging."
+    },
+    "apple": {
+        "description": "Apple is a temperate fruit rich in vitamins and minerals.",
+        "conditions": "Requires cold winters and moderate summers.",
+        "tips": "Protect from frost during flowering; prune annually."
+    },
+    "orange": {
+        "description": "Oranges are citrus fruits rich in vitamin C.",
+        "conditions": "Thrives in subtropical climates with well-drained soils.",
+        "tips": "Irrigate during dry spells; protect from citrus greening disease."
+    },
+    "papaya": {
+        "description": "Papaya is a tropical fruit crop valued for its nutrition.",
+        "conditions": "Prefers warm climates with sandy loam soils.",
+        "tips": "Ensure male and female plants for fruit set; irrigate regularly."
+    },
+    "coconut": {
+        "description": "Coconut palms are grown for food, oil, and fiber.",
+        "conditions": "Requires sandy coastal soils and high humidity.",
+        "tips": "Apply organic manure regularly; control rhinoceros beetle."
+    },
+    "cotton": {
+        "description": "Cotton is a fiber crop used in textiles.",
+        "conditions": "Needs long frost-free period and plenty of sunshine.",
+        "tips": "Control bollworm pests; avoid waterlogging."
+    },
+    "jute": {
+        "description": "Jute is a fiber crop used in making ropes and sacks.",
+        "conditions": "Prefers warm, humid climates with alluvial soils.",
+        "tips": "Harvest at flowering stage for best fiber quality."
+    },
+    "coffee": {
+        "description": "Coffee is a beverage crop grown in tropical highlands.",
+        "conditions": "Requires shade, cool temperatures, and well-drained soil.",
+        "tips": "Control coffee berry borer; maintain shade trees."
+    }
 }
 
-# --- MAIN UI ---
+# --- TAB 1: DISEASE DETECTION ---
 tab1, tab2, tab3 = st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "📘 Project Info"])
 
 with tab1:
@@ -274,38 +374,43 @@ with tab1:
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
-        col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
-        with col_img2:
-            st.image(image, caption="Uploaded Specimen", use_column_width="always")
-            if st.button("Run Diagnostic Analysis"):
-                if disease_model:
-                    img_resized = image.resize((224, 224))
-                    img_arr = img_to_array(img_resized) / 255.0
-                    img_arr = np.expand_dims(img_arr, axis=0)
-                    
-                    prediction = disease_model.predict(img_arr)
-                    idx = np.argmax(prediction)
-                    full_class_name = class_names[idx]
-                    p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
-                    
-                    st.markdown(f"<div class='prediction-card'><h2>{p_class_display}</h2></div>", unsafe_allow_html=True)
-                    
-                    # Display Treatment
-                    if full_class_name in disease_treatment:
-                        st.success(f"**Recommended Action:** {disease_treatment[full_class_name]}")
-                    
-                    # Grad-CAM Visualization
-                    if "healthy" not in full_class_name.lower() and detected_conv_name:
-                        st.divider()
-                        try:
-                            heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                            overlay = overlay_gradcam(img_resized, heatmap)
-                            st.image(overlay, caption="AI Heatmap: Infected Zones (Red = High Probability)", use_column_width="always")
-                        except Exception as e:
-                            st.error(f"Visualization error: {e}")
-                else:
-                    st.error("Disease model not found.")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.image(image, caption="Uploaded Specimen", use_column_width=True)
+        
+        if st.button("Run Diagnostic Analysis"):
+            img_resized = image.resize((224, 224))
+            img_arr = img_to_array(img_resized) / 255.0
+            img_arr = np.expand_dims(img_arr, axis=0)
+            
+            # Prediction
+            prediction = disease_model.predict(img_arr)
+            idx = np.argmax(prediction)
+            conf = np.max(prediction) * 100
+            p_class = class_names[idx].replace('___', ' ').replace('_', ' ')
+            
+            with col2:
+                st.markdown(f"""
+                    <div class='prediction-card'>
+                        <h3 style='margin:0;'>Result: {p_class}</h3>
+                        <h4 style='color: #28a745;'>Confidence: {conf:.2f}%</h4>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # Progress bar for confidence
+                st.progress(conf / 100)
 
+                # Heatmap Logic
+                if "healthy" not in p_class.lower() and detected_conv_name:
+                    try:
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                        overlay = overlay_gradcam(img_resized, heatmap)
+                        st.image(overlay, caption="Grad-CAM: Infected Areas (Heatmap)", use_column_width=True)
+                    except Exception as e:
+                        st.warning(f"Grad-CAM error: Ensure model has conv layers. {e}")
+
+# --- TAB 2: CROP RECOMMENDATION ---
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
     
@@ -314,61 +419,44 @@ with tab2:
     if "rain" not in st.session_state: st.session_state.rain = 100.0
 
     col_soil, col_weather = st.columns([2, 1])
-    
     with col_weather:
-        st.write("### 🌦️ Local Weather")
         city = st.text_input("Enter City", "Hyderabad")
-        if st.button("Fetch Live Weather"):
+        if st.button("Fetch Weather"):
             t, h, r, err = get_weather(city)
             if not err:
                 st.session_state.temp, st.session_state.hum, st.session_state.rain = t, h, r
-                st.rerun() 
-            else: 
-                st.error(err)
-        st.metric("Temperature", f"{st.session_state.temp}°C")
+                st.rerun()
+        st.metric("Temp", f"{st.session_state.temp}°C")
         st.metric("Humidity", f"{st.session_state.hum}%")
 
     with col_soil:
-        st.write("### 🧪 Soil & Environment")
-        n_col, p_col, k_col = st.columns(3)
-        N = n_col.number_input("Nitrogen (N)", 0, 200, 50)
-        P = p_col.number_input("Phosphorus (P)", 0, 200, 50)
-        K = k_col.number_input("Potassium (K)", 0, 200, 50)
-        ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
-        temp = st.number_input("Temperature (°C)", -10.0, 50.0, float(st.session_state.temp))
-        hum = st.number_input("Humidity (%)", 0.0, 100.0, float(st.session_state.hum))
-        rain = st.number_input("Rainfall (mm)", 0.0, 500.0, float(st.session_state.rain))
+        N = st.number_input("Nitrogen (N)", 0, 200, 50)
+        P = st.number_input("Phosphorus (P)", 0, 200, 50)
+        K = st.number_input("Potassium (K)", 0, 200, 50)
+        ph = st.slider("Soil pH", 0.0, 14.0, 6.5)
+        rain = st.number_input("Rainfall (mm)", 0, 500, int(st.session_state.rain))
 
-    st.write("---")
-    _, btn_col, _ = st.columns([1, 1, 1])
-    with btn_col:
-        predict_btn = st.button("Recommend Best Crop")
-
-    if predict_btn:
-        if crop_model:
-            features = np.array([[N, P, K, temp, hum, ph, rain]])
-            prediction = crop_model.predict(features)
-            crop = label_mapping[int(prediction[0])]
-            
-            st.balloons()
-            st.markdown(f"<div class='prediction-card'><h2 style='color: #2e7d32;'>🌱 Recommended: {crop.upper()}</h2></div>", unsafe_allow_html=True)
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                if crop in crop_info:
-                    st.subheader("📖 Crop Profile")
-                    st.write(crop_info[crop]['description'])
-                    st.info(f"**Conditions:** {crop_info[crop]['conditions']}")
-                    st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
-            with c2:
-                if crop in fertilizer_advice:
-                    st.subheader("🧪 Fertilizer Plan")
-                    st.warning(fertilizer_advice[crop])
-        else:
-            st.error("Model file 'rf_crop_recommendation.joblib' missing.")
+    if st.button("Recommend Best Crop"):
+        # Predict
+        features = np.array([[N, P, K, st.session_state.temp, st.session_state.hum, ph, rain]])
+        prediction = crop_model.predict(features)
+        crop = label_mapping[int(prediction[0])]
+        
+        # DISPLAY RESULTS (Balloons removed)
+        st.markdown(f"""
+            <div class='prediction-card'>
+                <h2 style='color: #2e7d32;'>Recommended Crop: {crop.upper()}</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.subheader("📖 Crop Info")
+            st.write(crop_info.get(crop, {}).get('description', 'No data available'))
+        with c2:
+            st.subheader("🧪 Fertilizer Plan")
+            st.info(fertilizer_advice.get(crop, 'No specific advice'))
 
 with tab3:
-    st.markdown("## 📘 System Architecture")
-    st.write("This platform uses Deep Learning (CNN) for disease identification and Machine Learning (Random Forest) for crop recommendation.")
-    st.info(f"Target Diagnostic Layer for Grad-CAM: `{detected_conv_name}`")
-    st.write("Developed for real-time agricultural decision support.")
+    st.write(f"**Diagnostic Layer:** `{detected_conv_name}`")
+    st.write("System online. No balloons enabled for Tab 2.")
