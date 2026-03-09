@@ -9,17 +9,28 @@ import joblib
 import requests
 
 # --- CONFIG & STYLING ---
-st.set_page_config(page_title="Agri-Smart Hub Pro", layout="wide")
+st.set_page_config(page_title="DeepCropCare", layout="wide")
 
-# IMPROVED CSS
 st.markdown("""
     <style>
-    .stApp { background-color: #0e1117; color: white; }
+    /* 1. Pull the entire app content up */
+    .block-container {
+        padding-top: 0.5rem !important; /* Force minimum padding */
+        padding-bottom: 0rem;
+        margin-top: -3.5rem; /* Pull content into the top header area */
+    }
     
-    /* Center text in all headers */
+    /* 2. Style the header container */
+    .main-header {
+        text-align: center; 
+        padding-top: 0rem; 
+        padding-bottom: 1rem;
+    }
+
+    .stApp { background-color: #0e1117; color: white; }
     h1, h2, h3 { text-align: center; }
 
-    /* Prediction Card Styling */
+    /* Prediction Card */
     .prediction-card { 
         padding: 20px; border-radius: 15px; 
         background-color: white; color: #1f1f1f; 
@@ -28,40 +39,31 @@ st.markdown("""
         border-bottom: 5px solid #28a745;
     }
 
-    /* Global Button Styling */
+    /* Buttons */
     .stButton>button {
         border-radius: 10px;
         background-color: #28a745;
         color: white;
         font-weight: bold;
     }
-
-    /* SPECIFIC FIX: Center the large action buttons */
-    .center-btn {
-        display: flex;
-        justify-content: center;
-        padding-bottom: 20px;
-    }
-    
-    /* Make buttons look better on mobile/small screens */
-    .stMetric {
-        background-color: #1a1c23;
-        padding: 10px;
-        border-radius: 10px;
-    }
     </style>
 """, unsafe_allow_html=True)
+
 # --- MAIN UI HEADER ---
+# Using a custom class "main-header" defined in the CSS above
 st.markdown("""
-    <div style="text-align: center; padding: 2rem 0rem;">
-        <h1 style="font-size: 4rem; color: #28a745; margin-bottom: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+    <div class="main-header">
+        <h1 style="font-size: 3.8rem; color: #28a745; margin-bottom: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
             🌱 DeepCropCare
         </h1>
-        <p style="font-size: 1.3rem; color: #a3a3a3; font-style: italic;">
+        <p style="font-size: 1.2rem; color: #a3a3a3; margin-top: -10px; font-style: italic;">
             Precision AI for Plant Health & Smarter Yields
         </p>
     </div>
 """, unsafe_allow_html=True)
+
+# --- TABS ---
+tab1, tab2, tab3 = st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "📘 Project Info"])
 
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
