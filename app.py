@@ -476,10 +476,8 @@ with tab2:
 
     with col_weather:
         st.write("### 🌦️ Local Weather")
-        # Village level hint
         city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
         
-        # FIXED: Only ONE button here to avoid DuplicateElementId error
         if st.button("Fetch Live Weather", use_container_width=True):
             t, h, err = get_weather(city)
             if not err:
@@ -489,7 +487,6 @@ with tab2:
             else: 
                 st.error(f"Village not found. Try 'District, State'")
         
-        # Editable Inputs linked to Session State
         st.session_state.weather_temp = st.number_input("Temp (°C)", value=float(st.session_state.weather_temp), step=0.1)
         st.session_state.weather_hum = st.number_input("Humidity (%)", value=float(st.session_state.weather_hum), step=0.1)
 
@@ -500,20 +497,25 @@ with tab2:
         predict_btn = st.button("Recommend Best Crop", use_container_width=True)
 
     if predict_btn:
-       if crop_model:
-          # 1. Organize input data into a 2D array for the model
-          # The order must match exactly how the model was trained (usually N, P, K, temp, hum, ph, rain)
-          features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
-        
-          # 2. Get the numeric prediction
-          prediction_idx = crop_model.predict(features)[0]
-        
-          # 3. Map the number to the crop name using your label_mapping
-          crop = label_mapping[prediction_idx]
-       else:
-           st.error("Crop model not loaded! Defaulting to demo mode.")
-           crop = "rice" # Fallback
-        
+        if crop_model:
+            # Prepare features for the model
+            features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
+            prediction_idx = crop_model.predict(features)[0]
+            crop = label_mapping[prediction_idx]
+        else:
+            st.error("Crop model not loaded! Defaulting to demo mode.")
+            crop = "rice" 
+
+        # Display the prediction card
+        st.markdown(f"""
+            <div class='prediction-card'>
+                <h2 style='color: #28a745; margin:0;'>🌱 Recommended: {crop.upper()}</h2>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Define columns for info display
+        inf1, inf2 = st.columns(2)
+
         with inf1:
             st.markdown("### 📖 Description")
             # STYLED DESCRIPTION CONTAINER
