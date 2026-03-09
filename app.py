@@ -57,6 +57,27 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    /* Glassmorphism Effect */
+    .prediction-card { 
+        background: rgba(255, 255, 255, 0.05); /* Semi-transparent */
+        backdrop-filter: blur(12px); /* Frosted glass effect */
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+        border-radius: 20px; 
+        padding: 30px; 
+        text-align: center; 
+        margin: 20px 0px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        border-bottom: 4px solid #28a745; /* Brand accent line */
+    }
+    
+    /* Make the text inside cards pop */
+    .prediction-card h2 { color: #28a745 !important; font-weight: 700 !important; }
+    .prediction-card h3 { color: #ffffff !important; opacity: 0.9; }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- MAIN UI HEADER ---
 st.markdown("""
