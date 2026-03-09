@@ -52,16 +52,57 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 # --- MAIN UI HEADER ---
+# --- CONFIG & STYLING ---
+st.set_page_config(page_title="DeepCropCare", layout="wide")
+
 st.markdown("""
-    <div style="text-align: center; padding: 2rem 0rem;">
+    <style>
+    /* REDUCE TOP MARGIN */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        margin-top: -2rem;
+    }
+    
+    .stApp { background-color: #0e1117; color: white; }
+    
+    h1, h2, h3 { text-align: center; }
+
+    .prediction-card { 
+        padding: 20px; border-radius: 15px; 
+        background-color: white; color: #1f1f1f; 
+        text-align: center; margin: 10px 0px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        border-bottom: 5px solid #28a745;
+    }
+
+    .stButton>button {
+        border-radius: 10px;
+        background-color: #28a745;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .stMetric {
+        background-color: #1a1c23;
+        padding: 10px;
+        border-radius: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- MAIN UI HEADER ---
+st.markdown("""
+    <div style="text-align: center; padding: 0.5rem 0rem;">
         <h1 style="font-size: 4rem; color: #28a745; margin-bottom: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
             🌱 DeepCropCare
         </h1>
-        <p style="font-size: 1.3rem; color: #a3a3a3; font-style: italic;">
+        <p style="font-size: 1.2rem; color: #a3a3a3; margin-top: -10px;">
             Precision AI for Plant Health & Smarter Yields
         </p>
     </div>
 """, unsafe_allow_html=True)
+
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
