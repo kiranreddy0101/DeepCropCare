@@ -126,13 +126,6 @@ with header_col2:
     st.session_state.selected_lang = selected_lang
     L = lang_dict[selected_lang]
 
-with header_col1:
-    st.markdown(f"""
-        <div style="text-align: left;">
-            <h1 style="font-size: 3rem; color: #28a745; margin-bottom: 0;">🌱 {L['title']}</h1>
-            <p style="color: #a3a3a3; margin-top: -5px;">Precision AI for Plant Health</p>
-        </div>
-    """, unsafe_allow_html=True)
 
 # --- HEADER ---
 st.markdown(f"""
