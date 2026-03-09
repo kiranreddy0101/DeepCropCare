@@ -1,3 +1,4 @@
+BEST 
 import streamlit as st
 import numpy as np
 import tensorflow as tf
@@ -9,150 +10,131 @@ import joblib
 import requests
 import time
 
-# --- 1. MULTI-LANGUAGE DICTIONARY ---
-lang_dict = {
-    "English": {
-        "title": "DeepCropCare",
-        "disease_tab": "🔍 Disease Detection",
-        "crop_tab": "🌾 Crop Recommendation",
-        "info_tab": "📘 Project Info",
-        "upload_label": "Upload leaf image",
-        "btn_analyze": "Run Diagnostic Analysis",
-        "soil_header": "🧪 Soil Parameters",
-        "weather_header": "🌦️ Local Weather",
-        "village_input": "Enter Village & District",
-        "btn_fetch": "Fetch Live Weather",
-        "btn_recommend": "Recommend Best Crop",
-        "analysis_done": "Analysis Complete!",
-        "optimal_cond": "🔍 Optimal Conditions:",
-        "fert_advice": "🧪 Fertilizer & Care Advice"
-    },
-    "Telugu": {
-        "title": "డీప్ క్రాప్ కేర్",
-        "disease_tab": "🔍 వ్యాధి నిర్ధారణ",
-        "crop_tab": "🌾 పంట సిఫార్సు",
-        "info_tab": "📘 ప్రాజెక్ట్ సమాచారం",
-        "upload_label": "ఆకు చిత్రాన్ని అప్‌లోడ్ చేయండి",
-        "btn_analyze": "రోగ నిర్ధారణ విశ్లేషణను ప్రారంభించండి",
-        "soil_header": "🧪 నేల పారామితులు",
-        "weather_header": "🌦️ స్థానిక వాతావరణం",
-        "village_input": "గ్రామం మరియు జిల్లాను నమోదు చేయండి",
-        "btn_fetch": "ప్రత్యక్ష వాతావరణాన్ని పొందండి",
-        "btn_recommend": "ఉత్తమ పంటను సిఫార్సు చేయండి",
-        "analysis_done": "విశ్లేషణ పూర్తయింది!",
-        "optimal_cond": "🔍 సరైన పరిస్థితులు:",
-        "fert_advice": "🧪 ఎరువులు & సంరక్షణ సలహా"
-    },
-    "Hindi": {
-        "title": "डीप क्रॉप केयर",
-        "disease_tab": "🔍 रोग पहचान",
-        "crop_tab": "🌾 फसल अनुशंसा",
-        "info_tab": "📘 प्रोजेक्ट जानकारी",
-        "upload_label": "पत्ती की छवि अपलोड करें",
-        "btn_analyze": "नैदानिक विश्लेषण चलाएं",
-        "soil_header": "🧪 मिट्टी के मापदंड",
-        "weather_header": "🌦️ स्थानीय मौसम",
-        "village_input": "गांव और जिला दर्ज करें",
-        "btn_fetch": "लाइव मौसम प्राप्त करें",
-        "btn_recommend": "सर्वोत्तम फसल की सिफारिश करें",
-        "analysis_done": "विश्लेषण पूरा हुआ!",
-        "optimal_cond": "🔍 इष्टतम स्थितियां:",
-        "fert_advice": "🧪 उर्वरक और देखभाल सलाह"
-    }
-}
-
-# --- 2. CONFIG & STYLING ---
-st.set_page_config(page_title="DeepCropCare", layout="wide",initial_sidebar_state="expanded")
-
-# --- 1. LANGUAGE SELECTION (NOW AT THE TOP) ---
-# We define this BEFORE the CSS so we can use L['title'] etc.
-if 'selected_lang' not in st.session_state:
-    st.session_state.selected_lang = "English"
-
-# --- 2. CONFIG & STYLING ---
+# --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
 
 st.markdown("""
     <style>
-    /* 1. RESTORE TOP MENU */
-    header {
-        visibility: visible !important;
-        background: rgba(0,0,0,0) !important;
-    }
-    
+    /* 1. CLEAN TOP SPACING */
+    header {visibility: hidden;}
     .stAppDeployButton {display:none;}
     
     .block-container {
-        padding-top: 2rem !important;
-        max-width: 95%;
+        padding-top: 1.5rem !important; /* Balanced padding */
+        margin-top: -4rem !important; 
+        max-width: 95%; /* Better use of screen width */
     }
 
-    /* 2. THEME & CARDS */
-    .stApp { 
-        background: radial-gradient(circle at top right, #1a2e1a, #0e1117); 
-        background-attachment: fixed; 
+    /* 2. LOGO HEADER */
+    .top-header {
+        text-align: center;
+        padding-bottom: 1rem;
     }
-    
+
+    .stApp { background-color: #0e1117; color: white; }
+
+    /* 3. BUTTON FIX - Prevent Text Wrapping */
     div.stButton > button {
         width: 100% !important;
+        white-space: nowrap !important; /* Forces text onto one line */
+        font-weight: bold !important;
         background-color: #28a745 !important;
         color: white !important;
         border-radius: 10px !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 1rem !important;
     }
+    .stApp {
+    background: linear-gradient(135deg, #0e1117 0%, #162210 100%);
+    background-attachment: fixed;
+}
 
+    /* 4. PREDICTION CARDS */
     .prediction-card { 
-        background: rgba(255, 255, 255, 0.05); 
-        backdrop-filter: blur(12px); 
+        padding: 25px; border-radius: 15px; 
+        background-color: white; color: #1f1f1f; 
+        text-align: center; margin: 15px 0px;
+        box-shadow: 0px 6px 15px rgba(0,0,0,0.4);
+        border-bottom: 6px solid #28a745;
+    }
+    /* Glassmorphism Effect */
+    .prediction-card { 
+        background: rgba(255, 255, 255, 0.05); /* Semi-transparent */
+        backdrop-filter: blur(12px); /* Frosted glass effect */
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
         border-radius: 20px; 
         padding: 30px; 
         text-align: center; 
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-bottom: 4px solid #28a745;
+        margin: 20px 0px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        border-bottom: 4px solid #28a745; /* Brand accent line */
+    }
+    
+    /* Make the text inside cards pop */
+    .prediction-card h2 { color: #28a745 !important; font-weight: 700 !important; }
+    .prediction-card h3 { color: #ffffff !important; opacity: 0.9; }
+    /* Organic Background Layer */
+    .stApp {
+        background: radial-gradient(circle at top right, #1a2e1a, #0e1117);
+        background-attachment: fixed;
+    }
+
+    /* Subtle texture overlay */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("https://www.transparenttextures.com/patterns/leaf.png");
+        opacity: 0.03; /* Keep it very subtle */
+        pointer-events: none;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. MAIN HEADER & LANGUAGE SELECTOR ---
-# This creates a layout where Title is on the left and Language is on the right
-header_col1, header_col2 = st.columns([3, 1])
-
-with header_col2:
-    # Language dropdown right at the top
-    selected_lang = st.selectbox(
-        "🌐 Language", 
-        ["English", "Telugu", "Hindi"],
-        index=["English", "Telugu", "Hindi"].index(st.session_state.selected_lang)
-    )
-    st.session_state.selected_lang = selected_lang
-    L = lang_dict[selected_lang]
-
-
-# --- HEADER ---
-st.markdown(f"""
+# --- MAIN UI HEADER ---
+st.markdown("""
     <div class="top-header">
-        <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0; text-align: center;">🌱 {L['title']}</h1>
-        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; text-align: center;">Precision AI for Plant Health & Smarter Yields</p>
+        <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">
+            🌱 DeepCropCare
+        </h1>
+        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300;">
+            Precision AI for Plant Health & Smarter Yields
+        </p>
     </div>
 """, unsafe_allow_html=True)
 
-# --- FUNCTIONS (Grad-CAM, Weather, Resources) ---
-# [Keep your get_gradcam_heatmap, overlay_gradcam, get_weather, and load_resources here as they were]
 
+
+
+
+# --- INTEGRATED GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
-    grad_model = tf.keras.models.Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
+    grad_model = tf.keras.models.Model(
+        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
+    )
+
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
         predictions = tf.squeeze(predictions)
-        if pred_index is None: pred_index = tf.argmax(predictions)
+        if pred_index is None:
+            pred_index = tf.argmax(predictions)
         class_channel = predictions[pred_index]
+
     grads = tape.gradient(class_channel, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
     conv_outputs = conv_outputs[0]
+
     heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
+
     heatmap = tf.maximum(heatmap, 0)
     denom = tf.reduce_max(heatmap)
     heatmap = tf.cond(denom > 0, lambda: heatmap / denom, lambda: heatmap)
+
     return heatmap.numpy()
 
 def overlay_gradcam(original_img, heatmap, alpha=0.4):
@@ -161,33 +143,41 @@ def overlay_gradcam(original_img, heatmap, alpha=0.4):
     heatmap = np.uint8(255 * heatmap)
     heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
     overlay_img = cv2.addWeighted(original_img, 1 - alpha, heatmap_color, alpha, 0)
+    # CRITICAL: Convert BGR to RGB so the colors display correctly in Streamlit
     return cv2.cvtColor(overlay_img, cv2.COLOR_BGR2RGB)
 
+# --- MODEL LOADING (Remains the same) ---
 @st.cache_resource
 def load_resources():
-    try: d_model = load_model("plant_disease_model_final4.h5", compile=False)
+    try:
+        d_model = load_model("plant_disease_model_final4.h5", compile=False)
     except: d_model = None
+
     detected_name = None
     if d_model:
         for layer in reversed(d_model.layers):
-            if len(layer.output.shape) == 4 and not any(x in layer.name.lower() for x in ['flatten', 'gap', 'pool']):
-                detected_name = layer.name
-                break
+            try:
+                if len(layer.output.shape) == 4:
+                    if not any(x in layer.name.lower() for x in ['flatten', 'gap', 'pool']):
+                        detected_name = layer.name
+                        break
+            except: continue
+    
     try: c_model = joblib.load("rf_crop_recommendation.joblib")
     except: c_model = None
     return d_model, c_model, detected_name
 
 disease_model, crop_model, detected_conv_name = load_resources()
 
+# --- HELPER FUNCTIONS ---
 def get_weather(city_name):
     API_KEY = "8c3a497f31607fe66be1f23c65538904"
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
     try:
         res = requests.get(url).json()
         return res["main"]["temp"], res["main"]["humidity"], None
-    except: return 25.0, 70.0, "Service unavailable"
+    except: return 25.0, 70.0, "Weather service unavailable"
 
-# [Keep your class_names, fertilizer_map, label_mapping, fertilizer_advice, crop_info here]
 # --- DATA DICTIONARIES ---
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
@@ -447,42 +437,52 @@ crop_info = {
 }
 
 # --- TABS ---
-tab1, tab2, tab3 = st.tabs([L["disease_tab"], L["crop_tab"], L["info_tab"]])
+tab1, tab2, tab3 = st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "📘 Project Info"])
+
 
 with tab1:
-    st.markdown(f"## {L['disease_tab']}")
-    uploaded_file = st.file_uploader(L["upload_label"], type=["jpg", "png", "jpeg"])
+    st.markdown("## 🌿 Plant Disease Analysis")
+    uploaded_file = st.file_uploader("Upload leaf image", type=["jpg", "png", "jpeg"])
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
+        
+        # Display small centered image
         col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
         with col_img:
-            st.image(image, caption="Specimen", use_container_width=True)
+            st.image(image, caption="Uploaded Specimen", use_container_width=True)
         
+        # CENTERED BUTTON FIX
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
-            run_btn = st.button(L["btn_analyze"], use_container_width=True)
+            run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
         
         if run_btn: 
-            progress_bar = st.progress(0)
-            for pc in range(100):
-                time.sleep(0.001)
-                progress_bar.progress(pc + 1)
+            # 1. Visual Progress Feedback
+            progress_bar = st.progress(90)
+            for percent_complete in range(100):
+                time.sleep(0.001) # Subtle delay for UX
+                progress_bar.progress(percent_complete + 1)
     
-            with st.spinner("🧠 Scanning..."):
+            with st.spinner("🧠 Identifying pathogens..."):
                 if disease_model:
+                    # Processing
                     img_resized = image.resize((224, 224))
                     img_arr = img_to_array(img_resized) / 255.0
                     img_arr = np.expand_dims(img_arr, axis=0)
+                    
+                    # Inference
                     prediction = disease_model.predict(img_arr)
                     idx = np.argmax(prediction)
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
                     p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
                     
+                    # 2. Clear Progress UI
                     progress_bar.empty()
-                    st.markdown(f"<h3 style='text-align: center;'>{L['analysis_done']}</h3>", unsafe_allow_html=True)
+                    st.markdown("<br><h3 style='text-align: center;'>Analysis Complete!</h3>", unsafe_allow_html=True)
                     
+                    # 3. Confidence Display (Glassmorphism Card)
                     st.markdown(f"""
                         <div class='prediction-card'>
                             <h2 style='margin:0;'>{p_class_display}</h2>
@@ -490,64 +490,115 @@ with tab1:
                         </div>
                     """, unsafe_allow_html=True)
                     
+                    # Action recommendation
                     if full_class_name in fertilizer_map:
                         st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
                     
+                    # 4. Side-by-Side Diagnostic Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
-                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                        overlay = overlay_gradcam(img_resized, heatmap)
-                        col_a, col_b = st.columns(2)
-                        with col_a: st.image(img_resized, caption="Original", use_container_width=True)
-                        with col_b: st.image(overlay, caption="Heatmap", use_container_width=True)
+                        st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
+                        try:
+                            heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                            overlay = overlay_gradcam(img_resized, heatmap)
+                            
+                            col_a, col_b = st.columns(2)
+                            with col_a:
+                                st.image(img_resized, caption="Original Scan", use_container_width=True)
+                            with col_b:
+                                st.image(overlay, caption="Infection Hotspots", use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Visualization error: {e}")
                 else:
-                    st.error("Model Error")
+                    progress_bar.empty()
+                    st.error("Disease model not loaded.")
+            
 
 with tab2:
-    st.markdown(f"## {L['crop_tab']}")
+    st.markdown("## 🚜 Smart Crop Recommendation")
+    
+    # Initialize session state for weather if not present
     if "weather_temp" not in st.session_state: st.session_state.weather_temp = 25.0
     if "weather_hum" not in st.session_state: st.session_state.weather_hum = 70.0
 
+    # Layout for inputs
     col_soil, col_weather = st.columns([1.5, 1])
+    
     with col_soil:
-        st.write(f"### {L['soil_header']}")
+        st.write("### 🧪 Soil Parameters")
         n1, p1, k1 = st.columns(3)
-        N = n1.number_input("N", 0, 200, 50)
-        P = p1.number_input("P", 0, 200, 50)
-        K = k1.number_input("K", 0, 200, 50)
-        ph = st.slider("pH", 0.0, 14.0, 6.5)
-        rain = st.number_input("Rainfall (mm)", 0.0, 1000.0, 100.0)
+        N = n1.number_input("Nitrogen (N)", 0, 200, 50)
+        P = p1.number_input("Phosphorus (P)", 0, 200, 50)
+        K = k1.number_input("Potassium (K)", 0, 200, 50)
+        ph = st.slider("Soil pH Level", 0.0, 14.0, 6.5)
+        rain = st.number_input("Annual Rainfall (mm)", 0.0, 1000.0, 100.0)
 
     with col_weather:
-        st.write(f"### {L['weather_header']}")
-        city = st.text_input(L["village_input"], "Hyderabad")
-        if st.button(L["btn_fetch"], use_container_width=True):
+        st.write("### 🌦️ Local Weather")
+        city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
+        
+        if st.button("Fetch Live Weather", use_container_width=True):
             t, h, err = get_weather(city)
             if not err:
-                st.session_state.weather_temp, st.session_state.weather_hum = float(t), float(h)
-                st.success(f"📍 {city}")
+                st.session_state.weather_temp = float(t)
+                st.session_state.weather_hum = float(h)
+                st.success(f"📍 Data fetched for {city}")
+            else: 
+                st.error(f"Village not found. Try 'District, State'")
         
-        st.session_state.weather_temp = st.number_input("Temp", value=float(st.session_state.weather_temp))
-        st.session_state.weather_hum = st.number_input("Humidity", value=float(st.session_state.weather_hum))
+        st.session_state.weather_temp = st.number_input("Temp (°C)", value=float(st.session_state.weather_temp), step=0.1)
+        st.session_state.weather_hum = st.number_input("Humidity (%)", value=float(st.session_state.weather_hum), step=0.1)
 
+    # CENTERED RECOMMENDATION BUTTON
+    st.markdown("<br>", unsafe_allow_html=True)
     _, btn_col, _ = st.columns([1, 1, 1])
     with btn_col:
-        predict_btn = st.button(L["btn_recommend"], use_container_width=True)
+        predict_btn = st.button("Recommend Best Crop", use_container_width=True)
 
     if predict_btn:
         if crop_model:
+            # Prepare features for the model
             features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
-            crop = label_mapping[crop_model.predict(features)[0]]
+            prediction_idx = crop_model.predict(features)[0]
+            crop = label_mapping[prediction_idx]
+        else:
+            st.error("Crop model not loaded! Defaulting to demo mode.")
+            crop = "rice" 
+
+        # Display the prediction card
+        st.markdown(f"""
+            <div class='prediction-card'>
+                <h2 style='color: #28a745; margin:0;'>🌱 Recommended: {crop.upper()}</h2>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Define columns for info display
+        inf1, inf2 = st.columns(2)
+
+        with inf1:
+            st.markdown("### 📖 Description")
+            # STYLED DESCRIPTION CONTAINER
+            st.markdown(f"""
+                <div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin-bottom: 15px;">
+                    <p style="margin:0; font-size: 1.1rem; line-height: 1.6; color: white;">
+                        {crop_info[crop]['description']}
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # STYLED CONDITIONS BOX (BLUE)
+            st.markdown(f"""
+                <div style="background-color: #0e2433; padding: 15px; border-radius: 10px; border: 1px solid #1c83e1;">
+                    <p style="margin:0; color: #5dade2; font-weight: bold;">🔍 Optimal Conditions:</p>
+                    <p style="margin:0; color: #85c1e9;">{crop_info[crop]['conditions']}</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with inf2:
+            st.markdown("### 🧪 Fertilizer & Care Advice")
+            st.warning(fertilizer_advice[crop])
+            st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
             
-            st.markdown(f"<div class='prediction-card'><h2>🌱 Recommended: {crop.upper()}</h2></div>", unsafe_allow_html=True)
-            inf1, inf2 = st.columns(2)
-            with inf1:
-                st.markdown(f"### 📖 Description")
-                st.markdown(f"<div style='background: #1a1c23; padding: 15px; border-radius: 10px;'>{crop_info[crop]['description']}</div>", unsafe_allow_html=True)
-                st.markdown(f"<br><b>{L['optimal_cond']}</b><br>{crop_info[crop]['conditions']}", unsafe_allow_html=True)
-            with inf2:
-                st.markdown(f"### {L['fert_advice']}")
-                st.warning(fertilizer_advice[crop])
-                st.success(f"Pro-Tip: {crop_info[crop]['tips']}")
+        st.markdown("<br><h3 style='text-align: center;'>✅ Analysis Complete</h3>", unsafe_allow_html=True)
 
 with tab3:
     st.markdown("## 📘 About DeepCropCare")
