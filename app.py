@@ -463,7 +463,7 @@ with tab1:
                 time.sleep(0.001) # Subtle delay for UX
                 progress_bar.progress(percent_complete + 1)
     
-            with st.spinner("🧠 AI identifying pathogens..."):
+            with st.spinner("🧠 Identifying pathogens..."):
                 if disease_model:
                     # Processing
                     img_resized = image.resize((224, 224))
@@ -479,7 +479,7 @@ with tab1:
                     
                     # 2. Clear Progress UI
                     progress_bar.empty()
-                    st.success("Analysis Complete!")
+                    st.markdown("<br><h3 style='text-align: center;'>Analysis Complete!</h3>", unsafe_allow_html=True)
                     
                     # 3. Confidence Display (Glassmorphism Card)
                     st.markdown(f"""
