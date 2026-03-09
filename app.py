@@ -51,6 +51,17 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+# --- MAIN UI HEADER ---
+st.markdown("""
+    <div style="text-align: center; padding: 2rem 0rem;">
+        <h1 style="font-size: 4rem; color: #28a745; margin-bottom: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+            🌱 DeepCropCare
+        </h1>
+        <p style="font-size: 1.3rem; color: #a3a3a3; font-style: italic;">
+            Precision AI for Plant Health & Smarter Yields
+        </p>
+    </div>
+""", unsafe_allow_html=True)
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
