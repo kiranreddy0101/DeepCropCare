@@ -72,6 +72,24 @@ st.markdown("""
     /* Make the text inside cards pop */
     .prediction-card h2 { color: #28a745 !important; font-weight: 700 !important; }
     .prediction-card h3 { color: #ffffff !important; opacity: 0.9; }
+    /* Organic Background Layer */
+    .stApp {
+        background: radial-gradient(circle at top right, #1a2e1a, #0e1117);
+        background-attachment: fixed;
+    }
+
+    /* Subtle texture overlay */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("https://www.transparenttextures.com/patterns/leaf.png");
+        opacity: 0.03; /* Keep it very subtle */
+        pointer-events: none;
+    }
     </style>
 """, unsafe_allow_html=True)
 
