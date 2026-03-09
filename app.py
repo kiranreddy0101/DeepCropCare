@@ -458,16 +458,39 @@ with tab2:
     with col_weather:
         st.write("### 🌦️ Local Weather")
         city = st.text_input("Enter City", "Hyderabad")
-        # Fixed Weather Button Alignment
+        
+        # 1. Fetch Button
         if st.button("Fetch Live Weather", use_container_width=True):
             t, h, err = get_weather(city)
             if not err:
-                st.session_state.weather_temp, st.session_state.weather_hum = t, h
-            else: st.error(err)
+                # Update session state so inputs update automatically
+                st.session_state.weather_temp = float(t)
+                st.session_state.weather_hum = float(h)
+            else: 
+                st.error(err)
         
+        # 2. Editable Inputs linked to Session State
+        # We use 'key' to tie these widgets directly to st.session_state
+        st.session_state.weather_temp = st.number_input(
+            "Temperature (°C)", 
+            value=float(st.session_state.weather_temp),
+            step=0.1,
+            format="%.1f"
+        )
+        
+        st.session_state.weather_hum = st.number_input(
+            "Humidity (%)", 
+            value=float(st.session_state.weather_hum),
+            min_value=0.0, 
+            max_value=100.0,
+            step=0.1,
+            format="%.1f"
+        )
+
+        # 3. Visual Metrics (Optional: keeps the UI consistent with your previous screenshots)
         m1, m2 = st.columns(2)
-        m1.metric("Temp", f"{st.session_state.weather_temp}°C")
-        m2.metric("Humidity", f"{st.session_state.weather_hum}%")
+        m1.metric("Current Temp", f"{st.session_state.weather_temp}°C")
+        m2.metric("Current Hum", f"{st.session_state.weather_hum}%")
 
     # CENTERED RECOMMENDATION BUTTON
     st.markdown("<br>", unsafe_allow_html=True)
