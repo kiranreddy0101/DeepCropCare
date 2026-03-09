@@ -97,10 +97,10 @@ st.markdown("""
 # --- MAIN UI HEADER ---
 st.markdown("""
     <div class="top-header">
-        <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">
+        <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0; text-align: center;">
             🌱 DeepCropCare
         </h1>
-        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300;">
+        <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300; text-align: center;">
             Precision AI for Plant Health & Smarter Yields
         </p>
     </div>
