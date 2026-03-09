@@ -352,19 +352,55 @@ with tab1:
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
         
-        # Display small centered image
+        # UI: Small centered image
         col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
         with col_img:
             st.image(image, caption="Uploaded Specimen", use_column_width=True)
         
-        # CENTERED BUTTON FIX
+        # UI: Centered Button
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
+            # use_container_width ensures the button doesn't wrap/cutoff
             run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
         
         if run_btn:
-            # Prediction Logic here (omitted for brevity, keep your logic)
-            st.success("Analysis Complete")
+            if disease_model:
+                # 1. Preprocess Image
+                img_resized = image.resize((224, 224))
+                img_arr = img_to_array(img_resized) / 255.0
+                img_arr = np.expand_dims(img_arr, axis=0)
+                
+                # 2. Prediction
+                prediction = disease_model.predict(img_arr)
+                idx = np.argmax(prediction)
+                confidence = np.max(prediction) * 100
+                full_class_name = class_names[idx]
+                p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
+                
+                # 3. DISPLAY PREDICTION CARD (This was missing in your screenshot)
+                st.markdown(f"""
+                    <div class='prediction-card'>
+                        <h2 style='margin:0;'>{p_class_display}</h2>
+                        <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # 4. Display Treatment
+                if full_class_name in fertilizer_map:
+                    st.success(f"**Recommended Action:** {fertilizer_map[full_class_name]}")
+                
+                # 5. Display Grad-CAM
+                if "healthy" not in full_class_name.lower() and detected_conv_name:
+                    st.divider()
+                    st.markdown("### 🎯 AI Heatmap: Infection Focus Zones")
+                    try:
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                        overlay = overlay_gradcam(img_resized, heatmap)
+                        st.image(overlay, caption="Red zones indicate high probability of disease", use_column_width=True)
+                    except Exception as e:
+                        st.error(f"Visualization error: {e}")
+            else:
+                st.error("Error: Disease model not loaded properly. Please check logs.")
 
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
