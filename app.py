@@ -15,7 +15,7 @@ st.set_page_config(page_title="DeepCropCare", layout="wide")
 st.markdown("""
     <style>
     /* 1. CLEAN TOP SPACING */
-    header {visibility: hidden;}
+    /*header {visibility: hidden;}
     .stAppDeployButton {display:none;}
     
     .block-container {
