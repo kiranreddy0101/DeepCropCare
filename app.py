@@ -55,10 +55,6 @@ st.markdown("""
         box-shadow: 0px 6px 15px rgba(0,0,0,0.4);
         border-bottom: 6px solid #28a745;
     }
-    </style>
-""", unsafe_allow_html=True)
-st.markdown("""
-    <style>
     /* Glassmorphism Effect */
     .prediction-card { 
         background: rgba(255, 255, 255, 0.05); /* Semi-transparent */
