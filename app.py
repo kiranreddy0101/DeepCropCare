@@ -64,33 +64,75 @@ lang_dict = {
 # --- 2. CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide",initial_sidebar_state="expanded")
 
-# Sidebar Language Selection
-with st.sidebar:
-    st.markdown("### 🌐 Language Settings")
-    selected_lang = st.selectbox("Choose Language / భాషను ఎంచుకోండి / भाषा चुनें", ["English", "Telugu", "Hindi"])
-    L = lang_dict[selected_lang] # Shortcut variable
+# --- 1. LANGUAGE SELECTION (NOW AT THE TOP) ---
+# We define this BEFORE the CSS so we can use L['title'] etc.
+if 'selected_lang' not in st.session_state:
+    st.session_state.selected_lang = "English"
 
-st.markdown(f"""
+# --- 2. CONFIG & STYLING ---
+st.set_page_config(page_title="DeepCropCare", layout="wide")
+
+st.markdown("""
     <style>
-    header {{visibility: hidden;}}
-    .stAppDeployButton {{display:none;}}
-    .block-container {{ padding-top: 1.5rem !important; margin-top: -4rem !important; max-width: 95%; }}
-    .top-header {{ text-align: center; padding-bottom: 1rem; }}
-    div.stButton > button {{
-        width: 100% !important; white-space: nowrap !important; font-weight: bold !important;
-        background-color: #28a745 !important; color: white !important; border-radius: 10px !important;
-    }}
-    .stApp {{ background: radial-gradient(circle at top right, #1a2e1a, #0e1117); background-attachment: fixed; }}
-    .prediction-card {{ 
-        background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border-radius: 20px; 
-        padding: 30px; text-align: center; margin: 20px 0px; border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8); border-bottom: 4px solid #28a745;
-    }}
-    .prediction-card h2 {{ color: #28a745 !important; font-weight: 700 !important; }}
-   
+    /* 1. RESTORE TOP MENU */
+    header {
+        visibility: visible !important;
+        background: rgba(0,0,0,0) !important;
+    }
+    
+    .stAppDeployButton {display:none;}
+    
+    .block-container {
+        padding-top: 2rem !important;
+        max-width: 95%;
+    }
+
+    /* 2. THEME & CARDS */
+    .stApp { 
+        background: radial-gradient(circle at top right, #1a2e1a, #0e1117); 
+        background-attachment: fixed; 
+    }
+    
+    div.stButton > button {
+        width: 100% !important;
+        background-color: #28a745 !important;
+        color: white !important;
+        border-radius: 10px !important;
+    }
+
+    .prediction-card { 
+        background: rgba(255, 255, 255, 0.05); 
+        backdrop-filter: blur(12px); 
+        border-radius: 20px; 
+        padding: 30px; 
+        text-align: center; 
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 4px solid #28a745;
     }
     </style>
 """, unsafe_allow_html=True)
+
+# --- 3. MAIN HEADER & LANGUAGE SELECTOR ---
+# This creates a layout where Title is on the left and Language is on the right
+header_col1, header_col2 = st.columns([3, 1])
+
+with header_col2:
+    # Language dropdown right at the top
+    selected_lang = st.selectbox(
+        "🌐 Language", 
+        ["English", "Telugu", "Hindi"],
+        index=["English", "Telugu", "Hindi"].index(st.session_state.selected_lang)
+    )
+    st.session_state.selected_lang = selected_lang
+    L = lang_dict[selected_lang]
+
+with header_col1:
+    st.markdown(f"""
+        <div style="text-align: left;">
+            <h1 style="font-size: 3rem; color: #28a745; margin-bottom: 0;">🌱 {L['title']}</h1>
+            <p style="color: #a3a3a3; margin-top: -5px;">Precision AI for Plant Health</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- HEADER ---
 st.markdown(f"""
