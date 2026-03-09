@@ -510,9 +510,9 @@ with tab2:
         
           # 3. Map the number to the crop name using your label_mapping
           crop = label_mapping[prediction_idx]
-      else:
-          st.error("Crop model not loaded! Defaulting to demo mode.")
-          crop = "rice" # Fallback
+       else:
+           st.error("Crop model not loaded! Defaulting to demo mode.")
+           crop = "rice" # Fallback
         
         with inf1:
             st.markdown("### 📖 Description")
