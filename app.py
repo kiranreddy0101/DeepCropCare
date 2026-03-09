@@ -72,20 +72,6 @@ with st.sidebar:
 
 st.markdown(f"""
     <style>
-    /* 1. CLEAN TOP SPACING - UPDATED */
-    header {
-        visibility: visible !important; /* This brings back the top-right menu */
-        background: rgba(0,0,0,0) !important; /* Makes the header background transparent */
-    }
-    
-    /* This removes only the "Deploy" button but keeps the menu */
-    .stAppDeployButton {display:none;} 
-    
-    .block-container {
-        padding-top: 2rem !important; /* Give a little space for the menu */
-        margin-top: -2rem !important; 
-        max-width: 95%; 
-    }
     header {{visibility: hidden;}}
     .stAppDeployButton {{display:none;}}
     .block-container {{ padding-top: 1.5rem !important; margin-top: -4rem !important; max-width: 95%; }}
@@ -101,6 +87,8 @@ st.markdown(f"""
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8); border-bottom: 4px solid #28a745;
     }}
     .prediction-card h2 {{ color: #28a745 !important; font-weight: 700 !important; }}
+   
+    }
     </style>
 """, unsafe_allow_html=True)
 
