@@ -7,6 +7,7 @@ from PIL import Image
 import cv2
 import joblib
 import requests
+import time
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
@@ -437,6 +438,7 @@ crop_info = {
 # --- TABS ---
 tab1, tab2, tab3 = st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "📘 Project Info"])
 
+
 with tab1:
     st.markdown("## 🌿 Plant Disease Analysis")
     uploaded_file = st.file_uploader("Upload leaf image", type=["jpg", "png", "jpeg"])
@@ -447,61 +449,67 @@ with tab1:
         # Display small centered image
         col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
         with col_img:
-            st.image(image, caption="Uploaded Specimen", use_column_width=True)
+            st.image(image, caption="Uploaded Specimen", use_container_width=True)
         
         # CENTERED BUTTON FIX
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
-            # We assign the result of the button to run_btn
             run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
         
-        # FIX: Just check if run_btn is True. Do NOT use run_btn()
         if run_btn: 
+            # 1. Visual Progress Feedback
             progress_bar = st.progress(0)
             for percent_complete in range(100):
-                time.sleep(0.01) # Very fast, just for the feel
+                time.sleep(0.005) # Subtle delay for UX
                 progress_bar.progress(percent_complete + 1)
     
-           with st.spinner("🧠 AI identifying pathogens..."):
-                # Your model.predict code goes here
-                st.success("Analysis Complete!")
-           progress_bar.empty() # Remove the bar once done
-            if disease_model:
-                # Processing
-                img_resized = image.resize((224, 224))
-                img_arr = img_to_array(img_resized) / 255.0
-                img_arr = np.expand_dims(img_arr, axis=0)
-                
-                # Inference
-                prediction = disease_model.predict(img_arr)
-                idx = np.argmax(prediction)
-                confidence = np.max(prediction) * 100
-                full_class_name = class_names[idx]
-                p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
-                
-                # Confidence Display
-                st.markdown(f"""
-                    <div class='prediction-card'>
-                        <h2 style='margin:0;'>{p_class_display}</h2>
-                        <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                # Action recommendation
-                if full_class_name in fertilizer_map:
-                    st.success(f"**Recommended Action:** {fertilizer_map[full_class_name]}")
-                
-                # Grad-CAM Visualization
-                if "healthy" not in full_class_name.lower() and detected_conv_name:
-                    st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
-                    try:
-                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                        overlay = overlay_gradcam(img_resized, heatmap)
-                        st.image(overlay, caption="Heatmap highlighting affected areas", use_column_width=True)
-                    except Exception as e:
-                        st.error(f"Visualization error: {e}")
-            else:
-                st.error("Disease model not loaded.")
+            with st.spinner("🧠 AI identifying pathogens..."):
+                if disease_model:
+                    # Processing
+                    img_resized = image.resize((224, 224))
+                    img_arr = img_to_array(img_resized) / 255.0
+                    img_arr = np.expand_dims(img_arr, axis=0)
+                    
+                    # Inference
+                    prediction = disease_model.predict(img_arr)
+                    idx = np.argmax(prediction)
+                    confidence = np.max(prediction) * 100
+                    full_class_name = class_names[idx]
+                    p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
+                    
+                    # 2. Clear Progress UI
+                    progress_bar.empty()
+                    st.success("Analysis Complete!")
+                    
+                    # 3. Confidence Display (Glassmorphism Card)
+                    st.markdown(f"""
+                        <div class='prediction-card'>
+                            <h2 style='margin:0;'>{p_class_display}</h2>
+                            <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Action recommendation
+                    if full_class_name in fertilizer_map:
+                        st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
+                    
+                    # 4. Side-by-Side Diagnostic Visualization
+                    if "healthy" not in full_class_name.lower() and detected_conv_name:
+                        st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
+                        try:
+                            heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                            overlay = overlay_gradcam(img_resized, heatmap)
+                            
+                            col_a, col_b = st.columns(2)
+                            with col_a:
+                                st.image(img_resized, caption="Original Scan", use_container_width=True)
+                            with col_b:
+                                st.image(overlay, caption="Infection Hotspots", use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Visualization error: {e}")
+                else:
+                    progress_bar.empty()
+                    st.error("Disease model not loaded.")
 
 with tab2:
     st.markdown("## 🚜 Smart Crop Recommendation")
