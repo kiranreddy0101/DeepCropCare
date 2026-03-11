@@ -523,49 +523,62 @@ with tab1:
                         except Exception as e:
                             st.error(f"Visualization error: {e}")
 
-                    # --- ADDING THE CLICKABLE ROBOT ICON ---
+                    # --- ADDING THE CLICKABLE ROBOT ICON (FIXED) ---
                     try:
                         import base64
                         with open("icon.jpg", "rb") as f:
                             img_base64 = base64.b64encode(f.read()).decode()
                         
-                        # CSS for the Circular Floating Icon
+                        # Use a Column-based Button with CSS to overlay the image
+                        # This makes the click 100% functional in Streamlit
                         st.markdown(f"""
                             <style>
-                            .floating-container {{
+                            .floating-bot-wrap {{
                                 position: fixed;
-                                bottom: 20px;
-                                right: 20px;
-                                z-index: 999;
+                                bottom: 80px; /* Moved slightly higher */
+                                right: 30px;
+                                z-index: 1000;
                             }}
-                            .circular-icon {{
-                                width: 80px;
-                                height: 80px;
+                            .circular-img {{
+                                width: 90px;
+                                height: 90px;
                                 border-radius: 50%;
-                                border: 3px solid #28a745;
-                                cursor: pointer;
-                                box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-                                transition: transform 0.2s;
-                                object-fit: cover;
+                                border: 4px solid #28a745;
+                                box-shadow: 0px 4px 15px rgba(0,0,0,0.4);
+                                pointer-events: none; /* Let clicks pass to the button below */
                             }}
-                            .circular-icon:hover {{
-                                transform: scale(1.1);
+                            /* Hide the actual button but keep it clickable over the image */
+                            .stButton>button[key="hidden_btn"] {{
+                                position: fixed;
+                                bottom: 80px;
+                                right: 30px;
+                                width: 90px;
+                                height: 90px;
+                                border-radius: 50%;
+                                background: transparent;
+                                color: transparent;
+                                border: none;
+                                z-index: 1001;
+                                cursor: pointer;
+                            }}
+                            .stButton>button[key="hidden_btn"]:hover {{
+                                background: rgba(40, 167, 69, 0.1);
+                                color: transparent;
                             }}
                             </style>
-                            <div class="floating-container">
-                                <img src="data:image/png;base64,{img_base64}" class="circular-icon" onclick="document.getElementById('hidden_btn').click();">
+                            <div class="floating-bot-wrap">
+                                <img src="data:image/png;base64,{img_base64}" class="circular-img">
                             </div>
                         """, unsafe_allow_html=True)
 
-                        # The Hidden Trigger Button
-                        st.markdown("<div style='display:none;'>", unsafe_allow_html=True)
-                        if st.button("hidden", key="hidden_btn"):
+                        if st.button("", key="hidden_btn"):
                             st.session_state.trigger_chat = True
-                            st.toast("Advice sent to Chatbot!", icon="🤖")
-                        st.markdown("</div>", unsafe_allow_html=True)
+                            st.toast(f"Consulting AI about {p_class_display}...", icon="🤖")
+                            # Trigger immediate tab switch logic if your app supports it, 
+                            # otherwise the automation logic in Tab 3 handles it.
 
                     except Exception as e:
-                        st.error("Make sure 'icon.jpg' is in your main folder.")
+                        st.error("Icon file missing.")
 
                 else:
                     progress_bar.empty()
@@ -668,88 +681,47 @@ with tab3:
     api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
     if not api_key:
-        st.error("🔑 API Key Missing: Please add it to Streamlit Secrets.")
+        st.error("🔑 API Key Missing.")
         st.stop()
 
     genai.configure(api_key=api_key)
 
-    # 2. Initialize Session State (Crucial Fix)
     if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "assistant", "content": "Hi! I am your Agronomist AI. How can I help you today?"}
-        ]
+        st.session_state.messages = [{"role": "assistant", "content": "Hi! I am your Agronomist AI. How can I help?"}]
 
     if "chat_session" not in st.session_state:
         disease_context = st.session_state.get('last_detected_disease', 'general farming')
-        system_instruction = (
-            f"You are a professional Agronomist AI. The user's plant has {disease_context}. "
-            "Be concise, use bullet points, and provide expert farming advice."
-        )
-        
-        model = genai.GenerativeModel(
-            model_name=MODEL_ID,
-            system_instruction=system_instruction
-        )
-        # Start chat with empty history
+        model = genai.GenerativeModel(model_name=MODEL_ID, system_instruction=f"You are a professional Agronomist. Provide advice on {disease_context}.")
         st.session_state.chat_session = model.start_chat(history=[])
-        # AUTOMATIC INJECTION LOGIC
-    if st.session_state.get('trigger_chat') and st.session_state.get('last_detected_disease'):
-        disease = st.session_state['last_detected_disease']
-        auto_prompt = f"I have detected {disease} on my plant. Please provide a detailed description, the cure, prevention steps, and a fertilizer advisory."
-        
-        # Add to message history
-        st.session_state.messages.append({"role": "user", "content": auto_prompt})
-        
-        # Generate response immediately
-        try:
-            response = st.session_state.chat_session.send_message(auto_prompt)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
-            # Reset trigger so it doesn't loop
-            st.session_state.trigger_chat = False
-            st.rerun()
-        except Exception as e:
-            st.error(f"Automation Error: {e}")
 
-    # 3. Display Chat History (Rendered BEFORE the input box)
-    # This loop is now safe because 'messages' is initialized above
+    # --- AUTOMATIC INJECTION ---
+    if st.session_state.get('trigger_chat'):
+        disease = st.session_state.get('last_detected_disease', 'the plant disease')
+        auto_prompt = f"Detailed analysis for {disease}: Give description, cure, prevention, and fertilizer advisory."
+        
+        st.session_state.messages.append({"role": "user", "content": auto_prompt})
+        with st.spinner("Analyzing Pathogen Data..."):
+            try:
+                response = st.session_state.chat_session.send_message(auto_prompt)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                st.session_state.trigger_chat = False # Reset
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
+
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # 4. Handle User Input (Stays at the bottom)
-    if prompt := st.chat_input("Ask about fertilizers, pests, or soil..."):
-        # Add user message and display
+    if prompt := st.chat_input("Ask follow-up questions..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
+        with st.spinner("Consulting..."):
+            response = st.session_state.chat_session.send_message(prompt)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+            st.rerun()
 
-        # Generate AI Response
-        with st.spinner("Consulting Agronomist..."):
-            try:
-                response = st.session_state.chat_session.send_message(prompt)
-                ai_response = response.text
-                
-                # Add AI message to state and display
-                st.session_state.messages.append({"role": "assistant", "content": ai_response})
-                with st.chat_message("assistant"):
-                    st.markdown(ai_response)
-                
-                st.rerun() # Refresh to keep layout clean
-                
-            except Exception as e:
-                if "429" in str(e):
-                    st.error("🚫 Daily Quota Exhausted. Try again tomorrow.")
-                else:
-                    st.error(f"⚠️ Error: {e}")
-
-    # 5. Reset Utility
-    st.divider()
-    if st.button("🗑️ Reset Chat"):
-        if "chat_session" in st.session_state:
-            del st.session_state.chat_session
-        if "messages" in st.session_state:
-            del st.session_state.messages
-        st.rerun()
 
 with tab4:
     st.markdown("## 📘 About DeepCropCare")
