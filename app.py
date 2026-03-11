@@ -606,7 +606,6 @@ with tab2:
             
         st.markdown("<br><h3 style='text-align: center;'>✅ Analysis Complete</h3>", unsafe_allow_html=True)
 
-
 with tab3:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
     
@@ -615,46 +614,45 @@ with tab3:
     api_key = st.secrets.get("GEMINI_API_KEY")
 
     if not api_key:
-        st.error("🔑 API Key Missing: Please add 'GEMINI_API_KEY' to Streamlit Secrets.")
+        st.error("🔑 API Key Missing: Please add it to Streamlit Secrets.")
         st.stop()
 
     genai.configure(api_key=api_key)
 
-    # 2. Initialize Chat Session
+    # 2. Initialize Session State (Crucial Fix)
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hi! I am your Agronomist AI. How can I help you today?"}
+        ]
+
     if "chat_session" not in st.session_state:
         disease_context = st.session_state.get('last_detected_disease', 'general farming')
-        
-        # System Instruction: Strictly controls the AI's behavior
         system_instruction = (
             f"You are a professional Agronomist AI. The user's plant has {disease_context}. "
-            "Your first response to any user greeting must be: 'Hi! I am your Agronomist AI. How can I help you today?' "
-            "Never list your capabilities in a long introduction. Be concise and use bullet points."
+            "Be concise, use bullet points, and provide expert farming advice."
         )
         
         model = genai.GenerativeModel(
             model_name=MODEL_ID,
             system_instruction=system_instruction
         )
-        
         # Start chat with empty history
         st.session_state.chat_session = model.start_chat(history=[])
-        
-        # Manual Greeting: This avoids the AI generating its own long intro message
-        st.session_state.messages = [{"role": "assistant", "content": "Hi! I am your Agronomist AI. How can I help you today?"}]
 
     # 3. Display Chat History (Rendered BEFORE the input box)
+    # This loop is now safe because 'messages' is initialized above
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # 4. Handle User Input (This naturally stays at the bottom)
+    # 4. Handle User Input (Stays at the bottom)
     if prompt := st.chat_input("Ask about fertilizers, pests, or soil..."):
-        # Add user message to state and display
+        # Add user message and display
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Generate Assistant Response
+        # Generate AI Response
         with st.spinner("Consulting Agronomist..."):
             try:
                 response = st.session_state.chat_session.send_message(prompt)
@@ -665,8 +663,7 @@ with tab3:
                 with st.chat_message("assistant"):
                     st.markdown(ai_response)
                 
-                # Rerun to ensure the UI stays updated and input stays at the bottom
-                st.rerun()
+                st.rerun() # Refresh to keep layout clean
                 
             except Exception as e:
                 if "429" in str(e):
