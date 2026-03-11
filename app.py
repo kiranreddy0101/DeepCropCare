@@ -652,7 +652,6 @@ with tab3:
 
     st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
 
-import time
 
 with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
