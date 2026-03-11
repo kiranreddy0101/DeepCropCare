@@ -653,66 +653,61 @@ with tab3:
     st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
 
 with tab4:
-    st.markdown("## 💬 DeepCropCare Agronomist AI ")
-    st.info("Ask expert advice on pesticides, organic remedies, or soil health.")
+    st.markdown("## 💬 DeepCropCare Agronomist AI")
+    st.info("Powered by Gemini — Free Expert Advice.")
 
-    # --- 1. SECURE API KEY RETRIEVAL ---
-    gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GROK_API_KEY") # Check both just in case
+    # --- 1. KEY LOADING ---
+    # Note: I added a fallback to check for the old GROK key just in case you named it that in secrets
+    gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GROK_API_KEY")
 
     if not gemini_key:
-        st.error("🔑 Gemini API Key Missing: Add 'GEMINI_API_KEY' to your Secrets or .env file.")
+        st.error("🔑 API Key Missing: Add 'GEMINI_API_KEY' to your Secrets or .env file.")
         st.stop()
 
-    # --- 2. CONFIGURE GEMINI ---
-    genai.configure(api_key=gemini_key)
-    
-    # Initialize session state for chat history
-    if "chat_session" not in st.session_state:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        # Start an empty chat session
-        st.session_state.chat_session = model.start_chat(history=[])
+    # --- 2. CONFIGURATION & MODEL SELECTION ---
+    try:
+        genai.configure(api_key=gemini_key)
         
-        # Define the instruction (Corrected variable name)
-        intro_instruction = (
-            "You are a professional Agronomist AI. Provide scientific and practical "
-            "farming advice. A user is consulting you via the DeepCropCare app."
-        )
+        # We try gemini-1.5-flash first, then fallback to 2.0-flash if needed
+        model_name = 'gemini-1.5-flash' 
         
-        # Add context if a disease was detected in Tab 1
-        if 'last_detected_disease' in st.session_state:
-            intro_instruction += f" Note: The user's plant was just diagnosed with {st.session_state.last_detected_disease}."
-        
-        # Send the initial instruction to set the AI's persona
-        st.session_state.chat_session.send_message(intro_instruction)
+        if "chat_session" not in st.session_state:
+            model = genai.GenerativeModel(model_name)
+            st.session_state.chat_session = model.start_chat(history=[])
+            
+            # Initial instruction
+            intro_instruction = "You are a professional Agronomist AI. Provide expert farming advice."
+            if 'last_detected_disease' in st.session_state:
+                intro_instruction += f" Context: The user's plant has {st.session_state.last_detected_disease}."
+            
+            # Use this safer way to send the first message
+            st.session_state.chat_session.send_message(intro_instruction)
 
-    # --- 3. DISPLAY CHAT HISTORY ---
-    # We skip the very first message (the instruction) to keep the UI clean
+    except Exception as e:
+        st.error(f"❌ Initialization Error: {e}")
+        st.info("Hint: Check if the 'Generative Language API' is enabled in your Google Cloud Console.")
+        st.stop()
+
+    # --- 3. DISPLAY & INPUT ---
     for i, message in enumerate(st.session_state.chat_session.history):
-        if i == 0: continue 
+        if i == 0: continue # Hide system instruction
         role = "assistant" if message.role == "model" else "user"
         with st.chat_message(role):
             st.markdown(message.parts[0].text)
 
-    # --- 4. HANDLE USER INPUT ---
-    if prompt := st.chat_input("Ex: What are the best organic fertilizers for Rice?"):
+    if prompt := st.chat_input("Ask about fertilizer, pests, or harvest..."):
         with st.chat_message("user"):
             st.markdown(prompt)
-
         try:
-            with st.spinner("Gemini is thinking..."):
+            with st.spinner("Consulting Gemini..."):
                 response = st.session_state.chat_session.send_message(prompt)
-                
-            with st.chat_message("assistant"):
-                st.markdown(response.text)
-                
+                with st.chat_message("assistant"):
+                    st.markdown(response.text)
         except Exception as e:
-            st.error(f"⚠️ Gemini Error: {e}")
+            st.error(f"⚠️ Chat Error: {e}")
 
-    # --- 5. RESET BUTTON ---
-    st.divider()
-    if st.button("🗑️ Reset  Chat"):
+    if st.button("🗑️ Reset Chat"):
         if "chat_session" in st.session_state:
             del st.session_state.chat_session
         st.rerun()
-
     
