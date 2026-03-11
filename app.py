@@ -9,7 +9,7 @@ import joblib
 import requests
 import time
 import os
-from dotenv import load_model, load_dotenv # Add load_dotenv
+from dotenv import load_dotenv 
 
 # Load the keys from the .env file
 load_dotenv()
