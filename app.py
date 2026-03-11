@@ -654,59 +654,63 @@ with tab3:
 
 with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
-    st.info("Powered by Gemini — Free Expert Advice.")
+    st.info("Powered by Gemini 3 Flash — Free Production Model (2026).")
 
-    # --- 1. KEY LOADING ---
-    # Note: I added a fallback to check for the old GROK key just in case you named it that in secrets
+    # --- 1. SECURE API KEY RETRIEVAL ---
+    # Checks for any variation of the key name in your secrets
     gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GROK_API_KEY")
 
     if not gemini_key:
-        st.error("🔑 API Key Missing: Add 'GEMINI_API_KEY' to your Secrets or .env file.")
+        st.error("🔑 API Key Missing: Please add 'GEMINI_API_KEY' to your Streamlit Secrets.")
         st.stop()
 
-    # --- 2. CONFIGURATION & MODEL SELECTION ---
+    # --- 2. CONFIGURE GEMINI 3 ---
     try:
         genai.configure(api_key=gemini_key)
         
-        # We try gemini-1.5-flash first, then fallback to 2.0-flash if needed
-        model_name = 'gemini-1.5-flash' 
+        # 2026 Stable Model Names: 'gemini-3-flash' or 'gemini-2.5-flash'
+        current_model = 'gemini-3-flash' 
         
         if "chat_session" not in st.session_state:
-            model = genai.GenerativeModel(model_name)
+            model = genai.GenerativeModel(current_model)
             st.session_state.chat_session = model.start_chat(history=[])
             
-            # Initial instruction
-            intro_instruction = "You are a professional Agronomist AI. Provide expert farming advice."
-            if 'last_detected_disease' in st.session_state:
-                intro_instruction += f" Context: The user's plant has {st.session_state.last_detected_disease}."
+            # Initial instruction to keep the AI on-task
+            disease_context = st.session_state.get('last_detected_disease', 'a plant')
+            system_instruction = (
+                f"You are a professional Agronomist. Provide farming advice. "
+                f"The user is asking about {disease_context}. Be concise."
+            )
             
-            # Use this safer way to send the first message
-            st.session_state.chat_session.send_message(intro_instruction)
+            # Send initial hidden instruction
+            st.session_state.chat_session.send_message(system_instruction)
 
     except Exception as e:
-        st.error(f"❌ Initialization Error: {e}")
-        st.info("Hint: Check if the 'Generative Language API' is enabled in your Google Cloud Console.")
+        st.error(f"❌ Model Connection Error: {e}")
         st.stop()
 
-    # --- 3. DISPLAY & INPUT ---
+    # --- 3. DISPLAY CHAT ---
     for i, message in enumerate(st.session_state.chat_session.history):
-        if i == 0: continue # Hide system instruction
+        if i == 0: continue # Hide the system instruction
         role = "assistant" if message.role == "model" else "user"
         with st.chat_message(role):
             st.markdown(message.parts[0].text)
 
-    if prompt := st.chat_input("Ask about fertilizer, pests, or harvest..."):
+    # --- 4. USER INPUT ---
+    if prompt := st.chat_input("Ask about fertilizers, pests, or harvest..."):
         with st.chat_message("user"):
             st.markdown(prompt)
         try:
-            with st.spinner("Consulting Gemini..."):
+            with st.spinner("Consulting Agronomist Database..."):
                 response = st.session_state.chat_session.send_message(prompt)
                 with st.chat_message("assistant"):
                     st.markdown(response.text)
         except Exception as e:
             st.error(f"⚠️ Chat Error: {e}")
 
-    if st.button("🗑️ Reset Chat"):
+    # --- 5. UTILITIES ---
+    st.divider()
+    if st.button("🗑️ Clear Conversation"):
         if "chat_session" in st.session_state:
             del st.session_state.chat_session
         st.rerun()
