@@ -565,7 +565,7 @@ with tab1:
     # --- ADDING THE CLICKABLE ROBOT ICON ---
     st.markdown("<br>", unsafe_allow_html=True)
     _, icon_col = st.columns([5, 1])
-            with icon_col:
+        with icon_col:
                 # Custom CSS to make the image circular and hoverable
                 st.markdown("""
                     <style>
