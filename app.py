@@ -562,12 +562,12 @@ with tab1:
                 else:
                     progress_bar.empty()
                     st.error("Disease model not loaded.")
-    # --- ADDING THE CLICKABLE ROBOT ICON ---
-    st.markdown("<br>", unsafe_allow_html=True)
-    _, icon_col = st.columns([5, 1])
-        with icon_col:
-             # Custom CSS to make the image circular and hoverable
-             st.markdown("""
+            # --- ADDING THE CLICKABLE ROBOT ICON ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            _, icon_col = st.columns([5, 1])
+            with icon_col:
+                # Custom CSS to make the image circular and hoverable
+                st.markdown("""
                     <style>
                     .robot-icon {
                         width: 80px; height: 80px; border-radius: 50%; 
@@ -579,7 +579,7 @@ with tab1:
                 """, unsafe_allow_html=True)
                 
                 # Using the uploaded image as a clickable button
-             if st.button("🤖 Get AI Advice", key="robot_btn"):
+                if st.button("🤖 Get AI Advice", key="robot_btn"):
                     st.session_state.trigger_chat = True
                     st.success("Analysis sent to Agronomist AI! Switch to Tab 3.")
                 st.image("icon.jpg", width=80) # Ensure your image file is named icon.jpg in the folder
