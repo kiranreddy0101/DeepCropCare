@@ -554,7 +554,7 @@ with tab1:
             st.markdown("<br>", unsafe_allow_html=True)
             _, icon_col = st.columns([5, 1])
             with icon_col:
-                try:
+                 try:
                      img_base64 = get_base64_image("icon.jpg")
                 # 2. CSS for the Circular Floating Icon
                 st.markdown(f"""
@@ -597,6 +597,7 @@ with tab1:
 
             except Exception as e:
                 st.error("Make sure 'icon.jpg' is in your main folder.")
+                
                 
             
 
