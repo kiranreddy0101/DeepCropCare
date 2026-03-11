@@ -557,15 +557,15 @@ with tab1:
                  try:
                      img_base64 = get_base64_image("icon.jpg")
                 # 2. CSS for the Circular Floating Icon
-                st.markdown(f"""
-                    <style>
-                    .floating-container {{
+                    st.markdown(f"""
+                      <style>
+                     .floating-container {{
                         position: fixed;
                         bottom: 20px;
                         right: 20px;
                         z-index: 999;
-                    }}
-                    .circular-icon {{
+                     }}
+                     .circular-icon {{
                         width: 80px;
                         height: 80px;
                         border-radius: 50%;
@@ -574,29 +574,29 @@ with tab1:
                         box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
                         transition: transform 0.2s;
                         object-fit: cover;
-                    }}
-                    .circular-icon:hover {{
+                     }}
+                     .circular-icon:hover {{
                         transform: scale(1.1);
-                    }}
-                    </style>
+                     }}
+                     </style>
                     
-                    <div class="floating-container">
-                        <a href="#chat-trigger" id="robot-link">
-                            <img src="data:image/png;base64,{img_base64}" class="circular-icon" onclick="document.getElementById('hidden_btn').click();">
-                        </a>
-                    </div>
-                """, unsafe_allow_html=True)
+                     <div class="floating-container">
+                         <a href="#chat-trigger" id="robot-link">
+                             <img src="data:image/png;base64,{img_base64}" class="circular-icon" onclick="document.getElementById('hidden_btn').click();">
+                         </a>
+                     </div>
+                 """, unsafe_allow_html=True)
 
-                # 3. The Hidden Trigger Button
-                # We hide this with CSS so you don't see the green box
-                st.markdown("<div style='display:none;'>", unsafe_allow_html=True)
-                if st.button("hidden", key="hidden_btn"):
-                    st.session_state.trigger_chat = True
-                    st.toast("Advice sent to Chatbot!", icon="🤖")
-                st.markdown("</div>", unsafe_allow_html=True)
+                 # 3. The Hidden Trigger Button
+                 # We hide this with CSS so you don't see the green box
+                 st.markdown("<div style='display:none;'>", unsafe_allow_html=True)
+                 if st.button("hidden", key="hidden_btn"):
+                     st.session_state.trigger_chat = True
+                     st.toast("Advice sent to Chatbot!", icon="🤖")
+                 st.markdown("</div>", unsafe_allow_html=True)
 
-            except Exception as e:
-                st.error("Make sure 'icon.jpg' is in your main folder.")
+             except Exception as e:
+                 st.error("Make sure 'icon.jpg' is in your main folder.")
                    
                 
             
