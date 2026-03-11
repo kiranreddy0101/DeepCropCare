@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 # Load the keys from the .env file
 load_dotenv()
-GROK_API_KEY = os.getenv("GROK_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
@@ -609,7 +609,16 @@ with tab2:
 with tab3:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
     
-    # 1. API & Session Setup (Keep this at the top)
+    gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+
+    if not gemini_key:
+        st.error("🔑 API Key Missing.")
+        st.stop()
+
+    genai.configure(api_key=gemini_key)
+    
+    # Switch to Flash-Lite for much higher free limits
+    MODEL_ID = 'gemini-3.1-flash-lite-preview'
     if "chat_session" not in st.session_state:
         # ... (Your existing initialization code) ...
         st.session_state.chat_greeting = "Hi! I am your Agronomist AI. How can I help you today?"
