@@ -609,44 +609,23 @@ with tab2:
 with tab3:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
     
-    # 1. API Setup
-    api_key = st.secrets.get("GEMINI_API_KEY")
-    if not api_key:
-        st.error("🔑 API Key Missing in Secrets.")
-        st.stop()
-    
-    genai.configure(api_key=api_key)
-
-    # 2. Initialization with a Hard Override
+    # 1. API & Session Setup (Keep this at the top)
     if "chat_session" not in st.session_state:
-        # Define the personality (Hidden from user)
-        disease_ctx = st.session_state.get('last_detected_disease', 'crops')
-        system_instruction = f"You are an Agronomist AI. The user's plant has {disease_ctx}. Be concise."
-        
-        model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash-lite',
-            system_instruction=system_instruction
-        )
-        
-        # Start the chat
-        st.session_state.chat_session = model.start_chat(history=[])
-        
-        # We manually insert the SHORT greeting into the history 
-        # so the AI doesn't generate its own long one.
+        # ... (Your existing initialization code) ...
         st.session_state.chat_greeting = "Hi! I am your Agronomist AI. How can I help you today?"
 
-    # 3. Display the Conversation
-    # We display our custom greeting first
+    # 2. DISPLAY THE HISTORY FIRST
+    # This ensures the messages stay at the top/middle
     with st.chat_message("assistant"):
         st.markdown(st.session_state.chat_greeting)
 
-    # Then display any subsequent messages in the history
     for message in st.session_state.chat_session.history:
         role = "assistant" if message.role == "model" else "user"
         with st.chat_message(role):
             st.markdown(message.parts[0].text)
 
-    # 4. Input Handling
+    # 3. THE INPUT BOX AT THE BOTTOM
+    # Moving this here pushes it below the history
     if prompt := st.chat_input("Ask me about fertilizers, pests, or soil..."):
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -655,13 +634,14 @@ with tab3:
             response = st.session_state.chat_session.send_message(prompt)
             with st.chat_message("assistant"):
                 st.markdown(response.text)
+                # This ensures the screen scrolls to the latest message
+                st.rerun() 
         except Exception as e:
             st.error(f"Chat Error: {e}")
 
-    # 5. THE MOST IMPORTANT PART: The Reset
+    # 4. RESET BUTTON (Optional: can be in sidebar or very bottom)
     st.divider()
-    if st.button("🗑️ Clear Chat & Remove Long Message"):
-        # This completely wipes the memory
+    if st.button("🗑️ Clear Chat"):
         for key in ["chat_session", "chat_greeting"]:
             if key in st.session_state:
                 del st.session_state[key]
