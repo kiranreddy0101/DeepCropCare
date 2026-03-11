@@ -700,9 +700,8 @@ with tab4:
             }
             
             payload = {
-                "model": "grok-beta", 
+                "model": "grok-2", # ✅ Standard production model
                 "messages": st.session_state.messages,
-                "temperature": 0.7,
                 "stream": False
             }
 
