@@ -9,6 +9,7 @@ import joblib
 import requests
 import time
 import os
+import google.generativeai as genai
 from dotenv import load_dotenv 
 
 # Load the keys from the .env file
