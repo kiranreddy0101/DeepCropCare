@@ -122,7 +122,7 @@ def get_base64_of_bin_file(bin_file):
     return base64.b64encode(data).decode()
 
 # Assuming your cleaned image is saved as 'robot_icon.png'
-# icon_base64 = get_base64_of_bin_file('robot_icon.png') 
+ icon_base64 = get_base64_of_bin_file('icon.jpg') 
 
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
