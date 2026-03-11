@@ -452,6 +452,10 @@ crop_info = {
 
 # --- TABS ---
 tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
+if 'last_detected_disease' not in st.session_state:
+    st.session_state['last_detected_disease'] = None
+if 'trigger_chat' not in st.session_state:
+    st.session_state['trigger_chat'] = False
 
 
 with tab1:
@@ -491,6 +495,8 @@ with tab1:
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
                     p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
+                    # Store the result for the chatbot
+                    st.session_state['last_detected_disease'] = p_class_display
                     
                     # 2. Clear Progress UI
                     progress_bar.empty()
@@ -556,6 +562,27 @@ with tab1:
                 else:
                     progress_bar.empty()
                     st.error("Disease model not loaded.")
+    # --- ADDING THE CLICKABLE ROBOT ICON ---
+    st.markdown("<br>", unsafe_allow_html=True)
+     _, icon_col = st.columns([5, 1])
+            with icon_col:
+                # Custom CSS to make the image circular and hoverable
+                st.markdown("""
+                    <style>
+                    .robot-icon {
+                        width: 80px; height: 80px; border-radius: 50%; 
+                        cursor: pointer; transition: transform 0.3s;
+                        border: 3px solid #28a745; object-fit: cover;
+                    }
+                    .robot-icon:hover { transform: scale(1.1); }
+                    </style>
+                """, unsafe_allow_html=True)
+                
+                # Using the uploaded image as a clickable button
+                if st.button("🤖 Get AI Advice", key="robot_btn"):
+                    st.session_state.trigger_chat = True
+                    st.success("Analysis sent to Agronomist AI! Switch to Tab 3.")
+                st.image("icon.jpg", width=80) # Ensure your image file is named icon.jpg in the folder
             
 
 with tab2:
@@ -677,6 +704,23 @@ with tab3:
         )
         # Start chat with empty history
         st.session_state.chat_session = model.start_chat(history=[])
+        # AUTOMATIC INJECTION LOGIC
+    if st.session_state.get('trigger_chat') and st.session_state.get('last_detected_disease'):
+        disease = st.session_state['last_detected_disease']
+        auto_prompt = f"I have detected {disease} on my plant. Please provide a detailed description, the cure, prevention steps, and a fertilizer advisory."
+        
+        # Add to message history
+        st.session_state.messages.append({"role": "user", "content": auto_prompt})
+        
+        # Generate response immediately
+        try:
+            response = st.session_state.chat_session.send_message(auto_prompt)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+            # Reset trigger so it doesn't loop
+            st.session_state.trigger_chat = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Automation Error: {e}")
 
     # 3. Display Chat History (Rendered BEFORE the input box)
     # This loop is now safe because 'messages' is initialized above
