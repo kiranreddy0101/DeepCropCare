@@ -469,120 +469,103 @@ with tab1:
             run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
         
         if run_btn: 
-            # 1. Visual Progress Feedback
-            progress_bar = st.progress(90)
+            progress_bar = st.progress(0)
             for percent_complete in range(100):
-                time.sleep(0.001) # Subtle delay for UX
+                time.sleep(0.001)
                 progress_bar.progress(percent_complete + 1)
     
             with st.spinner("🧠 Identifying pathogens..."):
                 if disease_model:
-                    # Processing
                     img_resized = image.resize((224, 224))
                     img_arr = img_to_array(img_resized) / 255.0
                     img_arr = np.expand_dims(img_arr, axis=0)
                     
-                    # Inference
                     prediction = disease_model.predict(img_arr)
                     idx = np.argmax(prediction)
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
                     p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
                     
-                    # Store the result for the chatbot
                     st.session_state['last_detected_disease'] = p_class_display
-                    
-                    # 2. Clear Progress UI
                     progress_bar.empty()
-                    st.markdown("<br><h3 style='text-align: center;'>Analysis Complete!</h3>", unsafe_allow_html=True)
                     
-                    # 3. Confidence Display (Glassmorphism Card)
                     st.markdown(f"""
                         <div class='prediction-card'>
-                            <h2 style='margin:0;'>{p_class_display}</h2>
-                            <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
+                            <h2 style='margin:0; text-align:center;'>{p_class_display}</h2>
+                            <h3 style='color: #28a745; margin:0; text-align:center;'>Confidence: {confidence:.2f}%</h3>
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # Action recommendation
                     if full_class_name in fertilizer_map:
                         st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
                     
-                    # 4. Side-by-Side Diagnostic Visualization
+                    # Grad-CAM Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
-                        st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
                         try:
                             heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
                             overlay = overlay_gradcam(img_resized, heatmap)
-                            
                             col_a, col_b = st.columns(2)
-                            with col_a:
-                                st.image(img_resized, caption="Original Scan", use_container_width=True)
-                            with col_b:
-                                st.image(overlay, caption="Infection Hotspots", use_container_width=True)
-                        except Exception as e:
-                            st.error(f"Visualization error: {e}")
+                            with col_a: st.image(img_resized, caption="Original Scan")
+                            with col_b: st.image(overlay, caption="Infection Hotspots")
+                        except Exception: pass
 
-                    # --- ADDING THE CLICKABLE ROBOT ICON (FIXED) ---
+                    # --- FIXED CIRCULAR FLOATING ICON ---
                     try:
                         import base64
                         with open("icon.jpg", "rb") as f:
                             img_base64 = base64.b64encode(f.read()).decode()
                         
-                        # Use a Column-based Button with CSS to overlay the image
-                        # This makes the click 100% functional in Streamlit
+                        # We use a JavaScript 'window.parent' trick to force the tab switch
                         st.markdown(f"""
                             <style>
                             .floating-bot-wrap {{
                                 position: fixed;
-                                bottom: 80px; /* Moved slightly higher */
+                                bottom: 100px; /* Moved higher to avoid overlap */
                                 right: 30px;
-                                z-index: 1000;
+                                z-index: 999999;
+                                cursor: pointer;
                             }}
                             .circular-img {{
                                 width: 90px;
                                 height: 90px;
                                 border-radius: 50%;
                                 border: 4px solid #28a745;
-                                box-shadow: 0px 4px 15px rgba(0,0,0,0.4);
-                                pointer-events: none; /* Let clicks pass to the button below */
+                                box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
+                                transition: transform 0.3s;
+                                background-color: white;
                             }}
-                            /* Hide the actual button but keep it clickable over the image */
-                            .stButton>button[key="hidden_btn"] {{
-                                position: fixed;
-                                bottom: 80px;
-                                right: 30px;
-                                width: 90px;
-                                height: 90px;
-                                border-radius: 50%;
-                                background: transparent;
-                                color: transparent;
-                                border: none;
-                                z-index: 1001;
-                                cursor: pointer;
-                            }}
-                            .stButton>button[key="hidden_btn"]:hover {{
-                                background: rgba(40, 167, 69, 0.1);
-                                color: transparent;
+                            .circular-img:hover {{ transform: scale(1.1); }}
+                            
+                            /* Completely hide the trigger button from the UI */
+                            div[data-testid="stButton"] > button[key="trigger_bot"] {{
+                                display: none !important;
                             }}
                             </style>
-                            <div class="floating-bot-wrap">
+
+                            <div class="floating-bot-wrap" onclick="triggerPython()">
                                 <img src="data:image/png;base64,{img_base64}" class="circular-img">
                             </div>
+
+                            <script>
+                            function triggerPython() {{
+                                // Find the invisible button and click it
+                                const btn = window.parent.document.querySelector('button[key="trigger_bot"]');
+                                if (btn) btn.click();
+                            }}
+                            </script>
                         """, unsafe_allow_html=True)
 
-                        if st.button("", key="hidden_btn"):
+                        # This button is hidden by CSS but provides the logic trigger
+                        if st.button("AI Logic", key="trigger_bot"):
                             st.session_state.trigger_chat = True
-                            st.toast(f"Consulting AI about {p_class_display}...", icon="🤖")
-                            # Trigger immediate tab switch logic if your app supports it, 
-                            # otherwise the automation logic in Tab 3 handles it.
+                            st.toast("Switching to Chatbot...", icon="🤖")
+                            # If using a specific tab index logic, set it here
+                            # st.session_state.active_tab = 2 
 
                     except Exception as e:
-                        st.error("Icon file missing.")
-
+                        st.error("Icon loading error.")
                 else:
-                    progress_bar.empty()
-                    st.error("Disease model not loaded.")
+                    st.error("Model missing.")
                 
             
 
