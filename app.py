@@ -115,16 +115,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# --- ADD THIS UTILITY FUNCTION TO HANDLE THE ICON ---
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
-# Assuming your cleaned image is saved as 'robot_icon.png'
-icon_base64 = get_base64_of_bin_file('icon.jpg') 
-
-
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
     grad_model = tf.keras.models.Model(
@@ -561,41 +551,54 @@ with tab1:
             st.markdown("<br>", unsafe_allow_html=True)
             _, icon_col = st.columns([5, 1])
             with icon_col:
-                st.markdown("""
-                <style>
-                /* This creates the floating container */
-                .floating-bot-container {
-                    position: fixed;
-                    bottom: 30px;
-                    right: 30px;
-                    z-index: 999;
-                    text-align: center;
-                }
-                /* This styles the image to look like a button */
-                .bot-icon {
-                    width: 90px;
-                    height: 90px;
-                    border-radius: 50%;
-                    border: 4px solid #28a745;
-                    box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
-                    cursor: pointer;
-                    transition: transform 0.2s;
-                    background-color: white;
-                }
-                .bot-icon:hover {
-                    transform: scale(1.1) rotate(5deg);
-                }
-                </style>
-            """, unsafe_allow_html=True)
-
-            # We use a button with a transparent label but place the image over it 
-            # Or simpler: just use the button and style it with the image
-            if st.button("🤖 Click to Consult AI", key="refined_robot_btn", use_container_width=False):
-                st.session_state.trigger_chat = True
-                st.toast(f"Consulting AI about {p_class_display}...", icon="🌿")
+                def get_base64_image(path):
+                with open(path, "rb") as f:
+                    return base64.b64encode(f.read()).decode()
             
-            # Display the icon below the button or as the visual trigger
-            st.image("icon.jpg", width=90)
+            try:
+                img_base64 = get_base64_image("icon.jpg")
+                
+                # 2. CSS for the Circular Floating Icon
+                st.markdown(f"""
+                    <style>
+                    .floating-container {{
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        z-index: 999;
+                    }}
+                    .circular-icon {{
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 50%;
+                        border: 3px solid #28a745;
+                        cursor: pointer;
+                        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+                        transition: transform 0.2s;
+                        object-fit: cover;
+                    }}
+                    .circular-icon:hover {{
+                        transform: scale(1.1);
+                    }}
+                    </style>
+                    
+                    <div class="floating-container">
+                        <a href="#chat-trigger" id="robot-link">
+                            <img src="data:image/png;base64,{img_base64}" class="circular-icon" onclick="document.getElementById('hidden_btn').click();">
+                        </a>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                # 3. The Hidden Trigger Button
+                # We hide this with CSS so you don't see the green box
+                st.markdown("<div style='display:none;'>", unsafe_allow_html=True)
+                if st.button("hidden", key="hidden_btn"):
+                    st.session_state.trigger_chat = True
+                    st.toast("Advice sent to Chatbot!", icon="🤖")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            except Exception as e:
+                st.error("Make sure 'icon.jpg' is in your main folder.")
                 
             
 
