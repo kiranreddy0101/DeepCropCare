@@ -561,23 +561,42 @@ with tab1:
             st.markdown("<br>", unsafe_allow_html=True)
             _, icon_col = st.columns([5, 1])
             with icon_col:
-                # Custom CSS to make the image circular and hoverable
                 st.markdown("""
-                    <style>
-                    .robot-icon {
-                        width: 80px; height: 80px; border-radius: 50%; 
-                        cursor: pointer; transition: transform 0.3s;
-                        border: 3px solid #28a745; object-fit: cover;
-                    }
-                    .robot-icon:hover { transform: scale(1.1); }
-                    </style>
-                """, unsafe_allow_html=True)
+                <style>
+                /* This creates the floating container */
+                .floating-bot-container {
+                    position: fixed;
+                    bottom: 30px;
+                    right: 30px;
+                    z-index: 999;
+                    text-align: center;
+                }
+                /* This styles the image to look like a button */
+                .bot-icon {
+                    width: 90px;
+                    height: 90px;
+                    border-radius: 50%;
+                    border: 4px solid #28a745;
+                    box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                    background-color: white;
+                }
+                .bot-icon:hover {
+                    transform: scale(1.1) rotate(5deg);
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+            # We use a button with a transparent label but place the image over it 
+            # Or simpler: just use the button and style it with the image
+            if st.button("🤖 Click to Consult AI", key="refined_robot_btn", use_container_width=False):
+                st.session_state.trigger_chat = True
+                st.toast(f"Consulting AI about {p_class_display}...", icon="🌿")
+            
+            # Display the icon below the button or as the visual trigger
+            st.image("icon.jpg", width=90)
                 
-                # Using the uploaded image as a clickable button
-                if st.button("🤖 Get AI Advice", key="robot_btn"):
-                    st.session_state.trigger_chat = True
-                    st.success("Analysis sent to Agronomist AI! Switch to Tab 3.")
-                st.image("icon.jpg", width=80) # Ensure your image file is named icon.jpg in the folder
             
 
 with tab2:
