@@ -443,7 +443,7 @@ crop_info = {
 }
 
 # --- TABS ---
-tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "📘 Project Info", "💬 Agronomist AI"])
+tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
 
 
 with tab1:
@@ -607,52 +607,6 @@ with tab2:
         st.markdown("<br><h3 style='text-align: center;'>✅ Analysis Complete</h3>", unsafe_allow_html=True)
 
 with tab3:
-    st.markdown("## 📘 About DeepCropCare")
-    
-    st.markdown("""
-    ### 🚀 The Mission
-    **DeepCropCare** is a cutting-edge agricultural platform designed to empower farmers with data-driven insights. 
-    By merging **Deep Learning** (for leaf diagnostics) and **Machine Learning** (for crop suitability), 
-    we provide a 360-degree view of your farm's potential and health.
-    """)
-
-    st.divider()
-
-    col_cv, col_ml = st.columns(2)
-    with col_cv:
-        st.markdown("#### 🧠 Computer Vision")
-        st.write("""
-        Using **Convolutional Neural Networks (CNN)**, the system analyzes leaf texture and 
-        patterns to detect 38 different plant-disease states.
-        """)
-        
-    with col_ml:
-        st.markdown("#### 📈 Predictive Analytics")
-        st.write("""
-        Our **Random Forest** engine processes soil NPK levels and weather data to 
-        recommend the ideal crop for your land.
-        """)
-
-    # Soil Chemistry Guide
-    with st.expander("🧪 Understanding Soil Parameters (N-P-K)"):
-        st.write("""
-        - **Nitrogen (N):** Essential for leaf growth and green color.
-        - **Phosphorus (P):** Critical for root development and flower/seed production.
-        - **Potassium (K):** Helps with overall plant health and disease resistance.
-        """)
-        
-
-    st.divider()
-
-    # Grad-CAM explanation
-    st.markdown("### 🎯 Interpretability: How the AI 'Sees'")
-    
-    
-    st.info(f"**Target Diagnostic Layer:** `{detected_conv_name}`. The heatmap highlights areas the AI identified as diseased.")
-
-    st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
-
-with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
     
     # 1. API Setup
@@ -712,3 +666,51 @@ with tab4:
             if key in st.session_state:
                 del st.session_state[key]
         st.rerun()
+
+with tab4:
+    st.markdown("## 📘 About DeepCropCare")
+    
+    st.markdown("""
+    ### 🚀 The Mission
+    **DeepCropCare** is a cutting-edge agricultural platform designed to empower farmers with data-driven insights. 
+    By merging **Deep Learning** (for leaf diagnostics) and **Machine Learning** (for crop suitability), 
+    we provide a 360-degree view of your farm's potential and health.
+    """)
+
+    st.divider()
+
+    col_cv, col_ml = st.columns(2)
+    with col_cv:
+        st.markdown("#### 🧠 Computer Vision")
+        st.write("""
+        Using **Convolutional Neural Networks (CNN)**, the system analyzes leaf texture and 
+        patterns to detect 38 different plant-disease states.
+        """)
+        
+    with col_ml:
+        st.markdown("#### 📈 Predictive Analytics")
+        st.write("""
+        Our **Random Forest** engine processes soil NPK levels and weather data to 
+        recommend the ideal crop for your land.
+        """)
+
+    # Soil Chemistry Guide
+    with st.expander("🧪 Understanding Soil Parameters (N-P-K)"):
+        st.write("""
+        - **Nitrogen (N):** Essential for leaf growth and green color.
+        - **Phosphorus (P):** Critical for root development and flower/seed production.
+        - **Potassium (K):** Helps with overall plant health and disease resistance.
+        """)
+        
+
+    st.divider()
+
+    # Grad-CAM explanation
+    st.markdown("### 🎯 Interpretability: How the AI 'Sees'")
+    
+    
+    st.info(f"**Target Diagnostic Layer:** `{detected_conv_name}`. The heatmap highlights areas the AI identified as diseased.")
+
+    st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
+
+
