@@ -655,72 +655,60 @@ with tab3:
 with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
     
-    # 1. API Configuration
-    # We use Flash-Lite for the 1,500 requests/day free quota in 2026
-    MODEL_ID = 'gemini-2.5-flash-lite'
+    # 1. API Setup
     api_key = st.secrets.get("GEMINI_API_KEY")
-
     if not api_key:
-        st.error("🔑 API Key Missing: Please add 'GEMINI_API_KEY' to Streamlit Secrets.")
+        st.error("🔑 API Key Missing in Secrets.")
         st.stop()
-
+    
     genai.configure(api_key=api_key)
 
-    # 2. Initialize Chat with a Hidden System Instruction
+    # 2. Initialization with a Hard Override
     if "chat_session" not in st.session_state:
-        # We define the AI's "Personality" here so it stays smart but quiet
-        disease_context = st.session_state.get('last_detected_disease', 'general farming')
-        
-        # System Instruction: Tells the AI who to be and how to greet
-        system_instruction = (
-            f"You are a professional Agronomist AI. The user's plant has {disease_context}. "
-            "IMPORTANT: Your very first response must only be: 'Hi! I am your Agronomist AI. How can I help you today?' "
-            "Do not list your capabilities unless asked. Be concise and use bullet points for advice."
-        )
+        # Define the personality (Hidden from user)
+        disease_ctx = st.session_state.get('last_detected_disease', 'crops')
+        system_instruction = f"You are an Agronomist AI. The user's plant has {disease_ctx}. Be concise."
         
         model = genai.GenerativeModel(
-            model_name=MODEL_ID,
+            model_name='gemini-2.5-flash-lite',
             system_instruction=system_instruction
         )
         
-        # Start the chat session
+        # Start the chat
         st.session_state.chat_session = model.start_chat(history=[])
         
-        # Send a dummy "hello" to trigger that first short response
-        try:
-            st.session_state.chat_session.send_message("Initial Setup")
-        except:
-            pass
+        # We manually insert the SHORT greeting into the history 
+        # so the AI doesn't generate its own long one.
+        st.session_state.chat_greeting = "Hi! I am your Agronomist AI. How can I help you today?"
 
-    # 3. Display Chat History (Hide the setup message)
-    for i, message in enumerate(st.session_state.chat_session.history):
-        # We skip message 0 (our "Initial Setup") and message 1 (the AI's greeting)
-        # to show a manually styled greeting or just keep it very clean.
-        if i == 0: continue 
-        
+    # 3. Display the Conversation
+    # We display our custom greeting first
+    with st.chat_message("assistant"):
+        st.markdown(st.session_state.chat_greeting)
+
+    # Then display any subsequent messages in the history
+    for message in st.session_state.chat_session.history:
         role = "assistant" if message.role == "model" else "user"
         with st.chat_message(role):
             st.markdown(message.parts[0].text)
 
-    # 4. Handle New User Input
-    if prompt := st.chat_input("Ask about fertilizers, pests, or harvest..."):
+    # 4. Input Handling
+    if prompt := st.chat_input("Ask me about fertilizers, pests, or soil..."):
         with st.chat_message("user"):
             st.markdown(prompt)
+        
+        try:
+            response = st.session_state.chat_session.send_message(prompt)
+            with st.chat_message("assistant"):
+                st.markdown(response.text)
+        except Exception as e:
+            st.error(f"Chat Error: {e}")
 
-        with st.spinner("Consulting Agronomist..."):
-            try:
-                response = st.session_state.chat_session.send_message(prompt)
-                with st.chat_message("assistant"):
-                    st.markdown(response.text)
-            except Exception as e:
-                if "429" in str(e):
-                    st.error("🚫 Daily Quota Exhausted. Try again tomorrow or use a different API key.")
-                else:
-                    st.error(f"⚠️ Error: {e}")
-
-    # 5. Clear Chat Utility
+    # 5. THE MOST IMPORTANT PART: The Reset
     st.divider()
-    if st.button("🗑️ Reset Chat"):
-        if "chat_session" in st.session_state:
-            del st.session_state.chat_session
+    if st.button("🗑️ Clear Chat & Remove Long Message"):
+        # This completely wipes the memory
+        for key in ["chat_session", "chat_greeting"]:
+            if key in st.session_state:
+                del st.session_state[key]
         st.rerun()
