@@ -9,6 +9,7 @@ import joblib
 import requests
 import time
 import os
+import base64
 import google.generativeai as genai
 from dotenv import load_dotenv 
 
@@ -114,7 +115,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# --- ADD THIS UTILITY FUNCTION TO HANDLE THE ICON ---
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
 
+# Assuming your cleaned image is saved as 'robot_icon.png'
+# icon_base64 = get_base64_of_bin_file('robot_icon.png') 
 
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
@@ -500,6 +508,37 @@ with tab1:
                     if full_class_name in fertilizer_map:
                         st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
                     
+                    # --- NEW: CHATBOT TRIGGER ICON ---
+                    # This creates a clickable floating circular icon
+                    # Replace 'URL_TO_YOUR_CLEAN_IMAGE' with your local path or hosted link
+                    icon_url = "https://i.postimg.cc/mD8Z8x8x/robot-clean.png" 
+                    
+                    st.markdown(f"""
+                        <style>
+                        .floating-bot {{
+                            position: fixed;
+                            bottom: 20px;
+                            right: 20px;
+                            width: 80px;
+                            height: 80px;
+                            background-image: url('{icon_url}');
+                            background-size: cover;
+                            border-radius: 50%;
+                            cursor: pointer;
+                            border: 3px solid #28a745;
+                            box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
+                            z-index: 999;
+                            transition: transform 0.3s;
+                        }}
+                        .floating-bot:hover {{ transform: scale(1.1); }}
+                        </style>
+                    """, unsafe_allow_html=True)
+
+                    if st.button("🤖 Ask Bot about this Disease", key="bot_trigger"):
+                        st.session_state.chat_input = f"Tell me about {p_class_display}, its preventive measures, and fertilizer advice."
+                        st.session_state.active_tab = "Chatbot" # Ensure your tabs logic uses session_state
+                        st.rerun()
+
                     # 4. Side-by-Side Diagnostic Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
                         st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
