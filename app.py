@@ -517,6 +517,28 @@ with tab1:
                 else:
                     progress_bar.empty()
                     st.error("Disease model not loaded.")
+    # --- Inside your Prediction logic in Tab 3 ---
+    st.success(f"✅ Prediction: {result_disease}")
+
+    # Add the "Ask AI" Button with an icon
+    if st.button(f"🔍 Get Treatment Plan for {result_disease}", icon=":material/psychology_alt:"):
+        # 1. Save the disease for the chatbot to see
+        st.session_state.last_detected_disease = result_disease
+    
+        # 2. Pre-fill a special request for the AI
+        st.session_state.messages = [
+        {"role": "assistant", "content": f"I see we've detected **{result_disease}**. Let me prepare a treatment and fertilizer plan for you..."},
+        {"role": "user", "content": f"Provide a detailed treatment, preventive measures, and fertilizer advisory for {result_disease}."}
+        ]
+    
+        # 3. Trigger the AI to respond immediately on the next tab
+        st.session_state.pushed_from_predict = True
+    
+        # 4. Switch to the Chatbot tab (Tab 4)
+        # Note: Ensure your st.tabs logic uses a key like st.tabs([...], key="main_tabs")
+        # This is how we programmatically change tabs in 2026
+        st.session_state["main_tabs"] = "💬 Chatbot" 
+        st.rerun()
             
 
 with tab2:
