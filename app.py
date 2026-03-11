@@ -540,11 +540,6 @@ with tab1:
                         </style>
                     """, unsafe_allow_html=True)
 
-                    if st.button("🤖 Ask Bot about this Disease", key="bot_trigger"):
-                        st.session_state.chat_input = f"Tell me about {p_class_display}, its preventive measures, and fertilizer advice."
-                        st.session_state.active_tab = "Chatbot" # Ensure your tabs logic uses session_state
-                        st.rerun()
-
                     # 4. Side-by-Side Diagnostic Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
                         st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
