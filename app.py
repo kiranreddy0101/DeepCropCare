@@ -611,7 +611,7 @@ with tab3:
     
     # 1. API Configuration
     MODEL_ID = 'gemini-2.5-flash-lite'
-    api_key = st.secrets.get("GEMINI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
     if not api_key:
         st.error("🔑 API Key Missing: Please add it to Streamlit Secrets.")
