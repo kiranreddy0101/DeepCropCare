@@ -8,6 +8,12 @@ import cv2
 import joblib
 import requests
 import time
+import os
+from dotenv import load_model, load_dotenv # Add load_dotenv
+
+# Load the keys from the .env file
+load_dotenv()
+GROK_API_KEY = os.getenv("GROK_API_KEY")
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
