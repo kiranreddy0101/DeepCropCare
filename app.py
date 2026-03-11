@@ -597,7 +597,6 @@ with tab1:
 
             except Exception as e:
                 st.error("Make sure 'icon.jpg' is in your main folder.")
-                   
                 
             
 
