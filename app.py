@@ -556,9 +556,8 @@ with tab1:
             with icon_col:
                  try:
                      img_base64 = get_base64_image("icon.jpg")
-                
-                   # 2. CSS for the Circular Floating Icon
-                   st.markdown(f"""
+                # 2. CSS for the Circular Floating Icon
+                st.markdown(f"""
                     <style>
                     .floating-container {{
                         position: fixed;
@@ -598,6 +597,7 @@ with tab1:
 
             except Exception as e:
                 st.error("Make sure 'icon.jpg' is in your main folder.")
+                   
                 
             
 
