@@ -656,7 +656,6 @@ import time
 
 with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
-    st.info("Using Gemini 3.1 Flash-Lite (Highest Free Quota)")
 
     gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
