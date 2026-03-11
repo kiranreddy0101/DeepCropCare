@@ -557,8 +557,8 @@ with tab1:
                  try:
                      img_base64 = get_base64_image("icon.jpg")
                 
-                # 2. CSS for the Circular Floating Icon
-                st.markdown(f"""
+                 # 2. CSS for the Circular Floating Icon
+                 st.markdown(f"""
                     <style>
                     .floating-container {{
                         position: fixed;
