@@ -653,65 +653,80 @@ with tab3:
 
 with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
-    st.markdown("Ask anything about pest control, irrigation, or soil health.")
+    st.info("Ask expert advice on pesticides, organic remedies, or soil health.")
 
-    # --- GROK API CONFIG ---
-    GROK_API_KEY = "xai-PYNmiBQ7FuqjDlULGGkfBfViY2waYWtqjZlxGCsIFBEvoHCuZCOZ0GaqjkQVnMqr3IHYCWA1bTBA5rHz" # Replace with your actual key
-    
-    # Initialize chat history
+    # --- 1. SECURE API KEY RETRIEVAL ---
+    # Automatically pulls from .env (local) or Streamlit Secrets (Cloud)
+    grok_api_key = os.getenv("GROK_API_KEY") or st.secrets.get("GROK_API_KEY")
+
+    if not grok_api_key:
+        st.error("🔑 API Key Missing: Add 'GROK_API_KEY' to your Secrets or .env file.")
+        st.stop()
+
+    # --- 2. INITIALIZE CHAT HISTORY & CONTEXT ---
     if "messages" not in st.session_state:
+        # Pulling context from Tab 1/Tab 2 so the AI knows what's happening
+        detected_issue = st.session_state.get('last_detected_disease', 'a general plant specimen')
+        
         st.session_state.messages = [
-            {"role": "system", "content": "You are a helpful and expert Agronomist AI for the DeepCropCare platform. Provide practical, scientific, and easy-to-understand farming advice. If asked about a disease, provide organic and chemical remedies."}
+            {
+                "role": "system", 
+                "content": (
+                    "You are a professional Agronomist AI. Your role is to assist farmers "
+                    "with scientific and practical advice. The user is currently "
+                    f"analyzing: {detected_issue}. Keep responses clear and actionable."
+                )
+            }
         ]
 
-    # Display chat messages from history on app rerun
+    # Render previous chat history
     for message in st.session_state.messages:
         if message["role"] != "system":
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-    # React to user input
-    if prompt := st.chat_input("How can I help you with your crops today?"):
-        # Display user message in chat message container
-        st.chat_message("user").markdown(prompt)
-        # Add user message to chat history
+    # --- 3. HANDLE USER INPUT & GROK API ---
+    if prompt := st.chat_input("Ex: How do I treat the disease you just found?"):
+        # Display user message and update history
+        with st.chat_message("user"):
+            st.markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         try:
-            # Prepare the API call to xAI (Grok)
+            # API Setup for xAI (Grok)
             headers = {
-                "Authorization": f"Bearer {GROK_API_KEY}",
+                "Authorization": f"Bearer {grok_api_key}",
                 "Content-Type": "application/json"
             }
             
             payload = {
-                "model": "grok-beta", # or "grok-1" depending on your access
+                "model": "grok-beta", 
                 "messages": st.session_state.messages,
+                "temperature": 0.7,
                 "stream": False
             }
 
-            with st.spinner("Grok is thinking..."):
+            with st.spinner("Consulting agricultural records..."):
                 response = requests.post(
                     "https://api.x.ai/v1/chat/completions",
                     headers=headers,
-                    json=payload
+                    json=payload,
+                    timeout=25
                 )
                 response.raise_for_status()
-                full_response = response.json()['choices'][0]['message']['content']
+                ai_response = response.json()['choices'][0]['message']['content']
 
-            # Display assistant response in chat message container
+            # Display and save AI's response
             with st.chat_message("assistant"):
-                st.markdown(full_response)
-            
-            # Add assistant response to chat history
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+                st.markdown(ai_response)
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
             
         except Exception as e:
-            st.error(f"Error connecting to Grok AI: {e}")
-            st.info("Please ensure your xAI API Key is valid and billing is active.")
+            st.error(f"⚠️ Connection Error: {e}")
 
-    # Button to clear chat
-    if st.button("Clear Conversation"):
+    # --- 4. CLEAR HISTORY OPTION ---
+    st.divider()
+    if st.button("🗑️ Reset Consultation"):
         st.session_state.messages = [st.session_state.messages[0]]
         st.rerun()
 
