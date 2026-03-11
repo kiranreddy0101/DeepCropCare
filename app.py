@@ -488,6 +488,7 @@ with tab1:
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
                     p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
+                    
                     # Store the result for the chatbot
                     st.session_state['last_detected_disease'] = p_class_display
                     
@@ -507,32 +508,6 @@ with tab1:
                     if full_class_name in fertilizer_map:
                         st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
                     
-                    # --- NEW: CHATBOT TRIGGER ICON ---
-                    # This creates a clickable floating circular icon
-                    # Replace 'URL_TO_YOUR_CLEAN_IMAGE' with your local path or hosted link
-                    icon_url = "https://i.postimg.cc/mD8Z8x8x/robot-clean.png" 
-                    
-                    st.markdown(f"""
-                        <style>
-                        .floating-bot {{
-                            position: fixed;
-                            bottom: 20px;
-                            right: 20px;
-                            width: 80px;
-                            height: 80px;
-                            background-image: url('{icon_url}');
-                            background-size: cover;
-                            border-radius: 50%;
-                            cursor: pointer;
-                            border: 3px solid #28a745;
-                            box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
-                            z-index: 999;
-                            transition: transform 0.3s;
-                        }}
-                        .floating-bot:hover {{ transform: scale(1.1); }}
-                        </style>
-                    """, unsafe_allow_html=True)
-
                     # 4. Side-by-Side Diagnostic Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
                         st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
@@ -547,57 +522,54 @@ with tab1:
                                 st.image(overlay, caption="Infection Hotspots", use_container_width=True)
                         except Exception as e:
                             st.error(f"Visualization error: {e}")
+
+                    # --- ADDING THE CLICKABLE ROBOT ICON ---
+                    try:
+                        import base64
+                        with open("icon.jpg", "rb") as f:
+                            img_base64 = base64.b64encode(f.read()).decode()
+                        
+                        # CSS for the Circular Floating Icon
+                        st.markdown(f"""
+                            <style>
+                            .floating-container {{
+                                position: fixed;
+                                bottom: 20px;
+                                right: 20px;
+                                z-index: 999;
+                            }}
+                            .circular-icon {{
+                                width: 80px;
+                                height: 80px;
+                                border-radius: 50%;
+                                border: 3px solid #28a745;
+                                cursor: pointer;
+                                box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+                                transition: transform 0.2s;
+                                object-fit: cover;
+                            }}
+                            .circular-icon:hover {{
+                                transform: scale(1.1);
+                            }}
+                            </style>
+                            <div class="floating-container">
+                                <img src="data:image/png;base64,{img_base64}" class="circular-icon" onclick="document.getElementById('hidden_btn').click();">
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                        # The Hidden Trigger Button
+                        st.markdown("<div style='display:none;'>", unsafe_allow_html=True)
+                        if st.button("hidden", key="hidden_btn"):
+                            st.session_state.trigger_chat = True
+                            st.toast("Advice sent to Chatbot!", icon="🤖")
+                        st.markdown("</div>", unsafe_allow_html=True)
+
+                    except Exception as e:
+                        st.error("Make sure 'icon.jpg' is in your main folder.")
+
                 else:
                     progress_bar.empty()
                     st.error("Disease model not loaded.")
-            # --- ADDING THE CLICKABLE ROBOT ICON ---
-            st.markdown("<br>", unsafe_allow_html=True)
-            _, icon_col = st.columns([5, 1])
-            with icon_col:
-                 try:
-                     img_base64 = get_base64_image("icon.jpg")
-                # 2. CSS for the Circular Floating Icon
-                st.markdown(f"""
-                    <style>
-                    .floating-container {{
-                        position: fixed;
-                        bottom: 20px;
-                        right: 20px;
-                        z-index: 999;
-                    }}
-                    .circular-icon {{
-                        width: 80px;
-                        height: 80px;
-                        border-radius: 50%;
-                        border: 3px solid #28a745;
-                        cursor: pointer;
-                        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-                        transition: transform 0.2s;
-                        object-fit: cover;
-                    }}
-                    .circular-icon:hover {{
-                        transform: scale(1.1);
-                    }}
-                    </style>
-                    
-                    <div class="floating-container">
-                        <a href="#chat-trigger" id="robot-link">
-                            <img src="data:image/png;base64,{img_base64}" class="circular-icon" onclick="document.getElementById('hidden_btn').click();">
-                        </a>
-                    </div>
-                """, unsafe_allow_html=True)
-
-                # 3. The Hidden Trigger Button
-                # We hide this with CSS so you don't see the green box
-                st.markdown("<div style='display:none;'>", unsafe_allow_html=True)
-                if st.button("hidden", key="hidden_btn"):
-                    st.session_state.trigger_chat = True
-                    st.toast("Advice sent to Chatbot!", icon="🤖")
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            except Exception as e:
-                st.error("Make sure 'icon.jpg' is in your main folder.")
-                
                 
             
 
