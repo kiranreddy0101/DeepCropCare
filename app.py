@@ -669,7 +669,7 @@ with tab4:
         genai.configure(api_key=gemini_key)
         
         # 2026 Stable Model Names: 'gemini-3-flash' or 'gemini-2.5-flash'
-        current_model = 'gemini-3-flash' 
+        current_model = 'gemini-3-flash-preview' 
         
         if "chat_session" not in st.session_state:
             model = genai.GenerativeModel(current_model)
