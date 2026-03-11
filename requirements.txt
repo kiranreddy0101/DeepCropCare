@@ -9,6 +9,7 @@ lime==0.2.0.1
 pandas==2.1.4
 python-dotenv
 requests
+google-generativeai
 
 
 
