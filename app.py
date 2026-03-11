@@ -652,62 +652,82 @@ with tab3:
 
     st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
 
-
 with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
+    st.info("Direct access to professional farming advice. Ask about treatments or prevention.")
 
-    gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+    # 1. Configuration & Model Setup
+    # It's better to use 'gemini-2.5-flash-lite' for the highest free daily quota (1,000+ RPD)
+    MODEL_ID = 'gemini-2.5-flash-lite'
+    api_key = st.secrets.get("GEMINI_API_KEY")
 
-    if not gemini_key:
-        st.error("🔑 API Key Missing.")
+    if not api_key:
+        st.error("🔑 Please add your GEMINI_API_KEY to Streamlit Secrets.")
         st.stop()
 
-    genai.configure(api_key=gemini_key)
-    
-    # Switch to Flash-Lite for much higher free limits
-    MODEL_ID = 'gemini-3.1-flash-lite-preview'
-    
+    genai.configure(api_key=api_key)
+
+    # 2. Initialize Chat with a Hidden Persona
     if "chat_session" not in st.session_state:
+        # Get the latest detected disease from Tab 3 (if available)
+        disease_context = st.session_state.get('last_detected_disease', 'general crops')
+        
+        # Define the AI's hidden persona
+        system_msg = (
+            f"You are a professional Agronomist AI. The user's plant was recently "
+            f"diagnosed with '{disease_context}'. Provide expert organic and chemical "
+            f"solutions. Keep answers structured with bullet points. Be concise."
+        )
+        
+        # Start the model and the chat
         model = genai.GenerativeModel(MODEL_ID)
         st.session_state.chat_session = model.start_chat(history=[])
-        # Hidden system instruction
+        
+        # Silently send the system instruction so the model knows its role
         try:
-            st.session_state.chat_session.send_message("You are a helpful Agronomist AI.")
-        except Exception: pass # Ignore setup errors for now
+            st.session_state.chat_session.send_message(system_msg)
+        except Exception:
+            pass # Fail silently if initial setup fails
 
-    # Display History
+    # 3. Display Chat History (Skipping the hidden system message at index 0)
     for i, message in enumerate(st.session_state.chat_session.history):
-        if i == 0: continue 
-        with st.chat_message("assistant" if message.role == "model" else "user"):
+        if i == 0: 
+            continue # Hides the long 'System Instruction' from the user
+        
+        role = "assistant" if message.role == "model" else "user"
+        with st.chat_message(role):
             st.markdown(message.parts[0].text)
 
-    # User Input with Auto-Retry Logic
-    if prompt := st.chat_input("Ask about your crops..."):
+    # 4. User Input Handling
+    if prompt := st.chat_input("Ex: What fertilizer should I use for Tomato Leaf Mold?"):
+        # Show user message immediately
         with st.chat_message("user"):
             st.markdown(prompt)
-            
-        # 🛡️ PROTECTIVE WRAPPER (Auto-Retry)
-        response_received = False
-        with st.spinner("Consulting..."):
-            for attempt in range(3): # Try 3 times
+
+        # Generate response with auto-retry logic for 2026 rate limits
+        response_placeholder = st.empty()
+        with st.spinner("Analyzing agricultural data..."):
+            success = False
+            for attempt in range(2): # Try twice if rate limited
                 try:
                     response = st.session_state.chat_session.send_message(prompt)
                     with st.chat_message("assistant"):
                         st.markdown(response.text)
-                    response_received = True
+                    success = True
                     break
                 except Exception as e:
-                    if "429" in str(e):
-                        wait_time = (attempt + 1) * 2 # Wait 2s, then 4s
-                        st.warning(f"Quota hit. Retrying in {wait_time}s...")
-                        time.sleep(wait_time)
+                    if "429" in str(e): # Rate limit hit
+                        time.sleep(2) # Wait 2 seconds and retry
                     else:
                         st.error(f"Error: {e}")
                         break
-        
-        if not response_received:
-            st.error("🚫 Daily Free Quota Exhausted. Try again tomorrow or use a different API key.")
+            
+            if not success:
+                st.warning("⚠️ Daily quota reached. Please try again in a few hours.")
 
-    if st.button("🗑️ Reset"):
-        del st.session_state.chat_session
+    # 5. Reset Utility
+    st.divider()
+    if st.button("🗑️ Clear Conversation"):
+        if "chat_session" in st.session_state:
+            del st.session_state.chat_session
         st.rerun()
