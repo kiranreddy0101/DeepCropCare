@@ -650,7 +650,7 @@ with tab4:
     st.markdown("Ask anything about pest control, irrigation, or soil health.")
 
     # --- GROK API CONFIG ---
-    GROK_API_KEY = "xai-iMLc6J7fHaVxkRKGGOmgcvLb7LBeWCtz2tucMlNbdMdlZZShj2HaHIVKvt7Hse5zOOnAHTVN9IsCTlsb" # Replace with your actual key
+    GROK_API_KEY = "xai-PYNmiBQ7FuqjDlULGGkfBfViY2waYWtqjZlxGCsIFBEvoHCuZCOZ0GaqjkQVnMqr3IHYCWA1bTBA5rHz" # Replace with your actual key
     
     # Initialize chat history
     if "messages" not in st.session_state:
