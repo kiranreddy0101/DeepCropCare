@@ -652,59 +652,64 @@ with tab3:
 
     st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
 
+import time
+
 with tab4:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
-    st.info("Using Gemini 3 Flash Preview (March 2026 Edition)")
+    st.info("Using Gemini 3.1 Flash-Lite (Highest Free Quota)")
 
-    # --- 1. KEY LOADING ---
     gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
     if not gemini_key:
-        st.error("🔑 API Key Missing: Please add 'GEMINI_API_KEY' to your Secrets.")
+        st.error("🔑 API Key Missing.")
         st.stop()
 
-    # --- 2. CONFIGURATION ---
     genai.configure(api_key=gemini_key)
     
-    # EXACT 2026 MODEL ID
-    MODEL_ID = 'gemini-3-flash-preview'
+    # Switch to Flash-Lite for much higher free limits
+    MODEL_ID = 'gemini-3.1-flash-lite-preview'
     
     if "chat_session" not in st.session_state:
+        model = genai.GenerativeModel(MODEL_ID)
+        st.session_state.chat_session = model.start_chat(history=[])
+        # Hidden system instruction
         try:
-            model = genai.GenerativeModel(MODEL_ID)
-            st.session_state.chat_session = model.start_chat(history=[])
-            
-            # Context Bridge
-            disease = st.session_state.get('last_detected_disease', 'a general plant')
-            st.session_state.chat_session.send_message(
-                f"SYSTEM: You are an Agronomist. Provide advice regarding {disease}. Be brief."
-            )
-        except Exception as e:
-            st.error(f"❌ Could not load model '{MODEL_ID}'. Error: {e}")
-            st.info("Try switching to 'gemini-2.5-flash' (Stable) if preview is unavailable.")
-            st.stop()
+            st.session_state.chat_session.send_message("You are a helpful Agronomist AI.")
+        except Exception: pass # Ignore setup errors for now
 
-    # --- 3. CHAT UI ---
+    # Display History
     for i, message in enumerate(st.session_state.chat_session.history):
-        if i == 0: continue # Hide system prompt
-        role = "assistant" if message.role == "model" else "user"
-        with st.chat_message(role):
+        if i == 0: continue 
+        with st.chat_message("assistant" if message.role == "model" else "user"):
             st.markdown(message.parts[0].text)
 
-    if prompt := st.chat_input("Ask about fertilizer, pests, or harvest..."):
+    # User Input with Auto-Retry Logic
+    if prompt := st.chat_input("Ask about your crops..."):
         with st.chat_message("user"):
             st.markdown(prompt)
-        try:
-            with st.spinner("Gemini 3 is thinking..."):
-                response = st.session_state.chat_session.send_message(prompt)
-                with st.chat_message("assistant"):
-                    st.markdown(response.text)
-        except Exception as e:
-            st.error(f"⚠️ API Error: {e}")
+            
+        # 🛡️ PROTECTIVE WRAPPER (Auto-Retry)
+        response_received = False
+        with st.spinner("Consulting..."):
+            for attempt in range(3): # Try 3 times
+                try:
+                    response = st.session_state.chat_session.send_message(prompt)
+                    with st.chat_message("assistant"):
+                        st.markdown(response.text)
+                    response_received = True
+                    break
+                except Exception as e:
+                    if "429" in str(e):
+                        wait_time = (attempt + 1) * 2 # Wait 2s, then 4s
+                        st.warning(f"Quota hit. Retrying in {wait_time}s...")
+                        time.sleep(wait_time)
+                    else:
+                        st.error(f"Error: {e}")
+                        break
+        
+        if not response_received:
+            st.error("🚫 Daily Free Quota Exhausted. Try again tomorrow or use a different API key.")
 
-    # Reset
-    st.divider()
-    if st.button("🗑️ Reset Conversation"):
-        if "chat_session" in st.session_state:
-            del st.session_state.chat_session
+    if st.button("🗑️ Reset"):
+        del st.session_state.chat_session
         st.rerun()
