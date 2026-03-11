@@ -606,12 +606,8 @@ with tab2:
             
         st.markdown("<br><h3 style='text-align: center;'>✅ Analysis Complete</h3>", unsafe_allow_html=True)
 
-import streamlit as st
-import google.generativeai as genai
-import time
-import os
 
-with tab4:
+with tab3:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
     
     # 1. API Configuration
