@@ -653,81 +653,63 @@ with tab3:
     st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
 
 with tab4:
-    st.markdown("## 💬 DeepCropCare Agronomist AI")
+    st.markdown("## 💬 DeepCropCare Agronomist AI (Gemini Free)")
     st.info("Ask expert advice on pesticides, organic remedies, or soil health.")
 
     # --- 1. SECURE API KEY RETRIEVAL ---
-    # Automatically pulls from .env (local) or Streamlit Secrets (Cloud)
-    grok_api_key = os.getenv("GROK_API_KEY") or st.secrets.get("GROK_API_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
-    if not grok_api_key:
-        st.error("🔑 API Key Missing: Add 'GROK_API_KEY' to your Secrets or .env file.")
+    if not gemini_key:
+        st.error("🔑 Gemini API Key Missing: Add 'GEMINI_API_KEY' to your Secrets or .env file.")
         st.stop()
 
-    # --- 2. INITIALIZE CHAT HISTORY & CONTEXT ---
-    if "messages" not in st.session_state:
-        # Pulling context from Tab 1/Tab 2 so the AI knows what's happening
-        detected_issue = st.session_state.get('last_detected_disease', 'a general plant specimen')
+    # --- 2. CONFIGURE GEMINI ---
+    genai.configure(api_key=gemini_key)
+    
+    # Initialize session state for chat history
+    if "gemini_messages" not in st.session_state:
+        st.session_state.gemini_messages = []
+        # Create a Chat Session
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        st.session_state.chat_session = model.start_chat(history=[])
         
-        st.session_state.messages = [
-            {
-                "role": "system", 
-                "content": (
-                    "You are a professional Agronomist AI. Your role is to assist farmers "
-                    "with scientific and practical advice. The user is currently "
-                    f"analyzing: {detected_issue}. Keep responses clear and actionable."
-                )
-            }
-        ]
+        # Add initial system instruction (Gemini handles this as a first message or system_instruction)
+        intro_context = (
+            "You are a professional Agronomist AI. Provide scientific and practical "
+            "farming advice. A user is consulting you via the DeepCropCare app."
+        )
+        # Optional: Add context from Tab 1 if available
+        if 'last_detected_disease' in st.session_state:
+            intro_context += f" Note: The user just detected {st.session_state.last_detected_disease}."
+        
+        st.session_state.chat_session.send_message(intro_instruction)
 
-    # Render previous chat history
-    for message in st.session_state.messages:
-        if message["role"] != "system":
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+    # Display chat history from the session
+    for message in st.session_state.chat_session.history:
+        role = "assistant" if message.role == "model" else "user"
+        with st.chat_message(role):
+            st.markdown(message.parts[0].text)
 
-    # --- 3. HANDLE USER INPUT & GROK API ---
-    if prompt := st.chat_input("Ex: How do I treat the disease you just found?"):
-        # Display user message and update history
+    # --- 3. HANDLE USER INPUT ---
+    if prompt := st.chat_input("Ex: What are the best organic fertilizers for Rice?"):
         with st.chat_message("user"):
             st.markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
 
         try:
-            # API Setup for xAI (Grok)
-            headers = {
-                "Authorization": f"Bearer {grok_api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "model": "grok-2", # ✅ Standard production model
-                "messages": st.session_state.messages,
-                "stream": False
-            }
-
-            with st.spinner("Consulting agricultural records..."):
-                response = requests.post(
-                    "https://api.x.ai/v1/chat/completions",
-                    headers=headers,
-                    json=payload,
-                    timeout=25
-                )
-                response.raise_for_status()
-                ai_response = response.json()['choices'][0]['message']['content']
-
-            # Display and save AI's response
+            with st.spinner("Gemini is thinking..."):
+                response = st.session_state.chat_session.send_message(prompt)
+                
             with st.chat_message("assistant"):
-                st.markdown(ai_response)
-            st.session_state.messages.append({"role": "assistant", "content": ai_response})
-            
+                st.markdown(response.text)
+                
         except Exception as e:
-            st.error(f"⚠️ Connection Error: {e}")
+            st.error(f"⚠️ Gemini Error: {e}")
 
-    # --- 4. CLEAR HISTORY OPTION ---
+    # --- 4. RESET BUTTON ---
     st.divider()
-    if st.button("🗑️ Reset Consultation"):
-        st.session_state.messages = [st.session_state.messages[0]]
+    if st.button("🗑️ Reset Gemini Chat"):
+        del st.session_state.gemini_messages
+        del st.session_state.chat_session
         st.rerun()
 
     
