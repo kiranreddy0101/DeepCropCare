@@ -12,12 +12,69 @@ import os
 import google.generativeai as genai
 from dotenv import load_dotenv 
 
+
+# --- TRANSLATION DATABASE ---
+LANG_DATA = {
+    "English": {
+        "title": "🌱 DeepCropCare",
+        "subtitle": "Precision AI for Plant Health & Smarter Yields",
+        "tabs": ["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"],
+        "upload_label": "Upload leaf image",
+        "btn_run": "Run Diagnostic Analysis",
+        "btn_weather": "Fetch Live Weather",
+        "btn_recommend": "Recommend Best Crop",
+        "analysis_complete": "Analysis Complete!",
+        "confidence": "Confidence",
+        "rec_action": "💡 Recommended Action",
+        "soil_param": "🧪 Soil Parameters",
+        "weather_title": "🌦️ Local Weather",
+        "placeholder_chat": "Ask about fertilizers, pests, or soil...",
+        "agro_hi": "Hi! I am your Agronomist AI. How can I help you today?",
+        "village_input": "Enter Village & District"
+    },
+    "Hindi": {
+        "title": "🌱 डीपक्रॉपकेयर",
+        "subtitle": "पौधों के स्वास्थ्य और बेहतर पैदावार के लिए सटीक एआई",
+        "tabs": ["🔍 रोग पहचान", "🌾 फसल अनुशंसा", "💬 कृषि विशेषज्ञ", "📘 जानकारी"],
+        "upload_label": "पत्ते की तस्वीर अपलोड करें",
+        "btn_run": "नैदानिक विश्लेषण चलाएं",
+        "btn_weather": "लाइव मौसम प्राप्त करें",
+        "btn_recommend": "सर्वोत्तम फसल की सिफारिश करें",
+        "analysis_complete": "विश्लेषण पूरा हुआ!",
+        "confidence": "आत्मविश्वास",
+        "rec_action": "💡 अनुशंसित कार्रवाई",
+        "soil_param": "🧪 मिट्टी के पैरामीटर",
+        "weather_title": "🌦️ स्थानीय मौसम",
+        "placeholder_chat": "उर्वरक, कीट या मिट्टी के बारे में पूछें...",
+        "agro_hi": "नमस्ते! मैं आपका कृषि विशेषज्ञ एआई हूँ। मैं आपकी कैसे मदद कर सकता हूँ?",
+        "village_input": "गाँव और जिला दर्ज करें"
+    },
+    "Telugu": {
+        "title": "🌱 డీప్‌క్రాప్‌కేర్",
+        "subtitle": "మొక్కల ఆరోగ్యం & మెరుగైన దిగుబడి కోసం ప్రెసిషన్ AI",
+        "tabs": ["🔍 వ్యాధి గుర్తింపు", "🌾 పంట సిఫార్సు", "💬 అగ్రోనమిస్ట్ AI", "📘 ప్రాజెక్ట్ సమాచారం"],
+        "upload_label": "ఆకు చిత్రాన్ని అప్‌లోడ్ చేయండి",
+        "btn_run": "విశ్లేషణను ప్రారంభించండి",
+        "btn_weather": "వాతావరణ వివరాలు పొందండి",
+        "btn_recommend": "ఉత్తమ పంటను సిఫార్సు చేయండి",
+        "analysis_complete": "విశ్లేషణ పూర్తయింది!",
+        "confidence": "ఖచ్చితత్వం",
+        "rec_action": "💡 సిఫార్సు చేయబడిన చర్య",
+        "soil_param": "🧪 నేల పారామితులు",
+        "weather_title": "🌦️ స్థానిక వాతావరణం",
+        "placeholder_chat": "ఎరువులు, తెగుళ్లు లేదా నేల గురించి అడగండి...",
+        "agro_hi": "నమస్కారం! నేను మీ అగ్రోనమిస్ట్ AI. ఈరోజు నేను మీకు ఎలా సహాయం చేయగలను?",
+        "village_input": "గ్రామం & జిల్లా నమోదు చేయండి"
+    }
+}
 # Load the keys from the .env file
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
+selected_lang = st.sidebar.selectbox("🌐 Language / భాష", ["English", "Hindi", "Telugu"])
+t = LANG_DATA[selected_lang]
 
 st.markdown("""
     <style>
@@ -447,62 +504,60 @@ tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommenda
 
 
 with tab1:
-    st.markdown("## 🌿 Plant Disease Analysis")
-    uploaded_file = st.file_uploader("Upload leaf image", type=["jpg", "png", "jpeg"])
+    st.markdown(f"## {t['tabs'][0]}")
+    uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "png", "jpeg"])
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert('RGB')
         
-        # Display small centered image
         col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
         with col_img:
             st.image(image, caption="Uploaded Specimen", use_container_width=True)
         
-        # CENTERED BUTTON FIX
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
-            run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
+            run_btn = st.button(t['btn_run'], use_container_width=True)
         
         if run_btn: 
-            # 1. Visual Progress Feedback
             progress_bar = st.progress(90)
             for percent_complete in range(100):
-                time.sleep(0.001) # Subtle delay for UX
+                time.sleep(0.001)
                 progress_bar.progress(percent_complete + 1)
     
-            with st.spinner("🧠 Identifying pathogens..."):
+            with st.spinner(t['identifying']):
                 if disease_model:
-                    # Processing
                     img_resized = image.resize((224, 224))
                     img_arr = img_to_array(img_resized) / 255.0
                     img_arr = np.expand_dims(img_arr, axis=0)
                     
-                    # Inference
                     prediction = disease_model.predict(img_arr)
                     idx = np.argmax(prediction)
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
                     p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
                     
-                    # 2. Clear Progress UI
                     progress_bar.empty()
-                    st.markdown("<br><h3 style='text-align: center;'>Analysis Complete!</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<br><h3 style='text-align: center;'>{t['analysis_complete']}</h3>", unsafe_allow_html=True)
                     
-                    # 3. Confidence Display (Glassmorphism Card)
                     st.markdown(f"""
                         <div class='prediction-card'>
                             <h2 style='margin:0;'>{p_class_display}</h2>
-                            <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
+                            <h3 style='color: #28a745; margin:0;'>{t['confidence']}: {confidence:.2f}%</h3>
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # Action recommendation
+                    # On-the-fly translation for fertilizer advice
                     if full_class_name in fertilizer_map:
-                        st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
+                        raw_advice = fertilizer_map[full_class_name]
+                        if selected_lang != "English":
+                            advice_prompt = f"Translate this farming advice to {selected_lang}: {raw_advice}. Give only the translation."
+                            translated_advice = genai.GenerativeModel('gemini-1.5-flash').generate_content(advice_prompt).text
+                        else:
+                            translated_advice = raw_advice
+                        st.info(f"**{t['rec_action']}:** {translated_advice}")
                     
-                    # 4. Side-by-Side Diagnostic Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
-                        st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
+                        st.markdown(f"<br><h3 style='text-align: center;'>{t['heatmap']}</h3>", unsafe_allow_html=True)
                         try:
                             heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
                             overlay = overlay_gradcam(img_resized, heatmap)
@@ -516,21 +571,18 @@ with tab1:
                             st.error(f"Visualization error: {e}")
                 else:
                     progress_bar.empty()
-                    st.error("Disease model not loaded.")
-            
+                    st.error("Model Error")
 
 with tab2:
-    st.markdown("## 🚜 Smart Crop Recommendation")
+    st.markdown(f"## {t['tabs'][1]}")
     
-    # Initialize session state for weather if not present
     if "weather_temp" not in st.session_state: st.session_state.weather_temp = 25.0
     if "weather_hum" not in st.session_state: st.session_state.weather_hum = 70.0
 
-    # Layout for inputs
     col_soil, col_weather = st.columns([1.5, 1])
     
     with col_soil:
-        st.write("### 🧪 Soil Parameters")
+        st.write(f"### {t['soil_param']}")
         n1, p1, k1 = st.columns(3)
         N = n1.number_input("Nitrogen (N)", 0, 200, 50)
         P = p1.number_input("Phosphorus (P)", 0, 200, 50)
@@ -539,72 +591,58 @@ with tab2:
         rain = st.number_input("Annual Rainfall (mm)", 0.0, 1000.0, 100.0)
 
     with col_weather:
-        st.write("### 🌦️ Local Weather")
-        city = st.text_input("Enter Village & District", "Kothur, Rangareddy")
+        st.write(f"### {t['weather_title']}")
+        city = st.text_input(t['village_input'], "Kothur, Rangareddy")
         
-        if st.button("Fetch Live Weather", use_container_width=True):
-            t, h, err = get_weather(city)
+        if st.button(t['btn_weather'], use_container_width=True):
+            t_val, h_val, err = get_weather(city)
             if not err:
-                st.session_state.weather_temp = float(t)
-                st.session_state.weather_hum = float(h)
-                st.success(f"📍 Data fetched for {city}")
-            else: 
-                st.error(f"Village not found. Try 'District, State'")
+                st.session_state.weather_temp = float(t_val)
+                st.session_state.weather_hum = float(h_val)
+                st.success(f"📍 {city}")
         
         st.session_state.weather_temp = st.number_input("Temp (°C)", value=float(st.session_state.weather_temp), step=0.1)
         st.session_state.weather_hum = st.number_input("Humidity (%)", value=float(st.session_state.weather_hum), step=0.1)
 
-    # CENTERED RECOMMENDATION BUTTON
     st.markdown("<br>", unsafe_allow_html=True)
     _, btn_col, _ = st.columns([1, 1, 1])
     with btn_col:
-        predict_btn = st.button("Recommend Best Crop", use_container_width=True)
+        predict_btn = st.button(t['btn_recommend'], use_container_width=True)
 
     if predict_btn:
         if crop_model:
-            # Prepare features for the model
             features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
             prediction_idx = crop_model.predict(features)[0]
             crop = label_mapping[prediction_idx]
         else:
-            st.error("Crop model not loaded! Defaulting to demo mode.")
             crop = "rice" 
 
-        # Display the prediction card
         st.markdown(f"""
             <div class='prediction-card'>
-                <h2 style='color: #28a745; margin:0;'>🌱 Recommended: {crop.upper()}</h2>
+                <h2 style='color: #28a745; margin:0;'>🌱 {crop.upper()}</h2>
             </div>
         """, unsafe_allow_html=True)
 
-        # Define columns for info display
+        # On-the-fly translation for Crop Descriptions
+        raw_desc = crop_info[crop]['description']
+        raw_cond = crop_info[crop]['conditions']
+        raw_fert = fertilizer_advice[crop]
+        raw_tip = crop_info[crop]['tips']
+
+        if selected_lang != "English":
+            combined_text = f"Description: {raw_desc}\nConditions: {raw_cond}\nFertilizer: {raw_fert}\nTip: {raw_tip}"
+            trans_result = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Translate this to {selected_lang}. Maintain the structure:\n{combined_text}").text
+            # Simple split logic or just display the translated block
+            display_desc = trans_result
+        else:
+            display_desc = raw_desc
+
         inf1, inf2 = st.columns(2)
-
         with inf1:
-            st.markdown("### 📖 Description")
-            # STYLED DESCRIPTION CONTAINER
-            st.markdown(f"""
-                <div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin-bottom: 15px;">
-                    <p style="margin:0; font-size: 1.1rem; line-height: 1.6; color: white;">
-                        {crop_info[crop]['description']}
-                    </p>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # STYLED CONDITIONS BOX (BLUE)
-            st.markdown(f"""
-                <div style="background-color: #0e2433; padding: 15px; border-radius: 10px; border: 1px solid #1c83e1;">
-                    <p style="margin:0; color: #5dade2; font-weight: bold;">🔍 Optimal Conditions:</p>
-                    <p style="margin:0; color: #85c1e9;">{crop_info[crop]['conditions']}</p>
-                </div>
-            """, unsafe_allow_html=True)
-
-        with inf2:
-            st.markdown("### 🧪 Fertilizer & Care Advice")
-            st.warning(fertilizer_advice[crop])
-            st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
+            st.markdown(f"### 📖 {t['tabs'][3]}")
+            st.markdown(f"""<div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745;">
+                            <p style="color: white;">{display_desc if selected_lang == 'English' else trans_result}</p></div>""", unsafe_allow_html=True)
             
-        st.markdown("<br><h3 style='text-align: center;'>✅ Analysis Complete</h3>", unsafe_allow_html=True)
 
 with tab3:
     st.markdown("## 💬 DeepCropCare Agronomist AI")
