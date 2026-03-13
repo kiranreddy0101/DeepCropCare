@@ -279,6 +279,28 @@ def get_weather(city_name):
     except:
         return 25.0, 70.0, "Weather service unavailable"
 
+def translate_text(text, lang):
+    # If English selected, return original text
+    if lang == "English":
+        return text
+
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash-lite")
+
+        prompt = f"""
+        Translate the following agricultural text to {lang}.
+        Keep farming terms accurate.
+
+        Text:
+        {text}
+        """
+
+        response = model.generate_content(prompt)
+        return response.text.strip()
+
+    except:
+        return text
+
 # --- DATA DICTIONARIES (Kept keys same for logic) ---
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
