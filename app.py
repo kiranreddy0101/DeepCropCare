@@ -444,11 +444,14 @@ crop_info = {
 }
 
 # --- TABS ---
+# Use session state to track which tab is active
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = 0
+
+tab1, tab2, tab3, tab4= st.tabs(tabs)
+# Note: Since standard st.tabs doesn't support 'value' in all versions, 
+# we use a workaround inside the logic.
 tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
-if 'last_detected_disease' not in st.session_state:
-    st.session_state['last_detected_disease'] = None
-if 'trigger_chat' not in st.session_state:
-    st.session_state['trigger_chat'] = False
 
 
 with tab1:
@@ -463,7 +466,6 @@ with tab1:
         with col_img:
             st.image(image, caption="Uploaded Specimen", use_container_width=True)
         
-        # CENTERED BUTTON FIX
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
             run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
@@ -509,18 +511,18 @@ with tab1:
                             with col_b: st.image(overlay, caption="Infection Hotspots")
                         except Exception: pass
 
-                    # --- FIXED CIRCULAR FLOATING ICON ---
+                    # --- IMPROVED CIRCULAR FLOATING ICON (NO VISIBLE BUTTONS) ---
                     try:
                         import base64
                         with open("icon.jpg", "rb") as f:
                             img_base64 = base64.b64encode(f.read()).decode()
                         
-                        # We use a JavaScript 'window.parent' trick to force the tab switch
                         st.markdown(f"""
                             <style>
+                            /* The container for the robot icon */
                             .floating-bot-wrap {{
                                 position: fixed;
-                                bottom: 100px; /* Moved higher to avoid overlap */
+                                bottom: 100px;
                                 right: 30px;
                                 z-index: 999999;
                                 cursor: pointer;
@@ -536,31 +538,48 @@ with tab1:
                             }}
                             .circular-img:hover {{ transform: scale(1.1); }}
                             
-                            /* Completely hide the trigger button from the UI */
-                            div[data-testid="stButton"] > button[key="trigger_bot"] {{
-                                display: none !important;
+                            /* Forcefully hide the actual Streamlit button and its container */
+                            div[data-testid="stButton"] {{
+                                position: absolute;
+                                visibility: hidden;
+                                width: 0;
+                                height: 0;
                             }}
                             </style>
 
-                            <div class="floating-bot-wrap" onclick="triggerPython()">
+                            <div class="floating-bot-wrap" onclick="triggerBotClick()">
                                 <img src="data:image/png;base64,{img_base64}" class="circular-img">
                             </div>
 
                             <script>
-                            function triggerPython() {{
-                                // Find the invisible button and click it
-                                const btn = window.parent.document.querySelector('button[key="trigger_bot"]');
-                                if (btn) btn.click();
+                            function triggerBotClick() {{
+                                // This finds the first button in the app that contains the specific text 
+                                // and clicks it hidden from view.
+                                var buttons = window.parent.document.querySelectorAll('button');
+                                for (var i = 0; i < buttons.length; i++) {{
+                                    if (buttons[i].innerText === "INTERNAL_TRIGGER_DO_NOT_SHOW") {{
+                                        buttons[i].click();
+                                        break;
+                                    }}
+                                }}
                             }}
                             </script>
                         """, unsafe_allow_html=True)
 
-                        # This button is hidden by CSS but provides the logic trigger
-                        if st.button("AI Logic", key="trigger_bot"):
+                        # We use a unique string that the JavaScript looks for
+                        if st.button("INTERNAL_TRIGGER_DO_NOT_SHOW"):
                             st.session_state.trigger_chat = True
-                            st.toast("Switching to Chatbot...", icon="🤖")
-                            # If using a specific tab index logic, set it here
-                            # st.session_state.active_tab = 2 
+                            # This is the key to switching tabs: 
+                            # We send a JS command to the parent window to click the 3rd tab button
+                            st.markdown("""
+                                <script>
+                                    var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                                    if (tabs.length >= 3) {
+                                        tabs[2].click(); 
+                                    }
+                                </script>
+                            """, unsafe_allow_html=True)
+                            st.rerun()
 
                     except Exception as e:
                         st.error("Icon loading error.")
