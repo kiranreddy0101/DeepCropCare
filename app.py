@@ -185,7 +185,6 @@ def get_weather(city_name):
         return res["main"]["temp"], res["main"]["humidity"], None
     except: return 25.0, 70.0, "Weather service unavailable"
 
-translator = Translator()
 
 @st.cache_data(show_spinner=False)
 def translate_text(text, lang):
@@ -453,7 +452,7 @@ crop_info = {
         "tips": "Control coffee berry borer; maintain shade trees."
     }
 }
-
+translator = Translator()
 # --- TABS ---
 tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
 
