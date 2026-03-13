@@ -19,6 +19,16 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
+language = st.selectbox(
+    "🌐 Select Language",
+    ["English", "Hindi", "Telugu"]
+)
+
+lang_code = {
+    "English": "en",
+    "Hindi": "hi",
+    "Telugu": "te"
+}[language]
 
 st.markdown("""
     <style>
