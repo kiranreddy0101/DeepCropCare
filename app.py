@@ -602,73 +602,130 @@ with tab1:
 
 with tab2:
     st.markdown(f"## 🚜 {T['tabs'][1]}")
-    if "weather_temp" not in st.session_state: st.session_state.weather_temp = 25.0
-    if "weather_hum" not in st.session_state: st.session_state.weather_hum = 70.0
+    if "weather_temp" not in st.session_state:
+        st.session_state.weather_temp = 25.0
+    if "weather_hum" not in st.session_state:
+        st.session_state.weather_hum = 70.0
 
     col_soil, col_weather = st.columns([1.5, 1])
+
     with col_soil:
         st.write(f"### {T['soil_params']}")
         n1, p1, k1 = st.columns(3)
+
         N = n1.number_input(T["nitrogen"], 0, 200, 50)
         P = p1.number_input(T["phosphorus"], 0, 200, 50)
         K = k1.number_input(T["potassium"], 0, 200, 50)
+
         ph = st.slider(T["ph"], 0.0, 14.0, 6.5)
         rain = st.number_input(T["rainfall"], 0.0, 1000.0, 100.0)
 
     with col_weather:
         st.write(f"### {T['weather_title']}")
         city = st.text_input(T["city_label"], "Kothur, Rangareddy")
+
         if st.button(T["fetch_weather"], use_container_width=True):
             t, h, err = get_weather(city)
+
             if not err:
                 st.session_state.weather_temp = float(t)
                 st.session_state.weather_hum = float(h)
                 st.success(f"📍 Data: {city}")
-            else: st.error("Location error.")
-        
-        st.session_state.weather_temp = st.number_input("Temp (°C)", value=float(st.session_state.weather_temp), step=0.1)
-        st.session_state.weather_hum = st.number_input("Humidity (%)", value=float(st.session_state.weather_hum), step=0.1)
+            else:
+                st.error("Location error.")
+
+        st.session_state.weather_temp = st.number_input(
+            "Temp (°C)",
+            value=float(st.session_state.weather_temp),
+            step=0.1
+        )
+
+        st.session_state.weather_hum = st.number_input(
+            "Humidity (%)",
+            value=float(st.session_state.weather_hum),
+            step=0.1
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
+
     _, btn_col, _ = st.columns([1, 1, 1])
     with btn_col:
         predict_btn = st.button(T["rec_crop_btn"], use_container_width=True)
 
     if predict_btn:
+
         if crop_model:
-            features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
+            features = np.array([[N, P, K,
+                                  st.session_state.weather_temp,
+                                  st.session_state.weather_hum,
+                                  ph,
+                                  rain]])
+
             prediction_idx = crop_model.predict(features)[0]
             crop = label_mapping[prediction_idx]
+
         else:
             st.error("Model Error")
-            crop = "rice" 
+            crop = "rice"
 
         st.markdown(f"""
             <div class='prediction-card'>
-                <h2 style='color: #28a745; margin:0;'>🌱 {T['rec_crop_result']}: {crop.upper()}</h2>
+                <h2 style='color: #28a745; margin:0;'>
+                🌱 {T['rec_crop_result']}: {crop.upper()}
+                </h2>
             </div>
         """, unsafe_allow_html=True)
 
         inf1, inf2 = st.columns(2)
+
+        # ---------- LEFT COLUMN ----------
         with inf1:
-            st.markdown(f"### 📖 {T['description']}")
+
+            desc = translate_text(crop_info[crop]['description'], lang)
+            cond = translate_text(crop_info[crop]['conditions'], lang)
+
             st.markdown(f"""
-                <div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin-bottom: 15px;">
-                    <p style="margin:0; font-size: 1.1rem; line-height: 1.6; color: white;">{crop_info[crop]['description']}</p>
-                </div>
+            <div style="background-color: #1a1c23;
+                        padding: 20px;
+                        border-radius: 10px;
+                        border-left: 5px solid #28a745;
+                        margin-bottom: 15px;">
+                <p style="margin:0;
+                          font-size: 1.1rem;
+                          line-height: 1.6;
+                          color: white;">
+                    {desc}
+                </p>
+            </div>
             """, unsafe_allow_html=True)
 
             st.markdown(f"""
-                <div style="background-color: #0e2433; padding: 15px; border-radius: 10px; border: 1px solid #1c83e1;">
-                    <p style="margin:0; color: #5dade2; font-weight: bold;">🔍 {T['optimal_cond']}:</p>
-                    <p style="margin:0; color: #85c1e9;">{crop_info[crop]['conditions']}</p>
+                <div style="background-color: #0e2433;
+                            padding: 15px;
+                            border-radius: 10px;
+                            border: 1px solid #1c83e1;">
+                    <p style="margin:0;
+                              color: #5dade2;
+                              font-weight: bold;">
+                        🔍 {T['optimal_cond']}:
+                    </p>
+
+                    <p style="margin:0; color: #85c1e9;">
+                        {cond}
+                    </p>
                 </div>
             """, unsafe_allow_html=True)
 
+        # ---------- RIGHT COLUMN ----------
         with inf2:
+
             st.markdown(f"### 🧪 {T['fert_care']}")
-            st.warning(fertilizer_advice[crop])
-            st.success(f"**{T['pro_tip']}:** {crop_info[crop]['tips']}")
+
+            fert = translate_text(fertilizer_advice[crop], lang)
+            tip = translate_text(crop_info[crop]['tips'], lang)
+
+            st.warning(fert)
+            st.success(f"**{T['pro_tip']}:** {tip}")
 
 with tab3:
     st.markdown(f"## 💬 {T['tabs'][2]}")
