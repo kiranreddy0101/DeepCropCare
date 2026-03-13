@@ -443,16 +443,16 @@ crop_info = {
     }
 }
 
-# --- TABS ---
-# Use session state to track which tab is active
+# --- TABS DEFINITION ---
+# 1. Define the list FIRST so the NameError goes away
+tab_titles = ["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"]
+
+# 2. Initialize active_tab if not present
 if 'active_tab' not in st.session_state:
     st.session_state.active_tab = 0
 
-tab1, tab2, tab3, tab4= st.tabs(tabs)
-# Note: Since standard st.tabs doesn't support 'value' in all versions, 
-# we use a workaround inside the logic.
-tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
-
+# 3. Create the tabs ONCE
+tab1, tab2, tab3, tab4 = st.tabs(tab_titles)
 
 with tab1:
     st.markdown("## 🌿 Plant Disease Analysis")
@@ -511,7 +511,7 @@ with tab1:
                             with col_b: st.image(overlay, caption="Infection Hotspots")
                         except Exception: pass
 
-                    # --- IMPROVED CIRCULAR FLOATING ICON (NO VISIBLE BUTTONS) ---
+                    # --- FIXED CIRCULAR FLOATING ICON & AUTO-SWITCH ---
                     try:
                         import base64
                         with open("icon.jpg", "rb") as f:
@@ -519,7 +519,11 @@ with tab1:
                         
                         st.markdown(f"""
                             <style>
-                            /* The container for the robot icon */
+                            /* 1. COMPLETELY REMOVE THE GREEN BUTTON CONTAINER */
+                            div.element-container:has(button:contains("INTERNAL_TRIGGER_DO_NOT_SHOW")) {{
+                                display: none !important;
+                            }}
+
                             .floating-bot-wrap {{
                                 position: fixed;
                                 bottom: 100px;
@@ -528,63 +532,38 @@ with tab1:
                                 cursor: pointer;
                             }}
                             .circular-img {{
-                                width: 90px;
-                                height: 90px;
+                                width: 95px;
+                                height: 95px;
                                 border-radius: 50%;
                                 border: 4px solid #28a745;
-                                box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
-                                transition: transform 0.3s;
+                                box-shadow: 0px 4px 15px rgba(0,0,0,0.4);
                                 background-color: white;
+                                transition: transform 0.2s;
                             }}
                             .circular-img:hover {{ transform: scale(1.1); }}
-                            
-                            /* Forcefully hide the actual Streamlit button and its container */
-                            div[data-testid="stButton"] {{
-                                position: absolute;
-                                visibility: hidden;
-                                width: 0;
-                                height: 0;
-                            }}
                             </style>
 
-                            <div class="floating-bot-wrap" onclick="triggerBotClick()">
+                            <div class="floating-bot-wrap" onclick="window.parent.document.querySelectorAll('button').forEach(btn => {{ if(btn.innerText === 'INTERNAL_TRIGGER_DO_NOT_SHOW') btn.click(); }})">
                                 <img src="data:image/png;base64,{img_base64}" class="circular-img">
                             </div>
-
-                            <script>
-                            function triggerBotClick() {{
-                                // This finds the first button in the app that contains the specific text 
-                                // and clicks it hidden from view.
-                                var buttons = window.parent.document.querySelectorAll('button');
-                                for (var i = 0; i < buttons.length; i++) {{
-                                    if (buttons[i].innerText === "INTERNAL_TRIGGER_DO_NOT_SHOW") {{
-                                        buttons[i].click();
-                                        break;
-                                    }}
-                                }}
-                            }}
-                            </script>
                         """, unsafe_allow_html=True)
 
-                        # We use a unique string that the JavaScript looks for
+                        # This button is hidden by the CSS above
                         if st.button("INTERNAL_TRIGGER_DO_NOT_SHOW"):
                             st.session_state.trigger_chat = True
-                            # This is the key to switching tabs: 
-                            # We send a JS command to the parent window to click the 3rd tab button
-                            st.markdown("""
+                            # This JS finds the 3rd tab (Agronomist AI) and clicks it
+                            st.components.v1.html("""
                                 <script>
-                                    var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-                                    if (tabs.length >= 3) {
-                                        tabs[2].click(); 
-                                    }
+                                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                                if (tabs.length >= 3) {
+                                    tabs[2].click();
+                                }
                                 </script>
-                            """, unsafe_allow_html=True)
+                            """, height=0)
                             st.rerun()
 
                     except Exception as e:
-                        st.error("Icon loading error.")
-                else:
-                    st.error("Model missing.")
+                        st.error("Icon display error.")
                 
             
 
