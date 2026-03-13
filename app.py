@@ -691,15 +691,21 @@ with tab3:
     if "messages" not in st.session_state:
         st.session_state.messages = [{"role": "assistant", "content": T["chat_hi"]}]
 
-    if "chat_session" not in st.session_state:
+    # Ensure chat session exists
+    if "chat_session" not in st.session_state or st.session_state.chat_session is None:
+
         disease_context = st.session_state.get('last_detected_disease', 'general farming')
-        # Instruct the AI to reply in the selected language
+
         system_instruction = (
-            f"You are a professional Agronomist AI. The user's plant has {disease_context}. "
-            f"Please respond primarily in {lang}. Be concise and use bullet points."
+           f"You are a professional Agronomist AI. The user's plant has {disease_context}. "
+           "Be concise, use bullet points, and provide expert farming advice."
         )
-        model = genai.GenerativeModel(model_name=MODEL_ID, system_instruction=system_instruction)
-        st.session_state.chat_session = model.start_chat(history=[])
+
+        model = genai.GenerativeModel(
+        model_name=MODEL_ID,
+        system_instruction=system_instruction
+       )
+       st.session_state.chat_session = model.start_chat(history=[])
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]): st.markdown(msg["content"])
@@ -715,6 +721,13 @@ with tab3:
                 st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 with st.chat_message("assistant"): st.markdown(ai_response)
             except Exception as e: st.error(f"Chat Error: {e}")
+
+    if st.button("🗑️ Reset Chat"):
+       st.session_state.chat_session = None
+       st.session_state.messages = [
+        {"role": "assistant", "content": "Hi! I am your Agronomist AI. How can I help you today?"}
+       ]
+       st.rerun()
 
 with tab4:
     st.markdown(f"## 📘 {T['tabs'][3]}")
