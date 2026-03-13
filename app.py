@@ -152,6 +152,16 @@ def overlay_gradcam(original_img, heatmap, alpha=0.4):
     # CRITICAL: Convert BGR to RGB so the colors display correctly in Streamlit
     return cv2.cvtColor(overlay_img, cv2.COLOR_BGR2RGB)
 
+
+def get_weather(city_name):
+    API_KEY = "8c3a497f31607fe66be1f23c65538904"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
+    try:
+        res = requests.get(url).json()
+        return res["main"]["temp"], res["main"]["humidity"], None
+    except: return 25.0, 70.0, "Weather service unavailable"
+
+
 # --- MODEL LOADING (Remains the same) ---
 @st.cache_resource
 def load_resources():
@@ -175,14 +185,6 @@ def load_resources():
 
 disease_model, crop_model, detected_conv_name = load_resources()
 
-# --- HELPER FUNCTIONS ---
-def get_weather(city_name):
-    API_KEY = "8c3a497f31607fe66be1f23c65538904"
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
-    try:
-        res = requests.get(url).json()
-        return res["main"]["temp"], res["main"]["humidity"], None
-    except: return 25.0, 70.0, "Weather service unavailable"
 
 # --- DATA DICTIONARIES ---
 class_names = [
