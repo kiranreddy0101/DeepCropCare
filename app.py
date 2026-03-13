@@ -262,14 +262,22 @@ def load_resources():
 
 disease_model, crop_model, detected_conv_name = load_resources()
 
-# --- HELPER FUNCTIONS ---
 def get_weather(city_name):
-    API_KEY = "8c3a497f31607fe66be1f23c65538904"
+    API_KEY = os.getenv("WEATHER_API_KEY")
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
+
     try:
         res = requests.get(url).json()
-        return res["main"]["temp"], res["main"]["humidity"], None
-    except: return 25.0, 70.0, "Weather service unavailable"
+
+        if "main" in res:
+            temp = res["main"]["temp"]
+            humidity = res["main"]["humidity"]
+            return temp, humidity, None
+        else:
+            return 25.0, 70.0, "Invalid location"
+
+    except:
+        return 25.0, 70.0, "Weather service unavailable"
 
 # --- DATA DICTIONARIES (Kept keys same for logic) ---
 class_names = [
@@ -562,7 +570,9 @@ with tab1:
                     idx = np.argmax(prediction)
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
-                    p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
+                    p_class_display = full_class_name.replace('___', '-').replace('_', ' ')
+                    # Save disease for Agronomist AI
+                    st.session_state["last_detected_disease"] = p_class_display
                     
                     progress_bar.empty()
                     st.markdown(f"<br><h3 style='text-align: center;'>{T['analysis_complete']}</h3>", unsafe_allow_html=True)
@@ -671,6 +681,12 @@ with tab3:
         st.stop()
 
     genai.configure(api_key=api_key)
+    if "prev_lang" not in st.session_state:
+        st.session_state.prev_lang = lang
+    if st.session_state.prev_lang != lang:
+        st.session_state.messages = [{"role": "assistant", "content": T["chat_hi"]}]
+        st.session_state.chat_session = None
+        st.session_state.prev_lang = lang
 
     if "messages" not in st.session_state:
         st.session_state.messages = [{"role": "assistant", "content": T["chat_hi"]}]
