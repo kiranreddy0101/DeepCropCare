@@ -12,8 +12,7 @@ import os
 import google.generativeai as genai
 from dotenv import load_dotenv 
 
-
-# --- TRANSLATION DATABASE ---
+# --- 1. FIXED TRANSLATION DATABASE ---
 LANG_DATA = {
     "English": {
         "title": "🌱 DeepCropCare",
@@ -23,6 +22,7 @@ LANG_DATA = {
         "btn_run": "Run Diagnostic Analysis",
         "btn_weather": "Fetch Live Weather",
         "btn_recommend": "Recommend Best Crop",
+        "identifying": "🧠 Identifying pathogens...",
         "analysis_complete": "Analysis Complete!",
         "confidence": "Confidence",
         "rec_action": "💡 Recommended Action",
@@ -30,51 +30,59 @@ LANG_DATA = {
         "weather_title": "🌦️ Local Weather",
         "placeholder_chat": "Ask about fertilizers, pests, or soil...",
         "agro_hi": "Hi! I am your Agronomist AI. How can I help you today?",
-        "village_input": "Enter Village & District"
+        "village_input": "Enter Village & District",
+        "heatmap": "🎯 AI Heatmap: Detected Infection Zones"
     },
     "Hindi": {
         "title": "🌱 डीपक्रॉपकेयर",
-        "subtitle": "पौधों के स्वास्थ्य और बेहतर पैदावार के लिए सटीक एआई",
+        "subtitle": "पौधों के स्वास्थ्य के लिए सटीक एआई",
         "tabs": ["🔍 रोग पहचान", "🌾 फसल अनुशंसा", "💬 कृषि विशेषज्ञ", "📘 जानकारी"],
         "upload_label": "पत्ते की तस्वीर अपलोड करें",
         "btn_run": "नैदानिक विश्लेषण चलाएं",
         "btn_weather": "लाइव मौसम प्राप्त करें",
         "btn_recommend": "सर्वोत्तम फसल की सिफारिश करें",
+        "identifying": "🧠 रोगजनकों की पहचान की जा रही है...",
         "analysis_complete": "विश्लेषण पूरा हुआ!",
         "confidence": "आत्मविश्वास",
         "rec_action": "💡 अनुशंसित कार्रवाई",
         "soil_param": "🧪 मिट्टी के पैरामीटर",
         "weather_title": "🌦️ स्थानीय मौसम",
         "placeholder_chat": "उर्वरक, कीट या मिट्टी के बारे में पूछें...",
-        "agro_hi": "नमस्ते! मैं आपका कृषि विशेषज्ञ एआई हूँ। मैं आपकी कैसे मदद कर सकता हूँ?",
-        "village_input": "गाँव और जिला दर्ज करें"
+        "agro_hi": "नमस्ते! मैं आपका कृषि विशेषज्ञ एआई हूँ।",
+        "village_input": "गाँव और जिला दर्ज करें",
+        "heatmap": "🎯 एआई हीटमैप: संक्रमण क्षेत्रों का पता चला"
     },
     "Telugu": {
         "title": "🌱 డీప్‌క్రాప్‌కేర్",
-        "subtitle": "మొక్కల ఆరోగ్యం & మెరుగైన దిగుబడి కోసం ప్రెసిషన్ AI",
+        "subtitle": "మొక్కల ఆరోగ్యం కోసం ప్రెసిషన్ AI",
         "tabs": ["🔍 వ్యాధి గుర్తింపు", "🌾 పంట సిఫార్సు", "💬 అగ్రోనమిస్ట్ AI", "📘 ప్రాజెక్ట్ సమాచారం"],
         "upload_label": "ఆకు చిత్రాన్ని అప్‌లోడ్ చేయండి",
         "btn_run": "విశ్లేషణను ప్రారంభించండి",
         "btn_weather": "వాతావరణ వివరాలు పొందండి",
         "btn_recommend": "ఉత్తమ పంటను సిఫార్సు చేయండి",
+        "identifying": "🧠 వ్యాధి కారకాలను గుర్తిస్తోంది...",
         "analysis_complete": "విశ్లేషణ పూర్తయింది!",
         "confidence": "ఖచ్చితత్వం",
         "rec_action": "💡 సిఫార్సు చేయబడిన చర్య",
         "soil_param": "🧪 నేల పారామితులు",
         "weather_title": "🌦️ స్థానిక వాతావరణం",
-        "placeholder_chat": "ఎరువులు, తెగుళ్లు లేదా నేల గురించి అడగండి...",
-        "agro_hi": "నమస్కారం! నేను మీ అగ్రోనమిస్ట్ AI. ఈరోజు నేను మీకు ఎలా సహాయం చేయగలను?",
-        "village_input": "గ్రామం & జిల్లా నమోదు చేయండి"
+        "placeholder_chat": "ఎరువులు లేదా తెగుళ్ల గురించి అడగండి...",
+        "agro_hi": "నమస్కారం! నేను మీ అగ్రోనమిస్ట్ AI.",
+        "village_input": "గ్రామం & జిల్లా నమోదు చేయండి",
+        "heatmap": "🎯 AI హీట్‌మ్యాప్: ఇన్ఫెక్షన్ జోన్‌లు గుర్తించబడ్డాయి"
     }
 }
+
+# --- 2. LANGUAGE SELECTOR (Place this right after LANG_DATA) ---
+selected_lang = st.sidebar.selectbox("🌐 Language / భాష", ["English", "Hindi", "Telugu"])
+t = LANG_DATA[selected_lang]
+
 # Load the keys from the .env file
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
-selected_lang = st.sidebar.selectbox("🌐 Language / భాష", ["English", "Hindi", "Telugu"])
-t = LANG_DATA[selected_lang]
 
 st.markdown("""
     <style>
@@ -502,7 +510,6 @@ crop_info = {
 # --- TABS ---
 tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
 
-
 with tab1:
     st.markdown(f"## {t['tabs'][0]}")
     uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "png", "jpeg"])
@@ -519,7 +526,7 @@ with tab1:
             run_btn = st.button(t['btn_run'], use_container_width=True)
         
         if run_btn: 
-            progress_bar = st.progress(90)
+            progress_bar = st.progress(0)
             for percent_complete in range(100):
                 time.sleep(0.001)
                 progress_bar.progress(percent_complete + 1)
@@ -546,32 +553,25 @@ with tab1:
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # On-the-fly translation for fertilizer advice
                     if full_class_name in fertilizer_map:
                         raw_advice = fertilizer_map[full_class_name]
+                        # Safe translation logic
                         if selected_lang != "English":
-                            advice_prompt = f"Translate this farming advice to {selected_lang}: {raw_advice}. Give only the translation."
-                            translated_advice = genai.GenerativeModel('gemini-1.5-flash').generate_content(advice_prompt).text
+                            try:
+                                translated_advice = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Translate to {selected_lang}: {raw_advice}").text
+                            except:
+                                translated_advice = raw_advice # Fallback to English if API fails
                         else:
                             translated_advice = raw_advice
                         st.info(f"**{t['rec_action']}:** {translated_advice}")
                     
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
                         st.markdown(f"<br><h3 style='text-align: center;'>{t['heatmap']}</h3>", unsafe_allow_html=True)
-                        try:
-                            heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                            overlay = overlay_gradcam(img_resized, heatmap)
-                            
-                            col_a, col_b = st.columns(2)
-                            with col_a:
-                                st.image(img_resized, caption="Original Scan", use_container_width=True)
-                            with col_b:
-                                st.image(overlay, caption="Infection Hotspots", use_container_width=True)
-                        except Exception as e:
-                            st.error(f"Visualization error: {e}")
-                else:
-                    progress_bar.empty()
-                    st.error("Model Error")
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                        overlay = overlay_gradcam(img_resized, heatmap)
+                        col_a, col_b = st.columns(2)
+                        with col_a: st.image(img_resized, use_container_width=True)
+                        with col_b: st.image(overlay, use_container_width=True)
 
 with tab2:
     st.markdown(f"## {t['tabs'][1]}")
