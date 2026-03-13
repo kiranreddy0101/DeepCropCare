@@ -10,8 +10,7 @@ import requests
 import time
 import os
 import google.generativeai as genai
-from dotenv import load_dotenv
-from googletrans import Translator
+from dotenv import load_dotenv 
 
 # Load the keys from the .env file
 load_dotenv()
@@ -19,16 +18,6 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="DeepCropCare", layout="wide")
-language = st.selectbox(
-    "🌐 Select Language",
-    ["English", "Hindi", "Telugu"]
-)
-
-lang_code = {
-    "English": "en",
-    "Hindi": "hi",
-    "Telugu": "te"
-}[language]
 
 st.markdown("""
     <style>
@@ -125,20 +114,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# --- TRANSLATION FUNCTION ---
 
-def translate_text(text, lang):
-    if lang == "en":
-        return text
-
-    prompt = f"Translate this text to {lang}. Only return translated text:\n{text}"
-
-    try:
-        model = genai.GenerativeModel("gemini-2.5-flash-lite")
-        response = model.generate_content(prompt)
-        return response.text
-    except:
-        return text
 
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
@@ -465,7 +441,7 @@ crop_info = {
         "tips": "Control coffee berry borer; maintain shade trees."
     }
 }
-translator = Translator()
+
 # --- TABS ---
 tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
 
@@ -507,7 +483,6 @@ with tab1:
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
                     p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
-                    p_class_display = translate_text(p_class_display, lang_code)
                     
                     # 2. Clear Progress UI
                     progress_bar.empty()
@@ -523,10 +498,7 @@ with tab1:
                     
                     # Action recommendation
                     if full_class_name in fertilizer_map:
-                        fert_text = translate_text(fertilizer_map[full_class_name], lang_code)
-                        label_text = translate_text("Recommended Action", lang_code)
-
-                        st.info(f"**💡 {label_text}:** {fert_text}")
+                        st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
                     
                     # 4. Side-by-Side Diagnostic Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
@@ -601,10 +573,7 @@ with tab2:
         # Display the prediction card
         st.markdown(f"""
             <div class='prediction-card'>
-                crop_name = translate_text(crop.upper(), lang_code)
-                rec_label = translate_text("Recommended", lang_code)
-
-                <h2 style='color: #28a745; margin:0;'>🌱 {rec_label}: {crop_name}</h2>
+                <h2 style='color: #28a745; margin:0;'>🌱 Recommended: {crop.upper()}</h2>
             </div>
         """, unsafe_allow_html=True)
 
@@ -617,7 +586,7 @@ with tab2:
             st.markdown(f"""
                 <div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin-bottom: 15px;">
                     <p style="margin:0; font-size: 1.1rem; line-height: 1.6; color: white;">
-                        translate_text(crop_info[crop]['description'], lang_code)
+                        {crop_info[crop]['description']}
                     </p>
                 </div>
             """, unsafe_allow_html=True)
@@ -626,17 +595,14 @@ with tab2:
             st.markdown(f"""
                 <div style="background-color: #0e2433; padding: 15px; border-radius: 10px; border: 1px solid #1c83e1;">
                     <p style="margin:0; color: #5dade2; font-weight: bold;">🔍 Optimal Conditions:</p>
-                    <p style="margin:0; color: #85c1e9;">translate_text(crop_info[crop]['conditions'], lang_code)</p>
+                    <p style="margin:0; color: #85c1e9;">{crop_info[crop]['conditions']}</p>
                 </div>
             """, unsafe_allow_html=True)
 
         with inf2:
             st.markdown("### 🧪 Fertilizer & Care Advice")
-            st.warning(translate_text(fertilizer_advice[crop], lang_code))
-            tip = translate_text(crop_info[crop]['tips'], lang_code)
-            tip_label = translate_text("Pro Tip", lang_code)
-
-            st.success(f"**{tip_label}:** {tip}")
+            st.warning(fertilizer_advice[crop])
+            st.success(f"**Pro-Tip:** {crop_info[crop]['tips']}")
             
         st.markdown("<br><h3 style='text-align: center;'>✅ Analysis Complete</h3>", unsafe_allow_html=True)
 
@@ -680,9 +646,7 @@ with tab3:
             st.markdown(msg["content"])
 
     # 4. Handle User Input (Stays at the bottom)
-    input_label = translate_text("Ask about fertilizers, pests, or soil...", lang_code)
-
-    if prompt := st.chat_input(input_label):
+    if prompt := st.chat_input("Ask about fertilizers, pests, or soil..."):
         # Add user message and display
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -691,10 +655,7 @@ with tab3:
         # Generate AI Response
         with st.spinner("Consulting Agronomist..."):
             try:
-                translated_prompt = translate_text(prompt, "en")
-                response = st.session_state.chat_session.send_message(translated_prompt)
-
-                ai_response = translate_text(response.text, lang_code)
+                response = st.session_state.chat_session.send_message(prompt)
                 ai_response = response.text
                 
                 # Add AI message to state and display
