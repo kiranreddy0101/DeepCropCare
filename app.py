@@ -623,25 +623,35 @@ with tab2:
             </div>
         """, unsafe_allow_html=True)
 
-        # On-the-fly translation for Crop Descriptions
+        # PREPARE DATA
         raw_desc = crop_info[crop]['description']
-        raw_cond = crop_info[crop]['conditions']
         raw_fert = fertilizer_advice[crop]
-        raw_tip = crop_info[crop]['tips']
+
+        # --- SAFE TRANSLATION BLOCK ---
+        display_desc = raw_desc
+        display_fert = raw_fert
 
         if selected_lang != "English":
-            combined_text = f"Description: {raw_desc}\nConditions: {raw_cond}\nFertilizer: {raw_fert}\nTip: {raw_tip}"
-            trans_result = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Translate this to {selected_lang}. Maintain the structure:\n{combined_text}").text
-            # Simple split logic or just display the translated block
-            display_desc = trans_result
-        else:
-            display_desc = raw_desc
+            try:
+                # We combine them to make only ONE API call (saves rate limits)
+                combined_query = f"Translate the following to {selected_lang}. Return only the translation:\n1. {raw_desc}\n2. {raw_fert}"
+                response = genai.GenerativeModel('gemini-1.5-flash').generate_content(combined_query)
+                # If it works, it replaces English with the translation
+                display_desc = response.text
+                display_fert = "" # Keeping it empty as desc now contains both
+            except Exception as e:
+                # If API fails (gRPC error), it stays in English and shows a small warning
+                st.warning("Translation service busy. Showing English version.")
 
         inf1, inf2 = st.columns(2)
         with inf1:
             st.markdown(f"### 📖 {t['tabs'][3]}")
             st.markdown(f"""<div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745;">
-                            <p style="color: white;">{display_desc if selected_lang == 'English' else trans_result}</p></div>""", unsafe_allow_html=True)
+                            <p style="color: white;">{display_desc}</p></div>""", unsafe_allow_html=True)
+        with inf2:
+            st.markdown(f"### 🧪 {t['rec_action']}")
+            if display_fert: # Only show if not already merged in translation
+                st.warning(display_fert)
             
 
 with tab3:
