@@ -9,7 +9,6 @@ import joblib
 import requests
 import time
 import os
-import base64
 import google.generativeai as genai
 from dotenv import load_dotenv 
 
@@ -114,9 +113,9 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-def get_base64_image(path):
-                with open(path, "rb") as f:
-                    return base64.b64encode(f.read()).decode()
+
+
+
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
@@ -443,16 +442,9 @@ crop_info = {
     }
 }
 
-# --- TABS DEFINITION ---
-# 1. Define the list FIRST so the NameError goes away
-tab_titles = ["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"]
+# --- TABS ---
+tab1, tab2, tab3, tab4= st.tabs(["🔍 Disease Detection", "🌾 Crop Recommendation", "💬 Agronomist AI", "📘 Project Info"])
 
-# 2. Initialize active_tab if not present
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 0
-
-# 3. Create the tabs ONCE
-tab1, tab2, tab3, tab4 = st.tabs(tab_titles)
 
 with tab1:
     st.markdown("## 🌿 Plant Disease Analysis")
@@ -466,105 +458,65 @@ with tab1:
         with col_img:
             st.image(image, caption="Uploaded Specimen", use_container_width=True)
         
+        # CENTERED BUTTON FIX
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
             run_btn = st.button("Run Diagnostic Analysis", use_container_width=True)
         
         if run_btn: 
-            progress_bar = st.progress(0)
+            # 1. Visual Progress Feedback
+            progress_bar = st.progress(90)
             for percent_complete in range(100):
-                time.sleep(0.001)
+                time.sleep(0.001) # Subtle delay for UX
                 progress_bar.progress(percent_complete + 1)
     
             with st.spinner("🧠 Identifying pathogens..."):
                 if disease_model:
+                    # Processing
                     img_resized = image.resize((224, 224))
                     img_arr = img_to_array(img_resized) / 255.0
                     img_arr = np.expand_dims(img_arr, axis=0)
                     
+                    # Inference
                     prediction = disease_model.predict(img_arr)
                     idx = np.argmax(prediction)
                     confidence = np.max(prediction) * 100
                     full_class_name = class_names[idx]
                     p_class_display = full_class_name.replace('___', ' ').replace('_', ' ')
                     
-                    st.session_state['last_detected_disease'] = p_class_display
+                    # 2. Clear Progress UI
                     progress_bar.empty()
+                    st.markdown("<br><h3 style='text-align: center;'>Analysis Complete!</h3>", unsafe_allow_html=True)
                     
+                    # 3. Confidence Display (Glassmorphism Card)
                     st.markdown(f"""
                         <div class='prediction-card'>
-                            <h2 style='margin:0; text-align:center;'>{p_class_display}</h2>
-                            <h3 style='color: #28a745; margin:0; text-align:center;'>Confidence: {confidence:.2f}%</h3>
+                            <h2 style='margin:0;'>{p_class_display}</h2>
+                            <h3 style='color: #28a745; margin:0;'>Confidence: {confidence:.2f}%</h3>
                         </div>
                     """, unsafe_allow_html=True)
                     
+                    # Action recommendation
                     if full_class_name in fertilizer_map:
                         st.info(f"**💡 Recommended Action:** {fertilizer_map[full_class_name]}")
                     
-                    # Grad-CAM Visualization
+                    # 4. Side-by-Side Diagnostic Visualization
                     if "healthy" not in full_class_name.lower() and detected_conv_name:
+                        st.markdown("<br><h3 style='text-align: center;'>🎯 AI Heatmap: Detected Infection Zones</h3>", unsafe_allow_html=True)
                         try:
                             heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
                             overlay = overlay_gradcam(img_resized, heatmap)
+                            
                             col_a, col_b = st.columns(2)
-                            with col_a: st.image(img_resized, caption="Original Scan")
-                            with col_b: st.image(overlay, caption="Infection Hotspots")
-                        except Exception: pass
-
-                    # --- FIXED CIRCULAR FLOATING ICON & AUTO-SWITCH ---
-                    try:
-                        import base64
-                        with open("icon.jpg", "rb") as f:
-                            img_base64 = base64.b64encode(f.read()).decode()
-                        
-                        st.markdown(f"""
-                            <style>
-                            /* 1. COMPLETELY REMOVE THE GREEN BUTTON CONTAINER */
-                            div.element-container:has(button:contains("INTERNAL_TRIGGER_DO_NOT_SHOW")) {{
-                                display: none !important;
-                            }}
-
-                            .floating-bot-wrap {{
-                                position: fixed;
-                                bottom: 100px;
-                                right: 30px;
-                                z-index: 999999;
-                                cursor: pointer;
-                            }}
-                            .circular-img {{
-                                width: 95px;
-                                height: 95px;
-                                border-radius: 50%;
-                                border: 4px solid #28a745;
-                                box-shadow: 0px 4px 15px rgba(0,0,0,0.4);
-                                background-color: white;
-                                transition: transform 0.2s;
-                            }}
-                            .circular-img:hover {{ transform: scale(1.1); }}
-                            </style>
-
-                            <div class="floating-bot-wrap" onclick="window.parent.document.querySelectorAll('button').forEach(btn => {{ if(btn.innerText === 'INTERNAL_TRIGGER_DO_NOT_SHOW') btn.click(); }})">
-                                <img src="data:image/png;base64,{img_base64}" class="circular-img">
-                            </div>
-                        """, unsafe_allow_html=True)
-
-                        # This button is hidden by the CSS above
-                        if st.button("INTERNAL_TRIGGER_DO_NOT_SHOW"):
-                            st.session_state.trigger_chat = True
-                            # This JS finds the 3rd tab (Agronomist AI) and clicks it
-                            st.components.v1.html("""
-                                <script>
-                                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-                                if (tabs.length >= 3) {
-                                    tabs[2].click();
-                                }
-                                </script>
-                            """, height=0)
-                            st.rerun()
-
-                    except Exception as e:
-                        st.error("Icon display error.")
-                
+                            with col_a:
+                                st.image(img_resized, caption="Original Scan", use_container_width=True)
+                            with col_b:
+                                st.image(overlay, caption="Infection Hotspots", use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Visualization error: {e}")
+                else:
+                    progress_bar.empty()
+                    st.error("Disease model not loaded.")
             
 
 with tab2:
@@ -662,47 +614,71 @@ with tab3:
     api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
     if not api_key:
-        st.error("🔑 API Key Missing.")
+        st.error("🔑 API Key Missing: Please add it to Streamlit Secrets.")
         st.stop()
 
     genai.configure(api_key=api_key)
 
+    # 2. Initialize Session State (Crucial Fix)
     if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "assistant", "content": "Hi! I am your Agronomist AI. How can I help?"}]
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hi! I am your Agronomist AI. How can I help you today?"}
+        ]
 
     if "chat_session" not in st.session_state:
         disease_context = st.session_state.get('last_detected_disease', 'general farming')
-        model = genai.GenerativeModel(model_name=MODEL_ID, system_instruction=f"You are a professional Agronomist. Provide advice on {disease_context}.")
+        system_instruction = (
+            f"You are a professional Agronomist AI. The user's plant has {disease_context}. "
+            "Be concise, use bullet points, and provide expert farming advice."
+        )
+        
+        model = genai.GenerativeModel(
+            model_name=MODEL_ID,
+            system_instruction=system_instruction
+        )
+        # Start chat with empty history
         st.session_state.chat_session = model.start_chat(history=[])
 
-    # --- AUTOMATIC INJECTION ---
-    if st.session_state.get('trigger_chat'):
-        disease = st.session_state.get('last_detected_disease', 'the plant disease')
-        auto_prompt = f"Detailed analysis for {disease}: Give description, cure, prevention, and fertilizer advisory."
-        
-        st.session_state.messages.append({"role": "user", "content": auto_prompt})
-        with st.spinner("Analyzing Pathogen Data..."):
-            try:
-                response = st.session_state.chat_session.send_message(auto_prompt)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-                st.session_state.trigger_chat = False # Reset
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error: {e}")
-
+    # 3. Display Chat History (Rendered BEFORE the input box)
+    # This loop is now safe because 'messages' is initialized above
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    if prompt := st.chat_input("Ask follow-up questions..."):
+    # 4. Handle User Input (Stays at the bottom)
+    if prompt := st.chat_input("Ask about fertilizers, pests, or soil..."):
+        # Add user message and display
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-        with st.spinner("Consulting..."):
-            response = st.session_state.chat_session.send_message(prompt)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
-            st.rerun()
 
+        # Generate AI Response
+        with st.spinner("Consulting Agronomist..."):
+            try:
+                response = st.session_state.chat_session.send_message(prompt)
+                ai_response = response.text
+                
+                # Add AI message to state and display
+                st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                with st.chat_message("assistant"):
+                    st.markdown(ai_response)
+                
+                st.rerun() # Refresh to keep layout clean
+                
+            except Exception as e:
+                if "429" in str(e):
+                    st.error("🚫 Daily Quota Exhausted. Try again tomorrow.")
+                else:
+                    st.error(f"⚠️ Error: {e}")
+
+    # 5. Reset Utility
+    st.divider()
+    if st.button("🗑️ Reset Chat"):
+        if "chat_session" in st.session_state:
+            del st.session_state.chat_session
+        if "messages" in st.session_state:
+            del st.session_state.messages
+        st.rerun()
 
 with tab4:
     st.markdown("## 📘 About DeepCropCare")
@@ -749,5 +725,3 @@ with tab4:
     st.info(f"**Target Diagnostic Layer:** `{detected_conv_name}`. The heatmap highlights areas the AI identified as diseased.")
 
     st.caption("DeepCropCare v1.0 | 2026 Agricultural Innovation")
-
-
