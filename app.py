@@ -702,10 +702,11 @@ with tab3:
         )
 
         model = genai.GenerativeModel(
-        model_name=MODEL_ID,
-        system_instruction=system_instruction
-       )
-       st.session_state.chat_session = model.start_chat(history=[])
+               model_name=MODEL_ID,
+               system_instruction=system_instruction
+        )
+        
+        st.session_state.chat_session = model.start_chat(history=[])
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]): st.markdown(msg["content"])
