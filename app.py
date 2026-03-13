@@ -576,9 +576,11 @@ with tab1:
 with tab2:
     st.markdown(f"## {t['tabs'][1]}")
     
+    # Initialize session state for weather
     if "weather_temp" not in st.session_state: st.session_state.weather_temp = 25.0
     if "weather_hum" not in st.session_state: st.session_state.weather_hum = 70.0
 
+    # Layout for inputs
     col_soil, col_weather = st.columns([1.5, 1])
     
     with col_soil:
@@ -595,11 +597,13 @@ with tab2:
         city = st.text_input(t['village_input'], "Kothur, Rangareddy")
         
         if st.button(t['btn_weather'], use_container_width=True):
-            t_val, h_val, err = get_weather(city)
+            w_t, w_h, err = get_weather(city)
             if not err:
-                st.session_state.weather_temp = float(t_val)
-                st.session_state.weather_hum = float(h_val)
+                st.session_state.weather_temp = float(w_t)
+                st.session_state.weather_hum = float(w_h)
                 st.success(f"📍 {city}")
+            else: 
+                st.error("Location not found.")
         
         st.session_state.weather_temp = st.number_input("Temp (°C)", value=float(st.session_state.weather_temp), step=0.1)
         st.session_state.weather_hum = st.number_input("Humidity (%)", value=float(st.session_state.weather_hum), step=0.1)
@@ -610,48 +614,59 @@ with tab2:
         predict_btn = st.button(t['btn_recommend'], use_container_width=True)
 
     if predict_btn:
-        if crop_model:
-            features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
-            prediction_idx = crop_model.predict(features)[0]
-            crop = label_mapping[prediction_idx]
-        else:
-            crop = "rice" 
+        with st.spinner("⏳ Analyzing soil & weather..."):
+            if crop_model:
+                features = np.array([[N, P, K, st.session_state.weather_temp, st.session_state.weather_hum, ph, rain]])
+                prediction_idx = crop_model.predict(features)[0]
+                crop = label_mapping[prediction_idx]
+            else:
+                crop = "rice" 
 
-        st.markdown(f"""
-            <div class='prediction-card'>
-                <h2 style='color: #28a745; margin:0;'>🌱 {crop.upper()}</h2>
-            </div>
-        """, unsafe_allow_html=True)
+            # Prediction Card
+            st.markdown(f"""
+                <div class='prediction-card'>
+                    <h2 style='color: #28a745; margin:0;'>🌱 {t['tabs'][1].split()[-1]}: {crop.upper()}</h2>
+                </div>
+            """, unsafe_allow_html=True)
 
-        # PREPARE DATA
-        raw_desc = crop_info[crop]['description']
-        raw_fert = fertilizer_advice[crop]
+            # Translation Logic for Crop Details
+            desc = crop_info[crop]['description']
+            cond = crop_info[crop]['conditions']
+            fert = fertilizer_advice[crop]
+            tip = crop_info[crop]['tips']
 
-        # --- SAFE TRANSLATION BLOCK ---
-        display_desc = raw_desc
-        display_fert = raw_fert
+            if selected_lang != "English":
+                try:
+                    # Combined request to save API quota and prevent gRPC errors
+                    query = f"Translate to {selected_lang}. Give 4 separate lines:\n1.{desc}\n2.{cond}\n3.{fert}\n4.{tip}"
+                    response = genai.GenerativeModel('gemini-1.5-flash').generate_content(query).text
+                    lines = response.split('\n')
+                    desc, cond, fert, tip = lines[0], lines[1], lines[2], lines[3]
+                except:
+                    st.warning("Translation offline - showing English.")
 
-        if selected_lang != "English":
-            try:
-                # We combine them to make only ONE API call (saves rate limits)
-                combined_query = f"Translate the following to {selected_lang}. Return only the translation:\n1. {raw_desc}\n2. {raw_fert}"
-                response = genai.GenerativeModel('gemini-1.5-flash').generate_content(combined_query)
-                # If it works, it replaces English with the translation
-                display_desc = response.text
-                display_fert = "" # Keeping it empty as desc now contains both
-            except Exception as e:
-                # If API fails (gRPC error), it stays in English and shows a small warning
-                st.warning("Translation service busy. Showing English version.")
+            inf1, inf2 = st.columns(2)
+            with inf1:
+                st.markdown(f"### 📖 {t['tabs'][3]}")
+                st.markdown(f"""
+                    <div class="info-container">
+                        <p style="margin:0; font-size: 1.1rem; color: white;">{desc}</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
-        inf1, inf2 = st.columns(2)
-        with inf1:
-            st.markdown(f"### 📖 {t['tabs'][3]}")
-            st.markdown(f"""<div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745;">
-                            <p style="color: white;">{display_desc}</p></div>""", unsafe_allow_html=True)
-        with inf2:
-            st.markdown(f"### 🧪 {t['rec_action']}")
-            if display_fert: # Only show if not already merged in translation
-                st.warning(display_fert)
+                st.markdown(f"""
+                    <div class="condition-box">
+                        <p style="margin:0; font-weight: bold;">🔍 {t['rec_action'].split()[-1]}:</p>
+                        <p style="margin:0;">{cond}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            with inf2:
+                st.markdown(f"### 🧪 {t['rec_action']}")
+                st.warning(fert)
+                st.success(f"**Pro-Tip:** {tip}")
+                
+            st.markdown(f"<br><h3 style='text-align: center;'>✅ {t['analysis_complete']}</h3>", unsafe_allow_html=True)
             
 
 with tab3:
