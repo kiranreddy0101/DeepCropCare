@@ -125,7 +125,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# --- TRANSLATION FUNCTION ---
 
+def translate_text(text, lang):
+    if lang == "en":
+        return text
+
+    prompt = f"Translate this text to {lang}. Only return translated text:\n{text}"
+
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        response = model.generate_content(prompt)
+        return response.text
+    except:
+        return text
 
 
 # --- INTEGRATED GRAD-CAM FUNCTIONS ---
@@ -194,16 +207,6 @@ def get_weather(city_name):
         res = requests.get(url).json()
         return res["main"]["temp"], res["main"]["humidity"], None
     except: return 25.0, 70.0, "Weather service unavailable"
-
-
-@st.cache_data(show_spinner=False)
-def translate_text(text, lang):
-    if lang == "en":
-        return text
-    try:
-        return translator.translate(text, dest=lang).text
-    except:
-        return text
 
 # --- DATA DICTIONARIES ---
 class_names = [
