@@ -2388,10 +2388,25 @@ st.markdown(
     [data-baseweb="select"] * {
         color: #eef6ee !important;
     }
+    [data-testid="stNumberInput"] [data-baseweb="base-input"],
+    [data-testid="stTextInput"] [data-baseweb="base-input"],
+    [data-testid="stNumberInput"] [data-baseweb="input"],
+    [data-testid="stTextInput"] [data-baseweb="input"] {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+    }
     [data-baseweb="input"] > div {
         background: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid rgba(255, 255, 255, 0.14) !important;
         box-shadow: none !important;
+    }
+    [data-testid="stNumberInput"] input,
+    [data-testid="stTextInput"] input {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        border: none !important;
     }
     [data-baseweb="input"] input {
         color: #eef6ee !important;
