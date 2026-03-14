@@ -1,6 +1,5 @@
 import os
 import time
-
 import cv2
 import google.generativeai as genai
 import joblib
@@ -1621,7 +1620,6 @@ tab1, tab2, tab3, tab4 = st.tabs(
 
 with tab1:
     st.markdown(f"## 🌿 {t('disease_heading', lang)}")
-    st.caption(", ".join(build_class_options(lang)[:12]) + " ...")
     uploaded_file = st.file_uploader(t("upload_leaf", lang), type=["jpg", "png", "jpeg"])
 
     if uploaded_file:
