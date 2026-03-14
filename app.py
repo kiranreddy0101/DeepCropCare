@@ -2382,11 +2382,34 @@ st.markdown(
     [data-baseweb="select"] > div {
         background: rgba(255, 255, 255, 0.1) !important;
         color: #eef6ee !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: none !important;
     }
     [data-baseweb="select"] * {
         color: #eef6ee !important;
     }
+    [data-baseweb="input"] > div {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: none !important;
+    }
     [data-baseweb="input"] input {
+        color: #eef6ee !important;
+        background: transparent !important;
+        -webkit-text-fill-color: #eef6ee !important;
+    }
+    [data-testid="stNumberInput"] button,
+    [data-testid="stNumberInput"] button:hover,
+    [data-testid="stNumberInput"] button:focus,
+    [data-testid="stNumberInput"] button:active {
+        background: transparent !important;
+        color: #eef6ee !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    [data-testid="stNumberInput"] button svg,
+    [data-testid="stSelectbox"] svg {
+        fill: #eef6ee !important;
         color: #eef6ee !important;
     }
     [data-testid="stHeader"] {
