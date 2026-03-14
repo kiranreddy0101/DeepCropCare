@@ -2289,34 +2289,18 @@ st.markdown(
     """
     <style>
     :root {
-        --app-bg: radial-gradient(circle at top right, #1a2e1a, #0e1117);
-        --app-text: #eef6ee;
-        --muted-text: #d8e6d3;
-        --subtle-text: #a3a3a3;
-        --panel-bg: rgba(255, 255, 255, 0.05);
-        --panel-border: rgba(255, 255, 255, 0.1);
-        --input-bg: rgba(255, 255, 255, 0.1);
-        --input-text: #eef6ee;
-        --header-bg: rgba(14, 17, 23, 0.78);
-        --tab-text: rgba(236, 244, 236, 0.72);
-        --uploader-bg: rgba(255, 255, 255, 0.07);
-        --uploader-border: rgba(255, 255, 255, 0.14);
-    }
-    @media (prefers-color-scheme: light) {
-        :root {
-            --app-bg: radial-gradient(circle at top right, #f3fbf1, #ffffff);
-            --app-text: #162316;
-            --muted-text: #314131;
-            --subtle-text: #556455;
-            --panel-bg: rgba(255, 255, 255, 0.88);
-            --panel-border: rgba(22, 35, 22, 0.12);
-            --input-bg: #ffffff;
-            --input-text: #162316;
-            --header-bg: rgba(255, 255, 255, 0.88);
-            --tab-text: rgba(22, 35, 22, 0.72);
-            --uploader-bg: rgba(255, 255, 255, 0.96);
-            --uploader-border: rgba(22, 35, 22, 0.14);
-        }
+        --app-bg: var(--background-color);
+        --app-text: var(--text-color);
+        --muted-text: var(--text-color);
+        --subtle-text: color-mix(in srgb, var(--text-color) 65%, var(--background-color));
+        --panel-bg: var(--secondary-background-color);
+        --panel-border: color-mix(in srgb, var(--text-color) 12%, transparent);
+        --input-bg: var(--secondary-background-color);
+        --input-text: var(--text-color);
+        --header-bg: color-mix(in srgb, var(--background-color) 90%, transparent);
+        --tab-text: color-mix(in srgb, var(--text-color) 72%, transparent);
+        --uploader-bg: var(--secondary-background-color);
+        --uploader-border: color-mix(in srgb, var(--text-color) 14%, transparent);
     }
     .block-container {
         padding-top: 2.4rem !important;
@@ -2331,17 +2315,23 @@ st.markdown(
         color: var(--app-text);
     }
     .stApp::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image: url("https://www.transparenttextures.com/patterns/leaf.png");
-        opacity: 0.03;
-        pointer-events: none;
+        content: none;
     }
     .top-header {
         text-align: center;
         padding-top: 1rem;
         padding-bottom: 1rem;
+    }
+    .hero-title {
+        font-size: 3.5rem;
+        color: #28a745;
+        margin-bottom: 0;
+    }
+    .hero-subtitle {
+        font-size: 1.1rem;
+        color: var(--subtle-text);
+        margin-top: -5px;
+        font-weight: 300;
     }
     .language-label {
         color: var(--muted-text);
@@ -2445,7 +2435,7 @@ st.markdown(
         padding: 30px;
         text-align: center;
         margin: 20px 0;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        box-shadow: 0 10px 30px color-mix(in srgb, var(--text-color) 10%, transparent);
         border-bottom: 4px solid #28a745;
     }
     .prediction-card h2 {
@@ -2610,8 +2600,8 @@ with header_left:
     st.markdown(
         f"""
         <div class="top-header">
-            <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">🌱 {t("hero_title", lang)}</h1>
-            <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300;">
+            <h1 class="hero-title">🌱 {t("hero_title", lang)}</h1>
+            <p class="hero-subtitle">
                 {t("hero_subtitle", lang)}
             </p>
         </div>
