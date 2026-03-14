@@ -1729,96 +1729,96 @@ def _draw_rounded_image(canvas, image_obj, box, radius=32):
 
 
 def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
-    page_width, page_height = 1654, 2339
-    margin = 110
-    title_font = _get_pdf_font(lang, 46)
-    body_font = _get_pdf_font(lang, 28)
-    subtitle_font = _get_pdf_font(lang, 34)
-    hero_font = _get_pdf_font(lang, 82)
-    meta_font = _get_pdf_font(lang, 24)
-    line_height = 42
+    page_width, page_height = 2480, 3508
+    margin = 170
+    title_font = _get_pdf_font(lang, 68)
+    body_font = _get_pdf_font(lang, 40)
+    subtitle_font = _get_pdf_font(lang, 50)
+    hero_font = _get_pdf_font(lang, 122)
+    meta_font = _get_pdf_font(lang, 32)
+    line_height = 58
     sections = _parse_report_sections(body_text)
     pages = []
 
     cover = Image.new("RGB", (page_width, page_height), "#eef3ea")
     cover_draw = ImageDraw.Draw(cover)
-    cover_draw.rounded_rectangle((60, 60, page_width - 60, page_height - 60), radius=54, fill="#102818")
-    cover_draw.rounded_rectangle((100, 100, page_width - 100, 820), radius=44, fill="#173c22")
-    cover_draw.text((150, 180), "DeepCropCare", font=hero_font, fill="white")
-    cover_draw.text((150, 320), title, font=title_font, fill="#d8ecdd")
-    cover_draw.rounded_rectangle((150, 470, page_width - 150, 640), radius=30, fill="#214d2d")
+    cover_draw.rounded_rectangle((80, 80, page_width - 80, page_height - 80), radius=78, fill="#102818")
+    cover_draw.rounded_rectangle((140, 140, page_width - 140, 1200), radius=58, fill="#173c22")
+    cover_draw.text((230, 250), "DeepCropCare", font=hero_font, fill="white")
+    cover_draw.text((230, 470), title, font=title_font, fill="#d8ecdd")
+    cover_draw.rounded_rectangle((230, 720, page_width - 230, 970), radius=42, fill="#214d2d")
     summary_lines = [line for line in body_text.splitlines() if ":" in line][:5]
-    summary_y = 505
+    summary_y = 770
     for line in summary_lines:
-        cover_draw.text((185, summary_y), line, font=meta_font, fill="white")
-        summary_y += 48
-    cover_draw.text((150, 720), time.strftime("%d %b %Y  %H:%M"), font=meta_font, fill="#b7cfbd")
+        cover_draw.text((280, summary_y), line, font=meta_font, fill="white")
+        summary_y += 68
+    cover_draw.text((230, 1080), time.strftime("%d %b %Y  %H:%M"), font=meta_font, fill="#b7cfbd")
     pages.append(cover)
 
     current_page = Image.new("RGB", (page_width, page_height), "#eef3ea")
     draw = ImageDraw.Draw(current_page)
-    draw.rounded_rectangle((70, 70, page_width - 70, page_height - 70), radius=46, fill="#ffffff")
-    draw.text((margin, 120), title, font=title_font, fill="#16321e")
-    y = 220
+    draw.rounded_rectangle((100, 100, page_width - 100, page_height - 100), radius=58, fill="#ffffff")
+    draw.text((margin, 170), title, font=title_font, fill="#16321e")
+    y = 330
 
     for section in sections:
         section_lines = section["lines"] or [""]
-        estimated_height = 110 + (len(section_lines) * 52)
+        estimated_height = 150 + (len(section_lines) * 72)
         if y + estimated_height > page_height - margin:
             pages.append(current_page)
             current_page = Image.new("RGB", (page_width, page_height), "#eef3ea")
             draw = ImageDraw.Draw(current_page)
-            draw.rounded_rectangle((70, 70, page_width - 70, page_height - 70), radius=46, fill="#ffffff")
-            y = 120
+            draw.rounded_rectangle((100, 100, page_width - 100, page_height - 100), radius=58, fill="#ffffff")
+            y = 170
 
         section_top = y
-        section_height = max(170, 105 + (len(section_lines) * 52))
+        section_height = max(250, 145 + (len(section_lines) * 72))
         draw.rounded_rectangle(
             (margin, section_top, page_width - margin, section_top + section_height),
-            radius=34,
+            radius=42,
             fill="#f7faf6",
             outline="#d8e6da",
-            width=3,
+            width=4,
         )
         if section["title"]:
             draw.rounded_rectangle(
-                (margin + 24, section_top + 24, page_width - margin - 24, section_top + 92),
-                radius=22,
+                (margin + 34, section_top + 34, page_width - margin - 34, section_top + 140),
+                radius=30,
                 fill="#e6f1e8",
             )
-            draw.text((margin + 48, section_top + 38), section["title"], font=subtitle_font, fill="#173c22")
-            text_y = section_top + 116
+            draw.text((margin + 68, section_top + 58), section["title"], font=subtitle_font, fill="#173c22")
+            text_y = section_top + 176
         else:
-            text_y = section_top + 34
+            text_y = section_top + 50
 
         for line in section_lines:
-            wrapped = _wrap_pdf_line(draw, line, body_font, page_width - (margin * 2) - 80)
+            wrapped = _wrap_pdf_line(draw, line, body_font, page_width - (margin * 2) - 140)
             for wrapped_line in wrapped:
-                draw.text((margin + 40, text_y), wrapped_line, font=body_font, fill="#263126")
+                draw.text((margin + 70, text_y), wrapped_line, font=body_font, fill="#263126")
                 text_y += line_height
-        y = section_top + section_height + 28
+        y = section_top + section_height + 42
 
     pages.append(current_page)
 
     for label, image_obj in image_blocks or []:
         image_page = Image.new("RGB", (page_width, page_height), "#eef3ea")
         image_draw = ImageDraw.Draw(image_page)
-        image_draw.rounded_rectangle((70, 70, page_width - 70, page_height - 70), radius=46, fill="#ffffff")
-        image_draw.rounded_rectangle((110, 110, page_width - 110, 340), radius=34, fill="#173c22")
-        image_draw.text((160, 165), "DeepCropCare Visual Report", font=title_font, fill="white")
-        image_draw.text((160, 240), label, font=subtitle_font, fill="#d7eadb")
+        image_draw.rounded_rectangle((100, 100, page_width - 100, page_height - 100), radius=58, fill="#ffffff")
+        image_draw.rounded_rectangle((150, 150, page_width - 150, 470), radius=42, fill="#173c22")
+        image_draw.text((230, 225), "DeepCropCare Visual Report", font=title_font, fill="white")
+        image_draw.text((230, 330), label, font=subtitle_font, fill="#d7eadb")
         image_draw.rounded_rectangle(
-            (110, 390, page_width - 110, page_height - 140),
-            radius=34,
+            (150, 560, page_width - 150, page_height - 180),
+            radius=42,
             fill="#f5f8f3",
             outline="#dbe7db",
-            width=3,
+            width=4,
         )
-        _draw_rounded_image(image_page, image_obj, (145, 425, page_width - 145, page_height - 175), radius=30)
+        _draw_rounded_image(image_page, image_obj, (200, 620, page_width - 200, page_height - 230), radius=38)
         pages.append(image_page)
 
     buffer = BytesIO()
-    pages[0].save(buffer, format="PDF", save_all=True, append_images=pages[1:])
+    pages[0].save(buffer, format="PDF", save_all=True, append_images=pages[1:], resolution=300.0)
     return buffer.getvalue()
 
 
@@ -2244,17 +2244,12 @@ st.markdown(
         color: white !important;
         background: #1f7a3e;
     }
-    .email-panel {
-        max-width: 760px;
-        margin: 0.9rem auto 0;
-        padding: 0.85rem 1.1rem;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .email-panel h4 {
-        margin: 0;
+    .email-heading {
+        margin: 0.85rem 0 0.5rem;
         text-align: center;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #eef6ee !important;
     }
     .detail-card {
         background: rgba(255, 255, 255, 0.05);
@@ -2493,7 +2488,7 @@ with tab1:
                 except Exception as exc:
                     st.error(f"{t('visualization_error', lang)}: {exc}")
             disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
-            _, action_col1, _, _ = st.columns([1.2, 1, 1, 1.2])
+            _, action_col1, _ = st.columns([1.2, 1, 1.2])
             with action_col1:
                 st.download_button(
                     t("report_download", lang),
@@ -2504,10 +2499,10 @@ with tab1:
                     key="download_disease_report",
                 )
             st.markdown(
-                f"<div class='email-panel'><h4>{t('email_report_heading', lang)}</h4></div>",
+                f"<div class='email-heading'>{t('email_report_heading', lang)}</div>",
                 unsafe_allow_html=True,
             )
-            _, disease_email_col, disease_send_col, _ = st.columns([0.9, 1.2, 0.55, 0.9])
+            _, disease_email_col, disease_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
             with disease_email_col:
                 disease_email = st.text_input(
                     t("email_address", lang),
@@ -2659,7 +2654,7 @@ with tab2:
             f"<br><h3 style='text-align: center;'>✅ {t('crop_analysis_complete', lang)}</h3>",
             unsafe_allow_html=True,
         )
-        _, crop_action_col1, crop_action_col2, _ = st.columns([1.2, 1, 1, 1.2])
+        _, crop_action_col1, _ = st.columns([1.2, 1, 1.2])
         with crop_action_col1:
             st.download_button(
                 t("crop_report_download", lang),
@@ -2670,10 +2665,10 @@ with tab2:
                 key="download_crop_report",
             )
         st.markdown(
-            f"<div class='email-panel'><h4>{t('email_report_heading', lang)}</h4></div>",
+            f"<div class='email-heading'>{t('email_report_heading', lang)}</div>",
             unsafe_allow_html=True,
         )
-        _, crop_email_col, crop_send_col, _ = st.columns([0.9, 1.2, 0.55, 0.9])
+        _, crop_email_col, crop_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
         with crop_email_col:
             crop_email = st.text_input(
                 t("email_address", lang),
