@@ -2210,6 +2210,56 @@ def remove_helper_icon():
     )
 
 
+def inject_input_theme():
+    components.html(
+        """
+        <script>
+        const parentDoc = window.parent.document;
+        const applyFieldTheme = () => {
+          const shellSelectors = [
+            'div[data-testid="stNumberInput"] [data-baseweb="base-input"]',
+            'div[data-testid="stTextInput"] [data-baseweb="base-input"]',
+            'div[data-testid="stSelectbox"] [data-baseweb="select"] > div'
+          ];
+          shellSelectors.forEach((selector) => {
+            parentDoc.querySelectorAll(selector).forEach((node) => {
+              node.style.background = 'rgba(255, 255, 255, 0.10)';
+              node.style.border = '1px solid rgba(255, 255, 255, 0.14)';
+              node.style.borderRadius = '12px';
+              node.style.boxShadow = 'none';
+            });
+          });
+
+          parentDoc.querySelectorAll('div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input').forEach((node) => {
+            node.style.background = 'transparent';
+            node.style.backgroundColor = 'transparent';
+            node.style.color = '#eef6ee';
+            node.style.webkitTextFillColor = '#eef6ee';
+            node.style.border = 'none';
+            node.style.boxShadow = 'none';
+            node.style.appearance = 'none';
+            node.style.webkitAppearance = 'none';
+          });
+
+          parentDoc.querySelectorAll('div[data-testid="stNumberInput"] button, div[data-testid="stSelectbox"] svg').forEach((node) => {
+            node.style.background = 'transparent';
+            node.style.color = '#eef6ee';
+            node.style.fill = '#eef6ee';
+            node.style.boxShadow = 'none';
+            node.style.border = 'none';
+          });
+        };
+
+        applyFieldTheme();
+        const oldTimer = window.parent.__deepcropcareInputThemeTimer;
+        if (oldTimer) clearInterval(oldTimer);
+        window.parent.__deepcropcareInputThemeTimer = setInterval(applyFieldTheme, 500);
+        </script>
+        """,
+        height=0,
+    )
+
+
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
     grad_model = tf.keras.models.Model(
         [model.inputs],
@@ -2517,6 +2567,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+inject_input_theme()
 
 
 if "language" not in st.session_state:
