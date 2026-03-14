@@ -1707,6 +1707,250 @@ def _normalize_pdf_text_line(text):
     return line
 
 
+def _pdf_escape_text(text):
+    safe = str(text).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    return safe.encode("latin-1", "replace").decode("latin-1")
+
+
+def _build_raw_pdf(page_specs):
+    objects = []
+
+    def add_object(data):
+        objects.append(data)
+        return len(objects)
+
+    font_times = add_object("<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>")
+    font_helvetica = add_object("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    font_helvetica_bold = add_object("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+
+    page_object_ids = []
+
+    for page in page_specs:
+        image_entries = []
+        xobject_lines = []
+        for index, image in enumerate(page.get("images", []), start=1):
+            image_obj_id = add_object(
+                b"<< /Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace /DeviceRGB "
+                b"/BitsPerComponent 8 /Filter /DCTDecode /Length %d >>\nstream\n"
+                % (image["width"], image["height"], len(image["data"]))
+                + image["data"]
+                + b"\nendstream"
+            )
+            image_name = f"/Im{index}"
+            image_entries.append((image_name, image_obj_id, image))
+            xobject_lines.append(f"{image_name} {image_obj_id} 0 R")
+
+        content_parts = ["BT"]
+        for text_item in page.get("texts", []):
+            font_key = {
+                "times": "/F1",
+                "bold": "/F3",
+            }.get(text_item["font"], "/F2")
+            r, g, b = text_item.get("color", (0, 0, 0))
+            content_parts.append(
+                f"{font_key} {text_item['size']} Tf {r:.4f} {g:.4f} {b:.4f} rg "
+                f"1 0 0 1 {text_item['x']:.2f} {text_item['y']:.2f} Tm "
+                f"({_pdf_escape_text(text_item['text'])}) Tj"
+            )
+        content_parts.append("ET")
+
+        for image_name, _, image in image_entries:
+            content_parts.append(
+                "q "
+                f"{image['draw_width']:.2f} 0 0 {image['draw_height']:.2f} "
+                f"{image['x']:.2f} {image['y']:.2f} cm {image_name} Do Q"
+            )
+
+        content_stream = "\n".join(content_parts).encode("latin-1", "replace")
+        content_obj_id = add_object(
+            b"<< /Length %d >>\nstream\n" % len(content_stream)
+            + content_stream
+            + b"\nendstream"
+        )
+
+        resources = (
+            f"<< /Font << /F1 {font_times} 0 R /F2 {font_helvetica} 0 R /F3 {font_helvetica_bold} 0 R >>"
+        )
+        if xobject_lines:
+            resources += f" /XObject << {' '.join(xobject_lines)} >>"
+        resources += " >>"
+
+        page_obj_id = add_object(
+            f"<< /Type /Page /Parent PAGES_REF /MediaBox [0 0 612 792] "
+            f"/Resources {resources} /Contents {content_obj_id} 0 R >>"
+        )
+        page_object_ids.append(page_obj_id)
+
+    pages_obj_id = add_object(
+        f"<< /Type /Pages /Count {len(page_object_ids)} /Kids [{' '.join(f'{obj} 0 R' for obj in page_object_ids)}] >>"
+    )
+    catalog_obj_id = add_object(f"<< /Type /Catalog /Pages {pages_obj_id} 0 R >>")
+
+    serialized = []
+    for obj in objects:
+        if isinstance(obj, bytes):
+            serialized.append(obj.replace(b"PAGES_REF", f"{pages_obj_id} 0 R".encode()))
+        else:
+            serialized.append(obj.replace("PAGES_REF", f"{pages_obj_id} 0 R").encode("latin-1", "replace"))
+
+    buffer = BytesIO()
+    buffer.write(b"%PDF-1.4\n")
+    offsets = [0]
+    for index, obj in enumerate(serialized, start=1):
+        offsets.append(buffer.tell())
+        buffer.write(f"{index} 0 obj\n".encode("latin-1"))
+        buffer.write(obj)
+        buffer.write(b"\nendobj\n")
+
+    xref_start = buffer.tell()
+    buffer.write(f"xref\n0 {len(serialized) + 1}\n".encode("latin-1"))
+    buffer.write(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        buffer.write(f"{offset:010d} 00000 n \n".encode("latin-1"))
+    buffer.write(
+        (
+            f"trailer\n<< /Size {len(serialized) + 1} /Root {catalog_obj_id} 0 R >>\n"
+            f"startxref\n{xref_start}\n%%EOF"
+        ).encode("latin-1")
+    )
+    return buffer.getvalue()
+
+
+def _build_vector_pdf_report_bytes(title, body_text, lang, image_blocks=None):
+    page_width, page_height = 612, 792
+    left_margin = 72
+    right_margin = 72
+    max_text_width = page_width - left_margin - right_margin
+    wrap_draw = ImageDraw.Draw(Image.new("RGB", (page_width, page_height), "white"))
+    title_font = _get_pdf_font(lang, 20)
+    subtitle_font = _get_pdf_font(lang, 20)
+    body_font = _get_pdf_font(lang, 12)
+    heading_font = _get_pdf_font(lang, 14)
+
+    raw_lines = [_normalize_pdf_text_line(line) for line in body_text.splitlines()]
+    lines = [line for line in raw_lines if line or line == ""]
+
+    page_specs = [{"texts": [], "images": []}]
+
+    def add_text(page_index, text, x, top_y, size, font, color=(0, 0, 0)):
+        page_specs[page_index]["texts"].append(
+            {
+                "text": text,
+                "x": x,
+                "y": page_height - top_y,
+                "size": size,
+                "font": font,
+                "color": color,
+            }
+        )
+
+    first_line = lines[0] if lines else "DeepCropCare"
+    second_line = next((line for line in lines[1:] if line), title)
+
+    first_width = wrap_draw.textlength(first_line, font=title_font)
+    second_width = wrap_draw.textlength(second_line, font=subtitle_font)
+    add_text(0, first_line, max(72, (page_width - first_width) / 2), 103, 20, "times")
+    add_text(0, second_line, max(72, (page_width - second_width) / 2), 142, 20, "times")
+
+    y = 212
+    body_start_index = 2
+    for index, raw_line in enumerate(lines[body_start_index:], start=body_start_index):
+        if not raw_line:
+            y += 16
+            continue
+
+        is_primary_heading = raw_line.isupper()
+        color = (0, 0, 0)
+        font_name = "helvetica"
+        font_size = 12
+
+        if is_primary_heading:
+            font_name = "bold"
+            font_size = 14
+            color = (0.0588, 0.278, 0.38)
+            text_to_draw = raw_line.title()
+        else:
+            text_to_draw = raw_line
+            if raw_line.startswith("Detected Disease:"):
+                color = (1, 0, 0)
+
+        wrap_font = heading_font if font_size == 14 else body_font
+        wrapped_lines = _wrap_pdf_line(wrap_draw, text_to_draw, wrap_font, max_text_width)
+
+        if y + (len(wrapped_lines) * 18) > 720:
+            page_specs.append({"texts": [], "images": []})
+            current_page = len(page_specs) - 1
+            y = 90
+        else:
+            current_page = len(page_specs) - 1
+
+        for wrapped_line in wrapped_lines:
+            add_text(current_page, wrapped_line, left_margin, y, font_size, font_name, color)
+            y += 29 if font_size == 14 else 24
+
+    if image_blocks:
+        for start in range(0, len(image_blocks), 2):
+            image_page = {"texts": [], "images": []}
+            title_text = "AI Heatmap Images"
+            title_width = wrap_draw.textlength(title_text, font=title_font)
+            image_page["texts"].append(
+                {
+                    "text": title_text,
+                    "x": max(72, (page_width - title_width) / 2),
+                    "y": page_height - 103,
+                    "size": 20,
+                    "font": "times",
+                    "color": (0, 0, 0),
+                }
+            )
+
+            slots = [
+                {"label_top": 150, "box": (72, 170, 540, 360)},
+                {"label_top": 420, "box": (72, 440, 540, 700)},
+            ]
+
+            for (label, image_obj), slot in zip(image_blocks[start : start + 2], slots):
+                label_text = _normalize_pdf_text_line(label).title()
+                image_page["texts"].append(
+                    {
+                        "text": label_text,
+                        "x": 72,
+                        "y": page_height - slot["label_top"],
+                        "size": 14,
+                        "font": "bold",
+                        "color": (0, 0, 0),
+                    }
+                )
+
+                image_rgb = image_obj.convert("RGB")
+                box_x1, box_y1, box_x2, box_y2 = slot["box"]
+                max_width = box_x2 - box_x1
+                max_height = box_y2 - box_y1
+                scale = min(max_width / image_rgb.width, max_height / image_rgb.height)
+                draw_width = image_rgb.width * scale
+                draw_height = image_rgb.height * scale
+                x = box_x1 + ((max_width - draw_width) / 2)
+                top_y = box_y1 + ((max_height - draw_height) / 2)
+
+                image_buffer = BytesIO()
+                image_rgb.save(image_buffer, format="JPEG", quality=92)
+                image_page["images"].append(
+                    {
+                        "data": image_buffer.getvalue(),
+                        "width": image_rgb.width,
+                        "height": image_rgb.height,
+                        "x": x,
+                        "y": page_height - top_y - draw_height,
+                        "draw_width": draw_width,
+                        "draw_height": draw_height,
+                    }
+                )
+
+            page_specs.append(image_page)
+
+    return _build_raw_pdf(page_specs)
+
+
 def _draw_rounded_image(canvas, image_obj, box, radius=32):
     x1, y1, x2, y2 = box
     image_copy = image_obj.convert("RGB")
@@ -1721,6 +1965,9 @@ def _draw_rounded_image(canvas, image_obj, box, radius=32):
 
 
 def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
+    if lang == "en":
+        return _build_vector_pdf_report_bytes(title, body_text, lang, image_blocks)
+
     page_width, page_height = 612, 792
     margin = 54
     title_font = _get_pdf_font(lang, 20)
