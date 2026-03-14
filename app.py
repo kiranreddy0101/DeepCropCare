@@ -1,6 +1,7 @@
 import os
 import time
 from urllib.parse import quote
+
 import cv2
 import google.generativeai as genai
 import joblib
@@ -41,6 +42,16 @@ LANGUAGE_LABELS = {
         "analysis_complete": "Analysis Complete!",
         "confidence": "Confidence",
         "recommended_action": "Recommended Action",
+        "report_summary": "Diagnostic Report Summary",
+        "report_download": "Download Report",
+        "report_email": "Email Report",
+        "report_subject": "DeepCropCare Disease Report",
+        "report_generated_on": "Generated On",
+        "report_image_name": "Image Name",
+        "report_detected_disease": "Detected Disease",
+        "report_heatmap_status": "Heatmap Analysis",
+        "report_heatmap_ready": "Included",
+        "report_heatmap_unavailable": "Not included",
         "heatmap_title": "AI Heatmap: Detected Infection Zones",
         "original_scan": "Original Scan",
         "infection_hotspots": "Infection Hotspots",
@@ -126,6 +137,16 @@ LANGUAGE_LABELS = {
         "analysis_complete": "विश्लेषण पूरा हुआ!",
         "confidence": "विश्वास स्तर",
         "recommended_action": "अनुशंसित कार्यवाही",
+        "report_summary": "डायग्नोस्टिक रिपोर्ट सारांश",
+        "report_download": "रिपोर्ट डाउनलोड करें",
+        "report_email": "रिपोर्ट ईमेल करें",
+        "report_subject": "डीपक्रॉपकेयर रोग रिपोर्ट",
+        "report_generated_on": "रिपोर्ट तिथि",
+        "report_image_name": "छवि का नाम",
+        "report_detected_disease": "पहचाना गया रोग",
+        "report_heatmap_status": "हीटमैप विश्लेषण",
+        "report_heatmap_ready": "शामिल है",
+        "report_heatmap_unavailable": "शामिल नहीं है",
         "heatmap_title": "एआई हीटमैप: पहचाने गए संक्रमण क्षेत्र",
         "original_scan": "मूल स्कैन",
         "infection_hotspots": "संक्रमण हॉटस्पॉट",
@@ -211,6 +232,16 @@ LANGUAGE_LABELS = {
         "analysis_complete": "విశ్లేషణ పూర్తైంది!",
         "confidence": "నమ్మక స్థాయి",
         "recommended_action": "సిఫార్సు చేసిన చర్య",
+        "report_summary": "డయాగ్నస్టిక్ రిపోర్ట్ సారాంశం",
+        "report_download": "రిపోర్ట్ డౌన్‌లోడ్ చేయండి",
+        "report_email": "రిపోర్ట్ ఈమెయిల్ చేయండి",
+        "report_subject": "డీప్‌క్రాప్‌కేర్ వ్యాధి రిపోర్ట్",
+        "report_generated_on": "రిపోర్ట్ తయారైన సమయం",
+        "report_image_name": "చిత్రం పేరు",
+        "report_detected_disease": "గుర్తించిన వ్యాధి",
+        "report_heatmap_status": "హీట్‌మ్యాప్ విశ్లేషణ",
+        "report_heatmap_ready": "చేర్చబడింది",
+        "report_heatmap_unavailable": "చేర్చబడలేదు",
         "heatmap_title": "ఏఐ హీట్‌మ్యాప్: గుర్తించిన సంక్రమణ ప్రాంతాలు",
         "original_scan": "మూల స్కాన్",
         "infection_hotspots": "సంక్రమణ హాట్‌స్పాట్లు",
@@ -1507,6 +1538,23 @@ def build_fallback_disease_report(class_name, lang):
     )
 
 
+def build_disease_report_text(class_name, confidence, lang, image_name, heatmap_available):
+    lines = [
+        "DeepCropCare",
+        t("report_summary", lang),
+        "",
+        f"{t('report_generated_on', lang)}: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"{t('report_image_name', lang)}: {image_name or t('na', lang)}",
+        f"{t('report_detected_disease', lang)}: {disease_display(class_name, lang)}",
+        f"{t('confidence', lang)}: {confidence:.2f}%",
+        f"{t('recommended_action', lang)}: {disease_advice(class_name, lang)}",
+        f"{t('report_heatmap_status', lang)}: {t('report_heatmap_ready', lang) if heatmap_available else t('report_heatmap_unavailable', lang)}",
+        "",
+        build_fallback_disease_report(class_name, lang),
+    ]
+    return "\n".join(lines)
+
+
 def inject_tab_switch(tab_text):
     safe_text = tab_text.replace("\\", "\\\\").replace("'", "\\'")
     components.html(
@@ -1580,8 +1628,8 @@ def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_te
               user-select: none;
             }}
             #deepcropcare-helper-dock .helper-orb {{
-              width: 84px;
-              height: 84px;
+              width: 74px;
+              height: 74px;
               border-radius: 999px;
               display: flex;
               align-items: center;
@@ -1592,8 +1640,8 @@ def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_te
               animation: agribot-float 2.1s ease-in-out infinite;
             }}
             #deepcropcare-helper-dock .helper-orb img {{
-              width: 64px;
-              height: 64px;
+              width: 54px;
+              height: 54px;
               object-fit: contain;
               border-radius: 50%;
               pointer-events: none;
@@ -1826,6 +1874,36 @@ st.markdown(
         opacity: 0.92;
         margin: 0.5rem 0 0;
     }
+    .result-center {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .report-summary {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 1rem 1.1rem;
+        margin: 1rem 0 1.25rem;
+    }
+    .report-actions {
+        display: flex;
+        justify-content: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+        margin: 0.5rem 0 1rem;
+    }
+    .report-email-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 220px;
+        padding: 0.7rem 1rem;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        color: white !important;
+        background: #1f7a3e;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -1932,7 +2010,21 @@ with tab1:
         if st.session_state.last_detected_class:
             detected_class = st.session_state.last_detected_class
             detected_confidence = st.session_state.last_detection_confidence or 0.0
+            heatmap_available = "healthy" not in detected_class.lower() and bool(detected_conv_name)
+            report_text = build_disease_report_text(
+                detected_class,
+                detected_confidence,
+                lang,
+                uploaded_file.name if uploaded_file else "",
+                heatmap_available,
+            )
+            report_filename = f"deepcropcare-report-{detected_class.replace(' ', '-').replace('/', '-')}.txt"
+            mailto_link = (
+                f"mailto:?subject={quote(t('report_subject', lang))}"
+                f"&body={quote(report_text)}"
+            )
 
+            st.markdown("<div class='result-center'>", unsafe_allow_html=True)
             st.markdown(
                 f"<br><h3 style='text-align: center;'>{t('analysis_complete', lang)}</h3>",
                 unsafe_allow_html=True,
@@ -1943,10 +2035,27 @@ with tab1:
                     <h2>{disease_display(detected_class, lang)}</h2>
                     <h3>{t('confidence', lang)}: {detected_confidence:.2f}%</h3>
                 </div>
+                <div class='report-summary'>
+                    <strong>{t('recommended_action', lang)}:</strong> {disease_advice(detected_class, lang)}
+                </div>
                 """,
                 unsafe_allow_html=True,
             )
-            st.info(f"**{t('recommended_action', lang)}:** {disease_advice(detected_class, lang)}")
+            action_col1, action_col2, action_col3 = st.columns([1, 1.2, 1.2])
+            with action_col2:
+                st.download_button(
+                    t("report_download", lang),
+                    data=report_text,
+                    file_name=report_filename,
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_disease_report",
+                )
+            with action_col3:
+                st.markdown(
+                    f"<a class='report-email-link' href='{mailto_link}'>{t('report_email', lang)}</a>",
+                    unsafe_allow_html=True,
+                )
 
             inject_helper_icon(
                 ASSISTANT_ICON,
@@ -1961,7 +2070,7 @@ with tab1:
                 st.session_state.target_tab = t("tab_chat", lang)
                 st.rerun()
 
-            if "healthy" not in detected_class.lower() and detected_conv_name:
+            if heatmap_available:
                 st.markdown(
                     f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
                     unsafe_allow_html=True,
@@ -1979,6 +2088,7 @@ with tab1:
                         st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
                 except Exception as exc:
                     st.error(f"{t('visualization_error', lang)}: {exc}")
+            st.markdown("</div>", unsafe_allow_html=True)
     else:
         remove_helper_icon()
 
