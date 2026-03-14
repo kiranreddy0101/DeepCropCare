@@ -3,7 +3,6 @@ import smtplib
 import time
 from io import BytesIO
 from email.message import EmailMessage
-from urllib.parse import quote
 
 import cv2
 import google.generativeai as genai
@@ -1697,59 +1696,124 @@ def _wrap_pdf_line(draw, text, font, max_width):
     return lines
 
 
+def _parse_report_sections(body_text):
+    sections = []
+    current = {"title": None, "lines": []}
+    for raw_line in body_text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.endswith(":") and len(line) < 45:
+            if current["title"] or current["lines"]:
+                sections.append(current)
+            current = {"title": line[:-1], "lines": []}
+        else:
+            current["lines"].append(line)
+    if current["title"] or current["lines"]:
+        sections.append(current)
+    return sections
+
+
+def _draw_rounded_image(canvas, image_obj, box, radius=32):
+    x1, y1, x2, y2 = box
+    image_copy = image_obj.convert("RGB")
+    image_copy.thumbnail((x2 - x1, y2 - y1))
+    paste_x = x1 + ((x2 - x1) - image_copy.width) // 2
+    paste_y = y1 + ((y2 - y1) - image_copy.height) // 2
+
+    mask = Image.new("L", (image_copy.width, image_copy.height), 0)
+    mask_draw = ImageDraw.Draw(mask)
+    mask_draw.rounded_rectangle((0, 0, image_copy.width, image_copy.height), radius=radius, fill=255)
+    canvas.paste(image_copy, (paste_x, paste_y), mask)
+
+
 def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
-    page_width, page_height = 1240, 1754
-    margin = 90
-    title_font = _get_pdf_font(lang, 34)
-    body_font = _get_pdf_font(lang, 22)
-    subtitle_font = _get_pdf_font(lang, 26)
-    hero_font = _get_pdf_font(lang, 54)
-    line_height = 34
+    page_width, page_height = 1654, 2339
+    margin = 110
+    title_font = _get_pdf_font(lang, 46)
+    body_font = _get_pdf_font(lang, 28)
+    subtitle_font = _get_pdf_font(lang, 34)
+    hero_font = _get_pdf_font(lang, 82)
+    meta_font = _get_pdf_font(lang, 24)
+    line_height = 42
+    sections = _parse_report_sections(body_text)
     pages = []
 
-    current_page = Image.new("RGB", (page_width, page_height), "#f5f7f2")
-    draw = ImageDraw.Draw(current_page)
-    draw.rounded_rectangle((40, 40, page_width - 40, 300), radius=40, fill="#173c22")
-    draw.text((margin, 100), "DeepCropCare", font=hero_font, fill="white")
-    draw.text((margin, 185), title, font=title_font, fill="#cde6d3")
-    draw.rounded_rectangle((margin, 340, page_width - margin, page_height - margin), radius=34, fill="white")
-    y = 390
+    cover = Image.new("RGB", (page_width, page_height), "#eef3ea")
+    cover_draw = ImageDraw.Draw(cover)
+    cover_draw.rounded_rectangle((60, 60, page_width - 60, page_height - 60), radius=54, fill="#102818")
+    cover_draw.rounded_rectangle((100, 100, page_width - 100, 820), radius=44, fill="#173c22")
+    cover_draw.text((150, 180), "DeepCropCare", font=hero_font, fill="white")
+    cover_draw.text((150, 320), title, font=title_font, fill="#d8ecdd")
+    cover_draw.rounded_rectangle((150, 470, page_width - 150, 640), radius=30, fill="#214d2d")
+    summary_lines = [line for line in body_text.splitlines() if ":" in line][:5]
+    summary_y = 505
+    for line in summary_lines:
+        cover_draw.text((185, summary_y), line, font=meta_font, fill="white")
+        summary_y += 48
+    cover_draw.text((150, 720), time.strftime("%d %b %Y  %H:%M"), font=meta_font, fill="#b7cfbd")
+    pages.append(cover)
 
-    for raw_line in body_text.splitlines():
-        is_heading = raw_line.strip().endswith(":") and len(raw_line) < 40
-        font = subtitle_font if is_heading else body_font
-        lines = _wrap_pdf_line(draw, raw_line or " ", font, page_width - (margin * 2))
-        for line in lines:
-            if y > page_height - margin - line_height:
-                pages.append(current_page)
-                current_page = Image.new("RGB", (page_width, page_height), "#f5f7f2")
-                draw = ImageDraw.Draw(current_page)
-                draw.rounded_rectangle((margin, margin, page_width - margin, page_height - margin), radius=34, fill="white")
-                y = margin + 40
-            if is_heading:
-                draw.rounded_rectangle((margin, y - 10, page_width - margin, y + 36), radius=18, fill="#e8f3ea")
-                draw.text((margin + 18, y), line, font=font, fill="#173c22")
-            else:
-                draw.text((margin, y), line, font=font, fill="#222222")
-            y += line_height
-        y += 6
+    current_page = Image.new("RGB", (page_width, page_height), "#eef3ea")
+    draw = ImageDraw.Draw(current_page)
+    draw.rounded_rectangle((70, 70, page_width - 70, page_height - 70), radius=46, fill="#ffffff")
+    draw.text((margin, 120), title, font=title_font, fill="#16321e")
+    y = 220
+
+    for section in sections:
+        section_lines = section["lines"] or [""]
+        estimated_height = 110 + (len(section_lines) * 52)
+        if y + estimated_height > page_height - margin:
+            pages.append(current_page)
+            current_page = Image.new("RGB", (page_width, page_height), "#eef3ea")
+            draw = ImageDraw.Draw(current_page)
+            draw.rounded_rectangle((70, 70, page_width - 70, page_height - 70), radius=46, fill="#ffffff")
+            y = 120
+
+        section_top = y
+        section_height = max(170, 105 + (len(section_lines) * 52))
+        draw.rounded_rectangle(
+            (margin, section_top, page_width - margin, section_top + section_height),
+            radius=34,
+            fill="#f7faf6",
+            outline="#d8e6da",
+            width=3,
+        )
+        if section["title"]:
+            draw.rounded_rectangle(
+                (margin + 24, section_top + 24, page_width - margin - 24, section_top + 92),
+                radius=22,
+                fill="#e6f1e8",
+            )
+            draw.text((margin + 48, section_top + 38), section["title"], font=subtitle_font, fill="#173c22")
+            text_y = section_top + 116
+        else:
+            text_y = section_top + 34
+
+        for line in section_lines:
+            wrapped = _wrap_pdf_line(draw, line, body_font, page_width - (margin * 2) - 80)
+            for wrapped_line in wrapped:
+                draw.text((margin + 40, text_y), wrapped_line, font=body_font, fill="#263126")
+                text_y += line_height
+        y = section_top + section_height + 28
 
     pages.append(current_page)
 
     for label, image_obj in image_blocks or []:
-        image_page = Image.new("RGB", (page_width, page_height), "#f5f7f2")
+        image_page = Image.new("RGB", (page_width, page_height), "#eef3ea")
         image_draw = ImageDraw.Draw(image_page)
-        image_draw.rounded_rectangle((50, 50, page_width - 50, page_height - 50), radius=34, fill="white")
-        image_draw.rounded_rectangle((margin, margin, page_width - margin, 220), radius=28, fill="#173c22")
-        image_draw.text((margin + 24, margin + 46), "DeepCropCare Visual Report", font=title_font, fill="white")
-        image_draw.text((margin + 24, margin + 110), label, font=subtitle_font, fill="#d6eadc")
-        image_copy = image_obj.convert("RGB")
-        available_width = page_width - (margin * 2)
-        available_height = page_height - (margin * 2) - 240
-        image_copy.thumbnail((available_width, available_height))
-        x = (page_width - image_copy.width) // 2
-        y = margin + 250 + max(0, (available_height - image_copy.height) // 2)
-        image_page.paste(image_copy, (x, y))
+        image_draw.rounded_rectangle((70, 70, page_width - 70, page_height - 70), radius=46, fill="#ffffff")
+        image_draw.rounded_rectangle((110, 110, page_width - 110, 340), radius=34, fill="#173c22")
+        image_draw.text((160, 165), "DeepCropCare Visual Report", font=title_font, fill="white")
+        image_draw.text((160, 240), label, font=subtitle_font, fill="#d7eadb")
+        image_draw.rounded_rectangle(
+            (110, 390, page_width - 110, page_height - 140),
+            radius=34,
+            fill="#f5f8f3",
+            outline="#dbe7db",
+            width=3,
+        )
+        _draw_rounded_image(image_page, image_obj, (145, 425, page_width - 145, page_height - 175), radius=30)
         pages.append(image_page)
 
     buffer = BytesIO()
@@ -2066,6 +2130,7 @@ st.markdown(
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] small,
     [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] p,
     [data-testid="stNumberInput"] label,
     [data-testid="stTextInput"] label,
     [data-testid="stSelectbox"] label,
@@ -2076,16 +2141,43 @@ st.markdown(
         background: rgba(255, 255, 255, 0.07) !important;
         border: 1px solid rgba(255, 255, 255, 0.14) !important;
     }
+    [data-testid="stFileUploader"] small,
+    [data-testid="stFileUploader"] p {
+        opacity: 1 !important;
+    }
     [data-testid="stFileUploader"] svg,
     [data-testid="stFileUploader"] button,
     [data-testid="stFileUploader"] section div {
+        color: #eef6ee !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background: #214d2d !important;
+        border: 1px solid rgba(255,255,255,0.16) !important;
+        color: #eef6ee !important;
+    }
+    [data-testid="stFileUploaderFileName"],
+    [data-testid="stFileUploaderFileData"] {
         color: #eef6ee !important;
     }
     [data-baseweb="select"] > div {
         background: rgba(255, 255, 255, 0.1) !important;
         color: #eef6ee !important;
     }
+    [data-baseweb="select"] * {
+        color: #eef6ee !important;
+    }
     [data-baseweb="input"] input {
+        color: #eef6ee !important;
+    }
+    [data-testid="stHeader"] {
+        background: rgba(14, 17, 23, 0.78) !important;
+    }
+    [data-testid="stHeader"] * {
+        color: #eef6ee !important;
+    }
+    button[kind="header"],
+    [data-testid="stToolbar"] button,
+    [data-testid="stDecoration"] {
         color: #eef6ee !important;
     }
     .prediction-card {
@@ -2143,14 +2235,18 @@ st.markdown(
     .email-panel {
         max-width: 760px;
         margin: 1rem auto 0;
-        padding: 1rem 1.1rem;
+        padding: 0.85rem 1.1rem;
         border-radius: 18px;
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .email-panel h4 {
-        margin: 0 0 0.8rem;
+        margin: 0;
         text-align: center;
+    }
+    .email-input-row {
+        max-width: 760px;
+        margin: 0.75rem auto 0;
     }
     .detail-card {
         background: rgba(255, 255, 255, 0.05);
@@ -2337,10 +2433,6 @@ with tab1:
             report_filename = f"deepcropcare-report-{detected_class.replace(' ', '-').replace('/', '-')}.txt"
             report_filename = report_filename.replace(".txt", ".pdf")
             disease_email_body = f"{t('report_email_body_intro', lang)}\n\n{report_text}"
-            mailto_link = (
-                f"mailto:?subject={quote(t('report_subject', lang))}"
-                f"&body={quote(disease_email_body)}"
-            )
 
             st.markdown("<div class='result-center'>", unsafe_allow_html=True)
             st.markdown(
@@ -2393,7 +2485,7 @@ with tab1:
                 except Exception as exc:
                     st.error(f"{t('visualization_error', lang)}: {exc}")
             disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
-            _, action_col1, action_col2, _ = st.columns([1.2, 1, 1, 1.2])
+            _, action_col1, _, _ = st.columns([1.2, 1, 1, 1.2])
             with action_col1:
                 st.download_button(
                     t("report_download", lang),
@@ -2403,22 +2495,23 @@ with tab1:
                     use_container_width=True,
                     key="download_disease_report",
                 )
-            with action_col2:
-                send_disease_email = st.button(
-                    t("report_email", lang),
-                    use_container_width=True,
-                    key="send_disease_report_button",
-                )
             st.markdown(
                 f"<div class='email-panel'><h4>{t('email_report_heading', lang)}</h4></div>",
                 unsafe_allow_html=True,
             )
-            _, disease_email_col, _ = st.columns([1, 1.5, 1])
+            _, disease_email_col, disease_send_col, _ = st.columns([0.9, 1.2, 0.55, 0.9])
             with disease_email_col:
                 disease_email = st.text_input(
                     t("email_address", lang),
                     key="disease_email_to",
                     placeholder="name@example.com",
+                    label_visibility="collapsed",
+                )
+            with disease_send_col:
+                send_disease_email = st.button(
+                    t("send_email", lang),
+                    use_container_width=True,
+                    key="send_disease_report_button",
                 )
             if send_disease_email:
                 if "@" not in disease_email or "." not in disease_email:
@@ -2568,22 +2661,23 @@ with tab2:
                 use_container_width=True,
                 key="download_crop_report",
             )
-        with crop_action_col2:
-            send_crop_email = st.button(
-                t("crop_report_email", lang),
-                use_container_width=True,
-                key="send_crop_report_button",
-            )
         st.markdown(
             f"<div class='email-panel'><h4>{t('email_report_heading', lang)}</h4></div>",
             unsafe_allow_html=True,
         )
-        _, crop_email_col, _ = st.columns([1, 1.5, 1])
+        _, crop_email_col, crop_send_col, _ = st.columns([0.9, 1.2, 0.55, 0.9])
         with crop_email_col:
             crop_email = st.text_input(
                 t("email_address", lang),
                 key="crop_email_to",
                 placeholder="name@example.com",
+                label_visibility="collapsed",
+            )
+        with crop_send_col:
+            send_crop_email = st.button(
+                t("send_email", lang),
+                use_container_width=True,
+                key="send_crop_report_button",
             )
         if send_crop_email:
             if "@" not in crop_email or "." not in crop_email:
