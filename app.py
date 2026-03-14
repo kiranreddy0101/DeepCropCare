@@ -2288,53 +2288,33 @@ disease_model, crop_model, detected_conv_name = load_resources()
 st.markdown(
     """
     <style>
-    :root {
-        --app-bg: var(--background-color);
-        --app-text: var(--text-color);
-        --muted-text: var(--text-color);
-        --subtle-text: color-mix(in srgb, var(--text-color) 65%, var(--background-color));
-        --panel-bg: var(--secondary-background-color);
-        --panel-border: color-mix(in srgb, var(--text-color) 12%, transparent);
-        --input-bg: var(--secondary-background-color);
-        --input-text: var(--text-color);
-        --header-bg: color-mix(in srgb, var(--background-color) 90%, transparent);
-        --tab-text: color-mix(in srgb, var(--text-color) 72%, transparent);
-        --uploader-bg: var(--secondary-background-color);
-        --uploader-border: color-mix(in srgb, var(--text-color) 14%, transparent);
-    }
     .block-container {
         padding-top: 2.4rem !important;
         max-width: 95%;
     }
     .stApp {
-        background: var(--app-bg);
+        background: radial-gradient(circle at top right, #1a2e1a, #0e1117);
         background-attachment: fixed;
-        color: var(--app-text);
+        color: #eef6ee;
     }
     .stApp, .stApp p, .stApp label, .stApp span, .stApp li, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
-        color: var(--app-text);
+        color: #eef6ee;
     }
     .stApp::before {
-        content: none;
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("https://www.transparenttextures.com/patterns/leaf.png");
+        opacity: 0.03;
+        pointer-events: none;
     }
     .top-header {
         text-align: center;
         padding-top: 1rem;
         padding-bottom: 1rem;
     }
-    .hero-title {
-        font-size: 3.5rem;
-        color: #28a745;
-        margin-bottom: 0;
-    }
-    .hero-subtitle {
-        font-size: 1.1rem;
-        color: var(--subtle-text);
-        margin-top: -5px;
-        font-weight: 300;
-    }
     .language-label {
-        color: var(--muted-text);
+        color: #d8e6d3;
         font-size: 0.95rem;
         font-weight: 600;
         margin-bottom: 0.35rem;
@@ -2362,7 +2342,7 @@ st.markdown(
         color: white !important;
     }
     [data-baseweb="tab-list"] button {
-        color: var(--tab-text) !important;
+        color: rgba(236, 244, 236, 0.72) !important;
     }
     [data-baseweb="tab-list"] button[aria-selected="true"] {
         color: #ff6b6b !important;
@@ -2375,11 +2355,11 @@ st.markdown(
     [data-testid="stTextInput"] label,
     [data-testid="stSelectbox"] label,
     [data-testid="stSlider"] label {
-        color: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     [data-testid="stFileUploader"] section {
-        background: var(--uploader-bg) !important;
-        border: 1px solid var(--uploader-border) !important;
+        background: rgba(255, 255, 255, 0.07) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
     }
     [data-testid="stFileUploader"] small,
     [data-testid="stFileUploader"] p {
@@ -2388,54 +2368,48 @@ st.markdown(
     [data-testid="stFileUploader"] svg,
     [data-testid="stFileUploader"] button,
     [data-testid="stFileUploader"] section div {
-        color: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     [data-testid="stFileUploader"] button {
         background: #214d2d !important;
-        border: 1px solid var(--uploader-border) !important;
+        border: 1px solid rgba(255,255,255,0.16) !important;
         color: #eef6ee !important;
     }
     [data-testid="stFileUploaderFileName"],
     [data-testid="stFileUploaderFileData"] {
-        color: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     [data-baseweb="select"] > div {
-        background: var(--input-bg) !important;
-        color: var(--input-text) !important;
-        border: 1px solid var(--panel-border) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #eef6ee !important;
     }
     [data-baseweb="select"] * {
-        color: var(--input-text) !important;
+        color: #eef6ee !important;
     }
-    [data-baseweb="input"] input,
-    [data-testid="stTextInput"] input,
-    [data-testid="stNumberInput"] input,
-    [data-testid="stNumberInput"] button,
-    [data-testid="stTextInput"] textarea {
-        color: var(--input-text) !important;
-        background: var(--input-bg) !important;
+    [data-baseweb="input"] input {
+        color: #eef6ee !important;
     }
     [data-testid="stHeader"] {
-        background: var(--header-bg) !important;
+        background: rgba(14, 17, 23, 0.78) !important;
     }
     [data-testid="stHeader"] * {
-        color: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     button[kind="header"],
     [data-testid="stToolbar"] button,
     [data-testid="stDecoration"] {
-        color: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     .prediction-card {
-        background: var(--panel-bg);
+        background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid var(--panel-border);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px;
         padding: 30px;
         text-align: center;
         margin: 20px 0;
-        box-shadow: 0 10px 30px color-mix(in srgb, var(--text-color) 10%, transparent);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
         border-bottom: 4px solid #28a745;
     }
     .prediction-card h2 {
@@ -2444,7 +2418,7 @@ st.markdown(
         margin: 0;
     }
     .prediction-card h3 {
-        color: var(--app-text) !important;
+        color: #ffffff !important;
         opacity: 0.92;
         margin: 0.5rem 0 0;
     }
@@ -2453,8 +2427,8 @@ st.markdown(
         margin: 0 auto;
     }
     .report-summary {
-        background: var(--panel-bg);
-        border: 1px solid var(--panel-border);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 18px;
         padding: 1rem 1.1rem;
         margin: 1rem 0 1.25rem;
@@ -2483,11 +2457,11 @@ st.markdown(
         text-align: center;
         font-size: 1.1rem;
         font-weight: 700;
-        color: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     .detail-card {
-        background: var(--panel-bg);
-        border: 1px solid var(--panel-border);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 14px;
         padding: 18px 20px;
         margin-bottom: 15px;
@@ -2496,16 +2470,10 @@ st.markdown(
         margin: 0;
         font-size: 1.05rem;
         line-height: 1.6;
-        color: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     .stTextInput input {
-        color: var(--input-text) !important;
-    }
-    [data-testid="stNumberInput"] button svg,
-    [data-testid="stSelectbox"] svg,
-    [data-testid="stSlider"] * {
-        color: var(--app-text) !important;
-        fill: var(--app-text) !important;
+        color: #eef6ee !important;
     }
     </style>
     """,
@@ -2600,8 +2568,8 @@ with header_left:
     st.markdown(
         f"""
         <div class="top-header">
-            <h1 class="hero-title">🌱 {t("hero_title", lang)}</h1>
-            <p class="hero-subtitle">
+            <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">🌱 {t("hero_title", lang)}</h1>
+            <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300;">
                 {t("hero_subtitle", lang)}
             </p>
         </div>
