@@ -1,5 +1,6 @@
 import os
 import time
+from io import BytesIO
 from urllib.parse import quote
 
 import cv2
@@ -11,7 +12,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import tensorflow as tf
 from dotenv import load_dotenv
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
@@ -52,6 +53,18 @@ LANGUAGE_LABELS = {
         "report_heatmap_status": "Heatmap Analysis",
         "report_heatmap_ready": "Included",
         "report_heatmap_unavailable": "Not included",
+        "report_input_summary": "Input Summary",
+        "report_weather_used": "Weather Used",
+        "report_email_body_intro": "Please find the report details below.",
+        "crop_report_subject": "DeepCropCare Crop Recommendation Report",
+        "crop_report_download": "Download Crop Report",
+        "crop_report_email": "Email Crop Report",
+        "report_temperature": "Temperature",
+        "report_crop_name": "Recommended Crop",
+        "report_crop_description": "Crop Description",
+        "report_crop_conditions": "Optimal Conditions",
+        "report_crop_fertilizer": "Fertilizer and Care",
+        "report_crop_tip": "Pro Tip",
         "heatmap_title": "AI Heatmap: Detected Infection Zones",
         "original_scan": "Original Scan",
         "infection_hotspots": "Infection Hotspots",
@@ -147,6 +160,18 @@ LANGUAGE_LABELS = {
         "report_heatmap_status": "हीटमैप विश्लेषण",
         "report_heatmap_ready": "शामिल है",
         "report_heatmap_unavailable": "शामिल नहीं है",
+        "report_input_summary": "इनपुट सारांश",
+        "report_weather_used": "उपयोग किया गया मौसम",
+        "report_email_body_intro": "कृपया नीचे रिपोर्ट का विवरण देखें।",
+        "crop_report_subject": "डीपक्रॉपकेयर फसल सिफारिश रिपोर्ट",
+        "crop_report_download": "फसल रिपोर्ट डाउनलोड करें",
+        "crop_report_email": "फसल रिपोर्ट ईमेल करें",
+        "report_temperature": "तापमान",
+        "report_crop_name": "अनुशंसित फसल",
+        "report_crop_description": "फसल विवरण",
+        "report_crop_conditions": "उत्तम परिस्थितियाँ",
+        "report_crop_fertilizer": "उर्वरक और देखभाल",
+        "report_crop_tip": "विशेष सुझाव",
         "heatmap_title": "एआई हीटमैप: पहचाने गए संक्रमण क्षेत्र",
         "original_scan": "मूल स्कैन",
         "infection_hotspots": "संक्रमण हॉटस्पॉट",
@@ -242,6 +267,18 @@ LANGUAGE_LABELS = {
         "report_heatmap_status": "హీట్‌మ్యాప్ విశ్లేషణ",
         "report_heatmap_ready": "చేర్చబడింది",
         "report_heatmap_unavailable": "చేర్చబడలేదు",
+        "report_input_summary": "ఇన్‌పుట్ సారాంశం",
+        "report_weather_used": "ఉపయోగించిన వాతావరణం",
+        "report_email_body_intro": "దయచేసి క్రింది రిపోర్ట్ వివరాలను చూడండి.",
+        "crop_report_subject": "డీప్‌క్రాప్‌కేర్ పంట సిఫార్సు రిపోర్ట్",
+        "crop_report_download": "పంట రిపోర్ట్ డౌన్‌లోడ్ చేయండి",
+        "crop_report_email": "పంట రిపోర్ట్ ఈమెయిల్ చేయండి",
+        "report_temperature": "ఉష్ణోగ్రత",
+        "report_crop_name": "సిఫార్సు చేసిన పంట",
+        "report_crop_description": "పంట వివరణ",
+        "report_crop_conditions": "అనుకూల పరిస్థితులు",
+        "report_crop_fertilizer": "ఎరువు మరియు సంరక్షణ",
+        "report_crop_tip": "ప్రో చిట్కా",
         "heatmap_title": "ఏఐ హీట్‌మ్యాప్: గుర్తించిన సంక్రమణ ప్రాంతాలు",
         "original_scan": "మూల స్కాన్",
         "infection_hotspots": "సంక్రమణ హాట్‌స్పాట్లు",
@@ -1555,6 +1592,135 @@ def build_disease_report_text(class_name, confidence, lang, image_name, heatmap_
     return "\n".join(lines)
 
 
+def build_crop_report_text(crop_key, lang, inputs):
+    crop_name = crop_text(crop_key, "name", lang)
+    lines = [
+        "DeepCropCare",
+        t("crop_report_subject", lang),
+        "",
+        f"{t('report_generated_on', lang)}: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"{t('report_crop_name', lang)}: {crop_name}",
+        "",
+        f"{t('report_input_summary', lang)}:",
+        f"{t('nitrogen', lang)}: {inputs['nitrogen']}",
+        f"{t('phosphorus', lang)}: {inputs['phosphorus']}",
+        f"{t('potassium', lang)}: {inputs['potassium']}",
+        f"{t('soil_ph', lang)}: {inputs['ph']}",
+        f"{t('rainfall', lang)}: {inputs['rain']}",
+        f"{t('report_weather_used', lang)}: {inputs['city']}",
+        f"{t('report_temperature', lang)}: {inputs['temp']}",
+        f"{t('humidity', lang)}: {inputs['hum']}",
+        "",
+        f"{t('report_crop_description', lang)}: {crop_text(crop_key, 'description', lang)}",
+        f"{t('report_crop_conditions', lang)}: {crop_text(crop_key, 'conditions', lang)}",
+        f"{t('report_crop_fertilizer', lang)}: {crop_text(crop_key, 'fertilizer', lang)}",
+        f"{t('report_crop_tip', lang)}: {crop_text(crop_key, 'tips', lang)}",
+    ]
+    return "\n".join(lines)
+
+
+def _pick_pdf_font_path(lang):
+    candidates = ["/System/Library/Fonts/Supplemental/Arial Unicode.ttf"]
+    if lang == "hi":
+        candidates.extend(
+            [
+                "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc",
+                "/System/Library/Fonts/Supplemental/DevanagariMT.ttc",
+            ]
+        )
+    elif lang == "te":
+        candidates.extend(
+            [
+                "/System/Library/Fonts/Supplemental/Telugu Sangam MN.ttc",
+                "/System/Library/Fonts/Supplemental/Telugu MN.ttc",
+            ]
+        )
+    candidates.extend(
+        [
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+        ]
+    )
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def _get_pdf_font(lang, size):
+    font_path = _pick_pdf_font_path(lang)
+    if font_path:
+        try:
+            return ImageFont.truetype(font_path, size)
+        except Exception:
+            pass
+    return ImageFont.load_default()
+
+
+def _wrap_pdf_line(draw, text, font, max_width):
+    words = str(text).split()
+    if not words:
+        return [""]
+    lines = []
+    current = words[0]
+    for word in words[1:]:
+        candidate = f"{current} {word}"
+        if draw.textlength(candidate, font=font) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
+    page_width, page_height = 1240, 1754
+    margin = 90
+    title_font = _get_pdf_font(lang, 34)
+    body_font = _get_pdf_font(lang, 22)
+    line_height = 34
+    pages = []
+
+    current_page = Image.new("RGB", (page_width, page_height), "white")
+    draw = ImageDraw.Draw(current_page)
+    y = margin
+    draw.text((margin, y), title, font=title_font, fill="#14361c")
+    y += 70
+
+    for raw_line in body_text.splitlines():
+        font = title_font if raw_line.strip().endswith(":") and len(raw_line) < 40 else body_font
+        lines = _wrap_pdf_line(draw, raw_line or " ", font, page_width - (margin * 2))
+        for line in lines:
+            if y > page_height - margin - line_height:
+                pages.append(current_page)
+                current_page = Image.new("RGB", (page_width, page_height), "white")
+                draw = ImageDraw.Draw(current_page)
+                y = margin
+            draw.text((margin, y), line, font=font, fill="#222222")
+            y += line_height
+        y += 6
+
+    pages.append(current_page)
+
+    for label, image_obj in image_blocks or []:
+        image_page = Image.new("RGB", (page_width, page_height), "white")
+        image_draw = ImageDraw.Draw(image_page)
+        image_draw.text((margin, margin), label, font=title_font, fill="#14361c")
+        image_copy = image_obj.convert("RGB")
+        available_width = page_width - (margin * 2)
+        available_height = page_height - (margin * 2) - 90
+        image_copy.thumbnail((available_width, available_height))
+        x = (page_width - image_copy.width) // 2
+        y = margin + 90 + max(0, (available_height - image_copy.height) // 2)
+        image_page.paste(image_copy, (x, y))
+        pages.append(image_page)
+
+    buffer = BytesIO()
+    pages[0].save(buffer, format="PDF", save_all=True, append_images=pages[1:])
+    return buffer.getvalue()
+
+
 def inject_tab_switch(tab_text):
     safe_text = tab_text.replace("\\", "\\\\").replace("'", "\\'")
     components.html(
@@ -1820,7 +1986,10 @@ st.markdown(
     .stApp {
         background: radial-gradient(circle at top right, #1a2e1a, #0e1117);
         background-attachment: fixed;
-        color: white;
+        color: #eef6ee;
+    }
+    .stApp, .stApp p, .stApp label, .stApp span, .stApp li, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
+        color: #eef6ee;
     }
     .stApp::before {
         content: "";
@@ -1851,6 +2020,37 @@ st.markdown(
         padding: 0.55rem 1rem !important;
         font-size: 1rem !important;
         border: none !important;
+    }
+    [data-baseweb="tab-list"] button {
+        color: rgba(236, 244, 236, 0.72) !important;
+    }
+    [data-baseweb="tab-list"] button[aria-selected="true"] {
+        color: #ff6b6b !important;
+    }
+    [data-testid="stFileUploader"] label,
+    [data-testid="stFileUploader"] small,
+    [data-testid="stFileUploader"] span,
+    [data-testid="stNumberInput"] label,
+    [data-testid="stTextInput"] label,
+    [data-testid="stSelectbox"] label,
+    [data-testid="stSlider"] label {
+        color: #eef6ee !important;
+    }
+    [data-testid="stFileUploader"] section {
+        background: rgba(255, 255, 255, 0.07) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    }
+    [data-testid="stFileUploader"] svg,
+    [data-testid="stFileUploader"] button,
+    [data-testid="stFileUploader"] section div {
+        color: #eef6ee !important;
+    }
+    [data-baseweb="select"] > div {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #eef6ee !important;
+    }
+    [data-baseweb="input"] input {
+        color: #eef6ee !important;
     }
     .prediction-card {
         background: rgba(255, 255, 255, 0.05);
@@ -1896,13 +2096,26 @@ st.markdown(
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 220px;
+        width: 100%;
         padding: 0.7rem 1rem;
         border-radius: 10px;
         text-decoration: none;
         font-weight: 700;
         color: white !important;
         background: #1f7a3e;
+    }
+    .detail-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 15px;
+    }
+    .detail-card p {
+        margin: 0;
+        font-size: 1.05rem;
+        line-height: 1.6;
+        color: #eef6ee !important;
     }
     </style>
     """,
@@ -1920,6 +2133,12 @@ if "last_detected_class" not in st.session_state:
     st.session_state.last_detected_class = None
 if "last_detection_confidence" not in st.session_state:
     st.session_state.last_detection_confidence = None
+if "last_uploaded_signature" not in st.session_state:
+    st.session_state.last_uploaded_signature = None
+if "disease_result_ready" not in st.session_state:
+    st.session_state.disease_result_ready = False
+if "crop_result" not in st.session_state:
+    st.session_state.crop_result = None
 
 header_left, header_right = st.columns([5, 1.5], vertical_alignment="top")
 with header_right:
@@ -1972,6 +2191,12 @@ with tab1:
     uploaded_file = st.file_uploader(t("upload_leaf", lang), type=["jpg", "png", "jpeg"])
 
     if uploaded_file:
+        upload_signature = (uploaded_file.name, getattr(uploaded_file, "size", None))
+        if upload_signature != st.session_state.last_uploaded_signature:
+            st.session_state.last_uploaded_signature = upload_signature
+            st.session_state.last_detected_class = None
+            st.session_state.last_detection_confidence = None
+            st.session_state.disease_result_ready = False
         image = Image.open(uploaded_file).convert("RGB")
 
         col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
@@ -2001,16 +2226,18 @@ with tab1:
                     st.session_state.last_detected_disease = disease_display(full_class_name, lang)
                     st.session_state.last_detected_class = full_class_name
                     st.session_state.last_detection_confidence = confidence
+                    st.session_state.disease_result_ready = True
 
                     progress_bar.empty()
                 else:
                     progress_bar.empty()
                     st.error(t("disease_model_missing", lang))
 
-        if st.session_state.last_detected_class:
+        if st.session_state.disease_result_ready and st.session_state.last_detected_class:
             detected_class = st.session_state.last_detected_class
             detected_confidence = st.session_state.last_detection_confidence or 0.0
             heatmap_available = "healthy" not in detected_class.lower() and bool(detected_conv_name)
+            report_images = [(t("original_scan", lang), image)]
             report_text = build_disease_report_text(
                 detected_class,
                 detected_confidence,
@@ -2019,9 +2246,11 @@ with tab1:
                 heatmap_available,
             )
             report_filename = f"deepcropcare-report-{detected_class.replace(' ', '-').replace('/', '-')}.txt"
+            report_filename = report_filename.replace(".txt", ".pdf")
+            disease_email_body = f"{t('report_email_body_intro', lang)}\n\n{report_text}"
             mailto_link = (
                 f"mailto:?subject={quote(t('report_subject', lang))}"
-                f"&body={quote(report_text)}"
+                f"&body={quote(disease_email_body)}"
             )
 
             st.markdown("<div class='result-center'>", unsafe_allow_html=True)
@@ -2041,21 +2270,6 @@ with tab1:
                 """,
                 unsafe_allow_html=True,
             )
-            action_col1, action_col2, action_col3 = st.columns([1, 1.2, 1.2])
-            with action_col2:
-                st.download_button(
-                    t("report_download", lang),
-                    data=report_text,
-                    file_name=report_filename,
-                    mime="text/plain",
-                    use_container_width=True,
-                    key="download_disease_report",
-                )
-            with action_col3:
-                st.markdown(
-                    f"<a class='report-email-link' href='{mailto_link}'>{t('report_email', lang)}</a>",
-                    unsafe_allow_html=True,
-                )
 
             inject_helper_icon(
                 ASSISTANT_ICON,
@@ -2081,6 +2295,7 @@ with tab1:
                     img_arr = np.expand_dims(img_arr, axis=0)
                     heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
                     overlay = overlay_gradcam(img_resized, heatmap)
+                    report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
                     col_a, col_b = st.columns(2)
                     with col_a:
                         st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
@@ -2088,8 +2303,26 @@ with tab1:
                         st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
                 except Exception as exc:
                     st.error(f"{t('visualization_error', lang)}: {exc}")
+            disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
+            _, action_col1, action_col2, _ = st.columns([1.2, 1, 1, 1.2])
+            with action_col1:
+                st.download_button(
+                    t("report_download", lang),
+                    data=disease_pdf,
+                    file_name=report_filename,
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="download_disease_report",
+                )
+            with action_col2:
+                st.markdown(
+                    f"<a class='report-email-link' href='{mailto_link}'>{t('report_email', lang)}</a>",
+                    unsafe_allow_html=True,
+                )
             st.markdown("</div>", unsafe_allow_html=True)
     else:
+        st.session_state.last_uploaded_signature = None
+        st.session_state.disease_result_ready = False
         remove_helper_icon()
 
 with tab2:
@@ -2147,8 +2380,32 @@ with tab2:
         else:
             st.error(t("crop_model_missing", lang))
             crop = "rice"
+        st.session_state.crop_result = {
+            "crop": crop,
+            "inputs": {
+                "nitrogen": nitrogen,
+                "phosphorus": phosphorus,
+                "potassium": potassium,
+                "ph": ph,
+                "rain": rain,
+                "temp": st.session_state.weather_temp,
+                "hum": st.session_state.weather_hum,
+                "city": city,
+            },
+        }
 
+    if st.session_state.crop_result:
+        crop = st.session_state.crop_result["crop"]
+        crop_inputs = st.session_state.crop_result["inputs"]
         crop_name = crop_text(crop, "name", lang)
+        crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
+        crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
+        crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
+        crop_mailto_link = (
+            f"mailto:?subject={quote(t('crop_report_subject', lang))}"
+            f"&body={quote(crop_email_body)}"
+        )
+        inf1, inf2 = st.columns(2)
         st.markdown(
             f"""
             <div class='prediction-card'>
@@ -2157,14 +2414,12 @@ with tab2:
             """,
             unsafe_allow_html=True,
         )
-
-        inf1, inf2 = st.columns(2)
         with inf1:
             st.markdown(f"### 📖 {t('description', lang)}")
             st.markdown(
                 f"""
-                <div style="background-color: #1a1c23; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin-bottom: 15px;">
-                    <p style="margin:0; font-size: 1.1rem; line-height: 1.6; color: white;">
+                <div class="detail-card" style="border-left: 5px solid #28a745;">
+                    <p>
                         {crop_text(crop, 'description', lang)}
                     </p>
                 </div>
@@ -2173,9 +2428,8 @@ with tab2:
             )
             st.markdown(
                 f"""
-                <div style="background-color: #0e2433; padding: 15px; border-radius: 10px; border: 1px solid #1c83e1;">
-                    <p style="margin:0; color: #5dade2; font-weight: bold;">🔍 {t('optimal_conditions', lang)}:</p>
-                    <p style="margin:0; color: #85c1e9;">{crop_text(crop, 'conditions', lang)}</p>
+                <div class="detail-card" style="border-left: 5px solid #1c83e1;">
+                    <p><strong>🔍 {t('optimal_conditions', lang)}:</strong> {crop_text(crop, 'conditions', lang)}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -2190,6 +2444,21 @@ with tab2:
             f"<br><h3 style='text-align: center;'>✅ {t('crop_analysis_complete', lang)}</h3>",
             unsafe_allow_html=True,
         )
+        _, crop_action_col1, crop_action_col2, _ = st.columns([1.2, 1, 1, 1.2])
+        with crop_action_col1:
+            st.download_button(
+                t("crop_report_download", lang),
+                data=crop_pdf,
+                file_name=f"deepcropcare-crop-report-{crop}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                key="download_crop_report",
+            )
+        with crop_action_col2:
+            st.markdown(
+                f"<a class='report-email-link' href='{crop_mailto_link}'>{t('crop_report_email', lang)}</a>",
+                unsafe_allow_html=True,
+            )
 
 with tab3:
     st.markdown(f"## 💬 {t('chat_heading', lang)}")
