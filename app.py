@@ -2536,6 +2536,14 @@ def send_email_with_attachment(to_email, subject, body, attachment_bytes, filena
     except Exception as exc:
         return False, str(exc)
 
+
+def is_email_configured():
+    smtp_host = st.secrets.get("SMTP_HOST") or os.getenv("SMTP_HOST")
+    smtp_username = st.secrets.get("SMTP_USERNAME") or os.getenv("SMTP_USERNAME")
+    smtp_password = st.secrets.get("SMTP_PASSWORD") or os.getenv("SMTP_PASSWORD")
+    smtp_from = st.secrets.get("SMTP_FROM_EMAIL") or os.getenv("SMTP_FROM_EMAIL") or smtp_username
+    return all([smtp_host, smtp_username, smtp_password, smtp_from])
+
 header_left, header_right = st.columns([5, 1.5], vertical_alignment="top")
 with header_right:
     label_placeholder = st.empty()
@@ -2710,6 +2718,9 @@ with tab1:
                 f"<div class='email-heading'>{t('email_report_heading', lang)}</div>",
                 unsafe_allow_html=True,
             )
+            disease_email_ready = is_email_configured()
+            if not disease_email_ready:
+                st.info(t("email_config_missing", lang))
             _, disease_email_col, disease_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
             with disease_email_col:
                 disease_email = st.text_input(
@@ -2723,6 +2734,7 @@ with tab1:
                     t("send_email", lang),
                     use_container_width=True,
                     key="send_disease_report_button",
+                    disabled=not disease_email_ready,
                 )
             if send_disease_email:
                 if "@" not in disease_email or "." not in disease_email:
@@ -2738,7 +2750,7 @@ with tab1:
                     if success:
                         st.success(t("email_sent", lang))
                     elif error_code == "missing_config":
-                        st.error(t("email_config_missing", lang))
+                        st.info(t("email_config_missing", lang))
                     else:
                         st.error(f"{t('email_failed', lang)}: {error_code}")
             st.markdown("</div>", unsafe_allow_html=True)
@@ -2823,7 +2835,6 @@ with tab2:
         crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
         crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
         crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
-        inf1, inf2 = st.columns(2)
         st.markdown(
             f"""
             <div class='prediction-card'>
@@ -2832,6 +2843,7 @@ with tab2:
             """,
             unsafe_allow_html=True,
         )
+        inf1, inf2 = st.columns(2)
         with inf1:
             st.markdown(f"### 📖 {t('description', lang)}")
             st.markdown(
@@ -2876,6 +2888,9 @@ with tab2:
             f"<div class='email-heading'>{t('email_report_heading', lang)}</div>",
             unsafe_allow_html=True,
         )
+        crop_email_ready = is_email_configured()
+        if not crop_email_ready:
+            st.info(t("email_config_missing", lang))
         _, crop_email_col, crop_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
         with crop_email_col:
             crop_email = st.text_input(
@@ -2889,6 +2904,7 @@ with tab2:
                 t("send_email", lang),
                 use_container_width=True,
                 key="send_crop_report_button",
+                disabled=not crop_email_ready,
             )
         if send_crop_email:
             if "@" not in crop_email or "." not in crop_email:
@@ -2904,7 +2920,7 @@ with tab2:
                 if success:
                     st.success(t("email_sent", lang))
                 elif error_code == "missing_config":
-                    st.error(t("email_config_missing", lang))
+                    st.info(t("email_config_missing", lang))
                 else:
                     st.error(f"{t('email_failed', lang)}: {error_code}")
 
