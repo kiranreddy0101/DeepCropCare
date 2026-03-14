@@ -1,6 +1,7 @@
 import os
 import time
 from urllib.parse import quote
+
 import cv2
 import google.generativeai as genai
 import joblib
@@ -1529,6 +1530,11 @@ def inject_tab_switch(tab_text):
     )
 
 
+def trigger_tab_switch(tab_text):
+    st.session_state.target_tab = tab_text
+    st.rerun()
+
+
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
     grad_model = tf.keras.models.Model(
         [model.inputs],
@@ -1796,16 +1802,19 @@ with tab1:
             st.info(f"**{t('recommended_action', lang)}:** {disease_advice(detected_class, lang)}")
 
             st.markdown(
-                f"""
+                """
                 <style>
-                .assistant-launch-wrap {{
+                .assistant-launch-dock {
+                    position: fixed;
+                    right: 2rem;
+                    bottom: 2rem;
+                    z-index: 999;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    justify-content: center;
-                    margin: 1.25rem 0 1.5rem;
-                }}
-                .assistant-launch {{
+                    gap: 0.55rem;
+                }
+                .assistant-launch-visual {
                     width: 108px;
                     height: 108px;
                     border-radius: 999px;
@@ -1815,37 +1824,52 @@ with tab1:
                     background: radial-gradient(circle at 30% 30%, rgba(255,177,66,.95), rgba(211,78,28,.95));
                     box-shadow: 0 18px 34px rgba(0,0,0,.35), 0 0 0 10px rgba(255,172,64,.08);
                     animation: agribot-float 2.1s ease-in-out infinite;
-                    text-decoration: none;
                     border: 3px solid rgba(255,255,255,.18);
-                }}
-                .assistant-launch img {{
+                    pointer-events: none;
+                }
+                .assistant-launch-visual img {
                     width: 88px;
                     height: 88px;
                     object-fit: contain;
                     border-radius: 50%;
-                }}
-                .assistant-launch-text {{
-                    margin-top: 0.7rem;
-                    font-size: 0.98rem;
-                    color: #dfe8d9;
+                }
+                .assistant-launch-caption {
+                    max-width: 220px;
                     text-align: center;
-                    max-width: 360px;
-                }}
-                @keyframes agribot-float {{
-                    0% {{ transform: translateY(0px) scale(1); }}
-                    50% {{ transform: translateY(-14px) scale(1.03); }}
-                    100% {{ transform: translateY(0px) scale(1); }}
-                }}
+                    color: #dfe8d9;
+                    font-size: 0.92rem;
+                    text-shadow: 0 2px 10px rgba(0,0,0,.35);
+                }
+                @keyframes agribot-float {
+                    0% { transform: translateY(0px) scale(1); }
+                    50% { transform: translateY(-14px) scale(1.03); }
+                    100% { transform: translateY(0px) scale(1); }
+                }
                 </style>
-                <div class="assistant-launch-wrap">
-                    <a class="assistant-launch" href="?assistant=1" title="{t('assistant_note', lang)}">
-                        <img src="{ASSISTANT_ICON}" alt="{t('assistant_note', lang)}" />
-                    </a>
-                    <div class="assistant-launch-text">{t('assistant_hint', lang)}</div>
-                </div>
                 """,
                 unsafe_allow_html=True,
             )
+
+            dock_col_left, dock_col_right = st.columns([5, 1.25])
+            with dock_col_right:
+                st.markdown(
+                    f"""
+                    <div class="assistant-launch-dock">
+                        <div class="assistant-launch-visual">
+                            <img src="{ASSISTANT_ICON}" alt="{t('assistant_note', lang)}" />
+                        </div>
+                        <div class="assistant-launch-caption">{t('assistant_hint', lang)}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                if st.button(
+                    t("assistant_note", lang),
+                    key="assistant_disease_button",
+                    use_container_width=True,
+                ):
+                    st.session_state.pending_chat_prompt = build_disease_prompt(detected_class, lang)
+                    trigger_tab_switch(t("tab_chat", lang))
 
             if "healthy" not in detected_class.lower() and detected_conv_name:
                 st.markdown(
