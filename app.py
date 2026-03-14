@@ -1,6 +1,7 @@
 import os
 import time
 from urllib.parse import quote
+
 import cv2
 import google.generativeai as genai
 import joblib
@@ -79,6 +80,7 @@ LANGUAGE_LABELS = {
         "system_instruction": "You are a professional Agronomist AI. The user's plant has {disease}. Reply in English. Be concise, use bullet points, and provide expert farming advice.",
         "assistant_hint": "Tap the helper bot for a simple explanation, cure, prevention, and care plan.",
         "assistant_note": "Agronomist helper",
+        "assistant_trigger": "Open agronomist helper",
         "assistant_auto_prompt": "Explain the detected disease {disease} in simple words. Give a detailed but easy-to-understand answer with these sections: 1. What this disease is. 2. Main symptoms farmers can notice. 3. Cure or treatment steps to follow now. 4. Prevention tips for the next few days and next season. 5. Fertilizer and plant care advice. 6. Simple do and don't points. Keep the tone practical and farmer-friendly.",
         "assistant_fallback_title": "Quick Agronomist Guide",
         "assistant_fallback_description": "This looks like {disease}. It can stress the plant and reduce growth if not managed early.",
@@ -163,6 +165,7 @@ LANGUAGE_LABELS = {
         "system_instruction": "आप एक पेशेवर कृषि विशेषज्ञ एआई हैं। उपयोगकर्ता के पौधे में {disease} है। केवल हिंदी में उत्तर दें। संक्षिप्त रहें, बुलेट पॉइंट्स का उपयोग करें और विशेषज्ञ कृषि सलाह दें।",
         "assistant_hint": "सरल विवरण, उपचार, बचाव और देखभाल योजना के लिए सहायक बॉट पर टैप करें।",
         "assistant_note": "कृषि सहायक",
+        "assistant_trigger": "कृषि सहायक खोलें",
         "assistant_auto_prompt": "पता चली हुई बीमारी {disease} को बहुत आसान हिंदी में समझाइए। उत्तर को इन भागों में दीजिए: 1. यह बीमारी क्या है। 2. किसान कौन से मुख्य लक्षण देख सकते हैं। 3. अभी कौन सा उपचार करना चाहिए। 4. अगले कुछ दिनों और अगले सीजन के लिए बचाव के तरीके। 5. उर्वरक और पौध देखभाल सलाह। 6. आसान क्या करें और क्या न करें। उत्तर व्यावहारिक और किसान-मित्र होना चाहिए।",
         "assistant_fallback_title": "त्वरित कृषि मार्गदर्शिका",
         "assistant_fallback_description": "यह {disease} जैसा दिख रहा है। समय पर नियंत्रण न करने पर पौधे की वृद्धि और उत्पादन प्रभावित हो सकते हैं।",
@@ -247,6 +250,7 @@ LANGUAGE_LABELS = {
         "system_instruction": "మీరు ఒక ప్రొఫెషనల్ వ్యవసాయ నిపుణుడు ఏఐ. వినియోగదారుడి మొక్కకు {disease} ఉంది. తెలుగు లో మాత్రమే జవాబివ్వండి. సంక్షిప్తంగా, బుల్లెట్ పాయింట్లలో నిపుణుల వ్యవసాయ సలహా ఇవ్వండి.",
         "assistant_hint": "సులభమైన వివరణ, చికిత్స, నివారణ, సంరక్షణ కోసం సహాయక బాట్‌పై ట్యాప్ చేయండి.",
         "assistant_note": "వ్యవసాయ సహాయకుడు",
+        "assistant_trigger": "వ్యవసాయ సహాయకుడిని తెరవండి",
         "assistant_auto_prompt": "గుర్తించిన వ్యాధి {disease} ను చాలా సులభమైన తెలుగులో వివరించండి. జవాబును ఈ భాగాలుగా ఇవ్వండి: 1. ఈ వ్యాధి ఏమిటి. 2. రైతు గమనించే ప్రధాన లక్షణాలు. 3. ఇప్పుడు చేయాల్సిన చికిత్స. 4. వచ్చే కొన్ని రోజులు మరియు వచ్చే సీజన్‌కు నివారణ సూచనలు. 5. ఎరువు మరియు మొక్క సంరక్షణ సలహా. 6. సులభమైన చేయాల్సినవి, చేయకూడనివి. జవాబు రైతులకు సులభంగా అర్థమయ్యేలా ఉండాలి.",
         "assistant_fallback_title": "త్వరిత వ్యవసాయ మార్గదర్శి",
         "assistant_fallback_description": "ఇది {disease} లాగా కనిపిస్తోంది. తొందరగా నియంత్రించకపోతే మొక్క పెరుగుదల మరియు దిగుబడిపై ప్రభావం పడుతుంది.",
@@ -1529,16 +1533,36 @@ def inject_tab_switch(tab_text):
     )
 
 
-def inject_helper_icon(icon_src, hint_text, note_text):
+def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_text):
     safe_hint = hint_text.replace("\\", "\\\\").replace("'", "\\'")
     safe_note = note_text.replace("\\", "\\\\").replace("'", "\\'")
     safe_icon = icon_src.replace("\\", "\\\\").replace("'", "\\'")
+    safe_trigger = trigger_label.replace("\\", "\\\\").replace("'", "\\'")
+    safe_loading = loading_text.replace("\\", "\\\\").replace("'", "\\'")
     components.html(
         f"""
         <script>
         const parentDoc = window.parent.document;
         const oldNode = parentDoc.getElementById('deepcropcare-helper-dock');
         if (oldNode) oldNode.remove();
+        const oldOverlay = parentDoc.getElementById('deepcropcare-helper-overlay');
+        if (oldOverlay) oldOverlay.remove();
+
+        const helperButton = Array.from(parentDoc.querySelectorAll('button')).find(
+          (button) => button.innerText.trim() === '{safe_trigger}'
+        );
+        if (helperButton) {{
+          const wrapper = helperButton.closest('div[data-testid="stButton"]');
+          if (wrapper) {{
+            wrapper.style.position = 'fixed';
+            wrapper.style.left = '-9999px';
+            wrapper.style.opacity = '0';
+            wrapper.style.pointerEvents = 'none';
+            wrapper.style.width = '1px';
+            wrapper.style.height = '1px';
+            wrapper.style.overflow = 'hidden';
+          }}
+        }}
 
         const dock = parentDoc.createElement('div');
         dock.id = 'deepcropcare-helper-dock';
@@ -1557,36 +1581,70 @@ def inject_helper_icon(icon_src, hint_text, note_text):
               user-select: none;
             }}
             #deepcropcare-helper-dock .helper-orb {{
-              width: 112px;
-              height: 112px;
+              width: 84px;
+              height: 84px;
               border-radius: 999px;
               display: flex;
               align-items: center;
               justify-content: center;
               background: radial-gradient(circle at 30% 30%, rgba(255,177,66,.96), rgba(211,78,28,.96));
-              box-shadow: 0 18px 34px rgba(0,0,0,.35), 0 0 0 10px rgba(255,172,64,.10);
+              box-shadow: 0 14px 28px rgba(0,0,0,.32), 0 0 0 8px rgba(255,172,64,.09);
               border: 3px solid rgba(255,255,255,.18);
               animation: agribot-float 2.1s ease-in-out infinite;
             }}
             #deepcropcare-helper-dock .helper-orb img {{
-              width: 88px;
-              height: 88px;
+              width: 64px;
+              height: 64px;
               object-fit: contain;
               border-radius: 50%;
               pointer-events: none;
             }}
             #deepcropcare-helper-dock .helper-caption {{
-              max-width: 230px;
+              max-width: 180px;
               text-align: center;
               color: #dfe8d9;
-              font-size: 15px;
+              font-size: 13px;
               line-height: 1.45;
               text-shadow: 0 2px 10px rgba(0,0,0,.35);
+            }}
+            #deepcropcare-helper-overlay {{
+              position: fixed;
+              inset: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: rgba(8, 14, 12, 0.45);
+              z-index: 10000;
+              backdrop-filter: blur(2px);
+            }}
+            #deepcropcare-helper-overlay .overlay-card {{
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              padding: 14px 18px;
+              border-radius: 14px;
+              background: rgba(16, 24, 20, 0.96);
+              color: #eef6ee;
+              box-shadow: 0 18px 38px rgba(0,0,0,.35);
+              border: 1px solid rgba(255,255,255,.1);
+              font-size: 16px;
+              font-weight: 600;
+            }}
+            #deepcropcare-helper-overlay .overlay-spinner {{
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              border: 3px solid rgba(255,255,255,.22);
+              border-top-color: #31c555;
+              animation: helper-spin 0.9s linear infinite;
             }}
             @keyframes agribot-float {{
               0% {{ transform: translateY(0px) scale(1); }}
               50% {{ transform: translateY(-14px) scale(1.03); }}
               100% {{ transform: translateY(0px) scale(1); }}
+            }}
+            @keyframes helper-spin {{
+              to {{ transform: rotate(360deg); }}
             }}
           </style>
           <div class="helper-orb" title="{safe_note}">
@@ -1596,9 +1654,17 @@ def inject_helper_icon(icon_src, hint_text, note_text):
         `;
 
         dock.addEventListener('click', () => {{
-          const url = new URL(window.parent.location.href);
-          url.searchParams.set('assistant', '1');
-          window.parent.location.assign(url.toString());
+          if (!helperButton) return;
+          const overlay = parentDoc.createElement('div');
+          overlay.id = 'deepcropcare-helper-overlay';
+          overlay.innerHTML = `
+            <div class="overlay-card">
+              <div class="overlay-spinner"></div>
+              <div>{safe_loading}</div>
+            </div>
+          `;
+          parentDoc.body.appendChild(overlay);
+          helperButton.click();
         }});
 
         parentDoc.body.appendChild(dock);
@@ -1614,6 +1680,8 @@ def remove_helper_icon():
         <script>
         const oldNode = window.parent.document.getElementById('deepcropcare-helper-dock');
         if (oldNode) oldNode.remove();
+        const oldOverlay = window.parent.document.getElementById('deepcropcare-helper-overlay');
+        if (oldOverlay) oldOverlay.remove();
         </script>
         """,
         height=0,
@@ -1818,11 +1886,6 @@ tab1, tab2, tab3, tab4 = st.tabs(
     ]
 )
 
-if st.query_params.get("assistant") == "1" and st.session_state.last_detected_class:
-    st.session_state.pending_chat_prompt = build_disease_prompt(st.session_state.last_detected_class, lang)
-    st.session_state.target_tab = t("tab_chat", lang)
-    st.query_params.clear()
-
 if st.session_state.get("target_tab"):
     inject_tab_switch(st.session_state.target_tab)
     st.session_state.target_tab = None
@@ -1890,7 +1953,14 @@ with tab1:
                 ASSISTANT_ICON,
                 t("assistant_hint", lang),
                 t("assistant_note", lang),
+                t("assistant_trigger", lang),
+                t("chat_spinner", lang),
             )
+            helper_clicked = st.button(t("assistant_trigger", lang), key="assistant_trigger_button")
+            if helper_clicked:
+                st.session_state.pending_chat_prompt = build_disease_prompt(detected_class, lang)
+                st.session_state.target_tab = t("tab_chat", lang)
+                st.rerun()
 
             if "healthy" not in detected_class.lower() and detected_conv_name:
                 st.markdown(
