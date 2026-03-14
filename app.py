@@ -1,7 +1,6 @@
 import os
 import time
 from urllib.parse import quote
-
 import cv2
 import google.generativeai as genai
 import joblib
