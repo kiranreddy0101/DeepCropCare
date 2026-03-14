@@ -2216,6 +2216,8 @@ def inject_input_theme():
         <script>
         const parentDoc = window.parent.document;
         const applyFieldTheme = () => {
+          const isLightMode = window.parent.matchMedia && window.parent.matchMedia('(prefers-color-scheme: light)').matches;
+          const textColor = isLightMode ? '#111111' : '#eef6ee';
           const shellSelectors = [
             'div[data-testid="stNumberInput"] [data-baseweb="base-input"]',
             'div[data-testid="stTextInput"] [data-baseweb="base-input"]',
@@ -2233,8 +2235,8 @@ def inject_input_theme():
           parentDoc.querySelectorAll('div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input').forEach((node) => {
             node.style.background = 'transparent';
             node.style.backgroundColor = 'transparent';
-            node.style.color = '#eef6ee';
-            node.style.webkitTextFillColor = '#eef6ee';
+            node.style.color = textColor;
+            node.style.webkitTextFillColor = textColor;
             node.style.border = 'none';
             node.style.boxShadow = 'none';
             node.style.appearance = 'none';
@@ -2243,8 +2245,8 @@ def inject_input_theme():
 
           parentDoc.querySelectorAll('div[data-testid="stNumberInput"] button, div[data-testid="stSelectbox"] svg').forEach((node) => {
             node.style.background = 'transparent';
-            node.style.color = '#eef6ee';
-            node.style.fill = '#eef6ee';
+            node.style.color = textColor;
+            node.style.fill = textColor;
             node.style.boxShadow = 'none';
             node.style.border = 'none';
           });
