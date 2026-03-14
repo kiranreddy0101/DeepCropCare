@@ -1,5 +1,6 @@
 import os
 import time
+
 import cv2
 import google.generativeai as genai
 import joblib
@@ -1504,7 +1505,7 @@ st.markdown(
     """
     <style>
     .block-container {
-        padding-top: 1.25rem !important;
+        padding-top: 2.4rem !important;
         max-width: 95%;
     }
     .stApp {
@@ -1522,7 +1523,14 @@ st.markdown(
     }
     .top-header {
         text-align: center;
+        padding-top: 1rem;
         padding-bottom: 1rem;
+    }
+    .language-label {
+        color: #d8e6d3;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
     }
     div.stButton > button {
         width: 100% !important;
@@ -1570,28 +1578,37 @@ if "weather_temp" not in st.session_state:
 if "weather_hum" not in st.session_state:
     st.session_state.weather_hum = 70.0
 
-header_left, header_right = st.columns([5, 1.5])
+header_left, header_right = st.columns([5, 1.5], vertical_alignment="top")
+with header_right:
+    st.markdown(
+        f"<div class='language-label'>{t('language_selector', st.session_state.language)}</div>",
+        unsafe_allow_html=True,
+    )
+    selected_language = st.selectbox(
+        t("language_selector", st.session_state.language),
+        options=list(LANGUAGES.keys()),
+        format_func=lambda code: LANGUAGES[code],
+        index=list(LANGUAGES.keys()).index(st.session_state.language),
+        label_visibility="collapsed",
+    )
+
+if selected_language != st.session_state.language:
+    st.session_state.language = selected_language
+
+lang = st.session_state.language
+
 with header_left:
     st.markdown(
         f"""
         <div class="top-header">
-            <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">🌱 {t("hero_title", st.session_state.language)}</h1>
+            <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">🌱 {t("hero_title", lang)}</h1>
             <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300;">
-                {t("hero_subtitle", st.session_state.language)}
+                {t("hero_subtitle", lang)}
             </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
-with header_right:
-    st.session_state.language = st.selectbox(
-        t("language_selector", st.session_state.language),
-        options=list(LANGUAGES.keys()),
-        format_func=lambda code: LANGUAGES[code],
-        index=list(LANGUAGES.keys()).index(st.session_state.language),
-    )
-
-lang = st.session_state.language
 
 tab1, tab2, tab3, tab4 = st.tabs(
     [
