@@ -1,7 +1,6 @@
 import os
 import time
 from urllib.parse import quote
-
 import cv2
 import google.generativeai as genai
 import joblib
@@ -1530,9 +1529,95 @@ def inject_tab_switch(tab_text):
     )
 
 
-def trigger_tab_switch(tab_text):
-    st.session_state.target_tab = tab_text
-    st.rerun()
+def inject_helper_icon(icon_src, hint_text, note_text):
+    safe_hint = hint_text.replace("\\", "\\\\").replace("'", "\\'")
+    safe_note = note_text.replace("\\", "\\\\").replace("'", "\\'")
+    safe_icon = icon_src.replace("\\", "\\\\").replace("'", "\\'")
+    components.html(
+        f"""
+        <script>
+        const parentDoc = window.parent.document;
+        const oldNode = parentDoc.getElementById('deepcropcare-helper-dock');
+        if (oldNode) oldNode.remove();
+
+        const dock = parentDoc.createElement('div');
+        dock.id = 'deepcropcare-helper-dock';
+        dock.innerHTML = `
+          <style>
+            #deepcropcare-helper-dock {{
+              position: fixed;
+              right: 26px;
+              bottom: 26px;
+              z-index: 9999;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 10px;
+              cursor: pointer;
+              user-select: none;
+            }}
+            #deepcropcare-helper-dock .helper-orb {{
+              width: 112px;
+              height: 112px;
+              border-radius: 999px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: radial-gradient(circle at 30% 30%, rgba(255,177,66,.96), rgba(211,78,28,.96));
+              box-shadow: 0 18px 34px rgba(0,0,0,.35), 0 0 0 10px rgba(255,172,64,.10);
+              border: 3px solid rgba(255,255,255,.18);
+              animation: agribot-float 2.1s ease-in-out infinite;
+            }}
+            #deepcropcare-helper-dock .helper-orb img {{
+              width: 88px;
+              height: 88px;
+              object-fit: contain;
+              border-radius: 50%;
+              pointer-events: none;
+            }}
+            #deepcropcare-helper-dock .helper-caption {{
+              max-width: 230px;
+              text-align: center;
+              color: #dfe8d9;
+              font-size: 15px;
+              line-height: 1.45;
+              text-shadow: 0 2px 10px rgba(0,0,0,.35);
+            }}
+            @keyframes agribot-float {{
+              0% {{ transform: translateY(0px) scale(1); }}
+              50% {{ transform: translateY(-14px) scale(1.03); }}
+              100% {{ transform: translateY(0px) scale(1); }}
+            }}
+          </style>
+          <div class="helper-orb" title="{safe_note}">
+            <img src="{safe_icon}" alt="{safe_note}" />
+          </div>
+          <div class="helper-caption">{safe_hint}</div>
+        `;
+
+        dock.addEventListener('click', () => {{
+          const url = new URL(window.parent.location.href);
+          url.searchParams.set('assistant', '1');
+          window.parent.location.assign(url.toString());
+        }});
+
+        parentDoc.body.appendChild(dock);
+        </script>
+        """,
+        height=0,
+    )
+
+
+def remove_helper_icon():
+    components.html(
+        """
+        <script>
+        const oldNode = window.parent.document.getElementById('deepcropcare-helper-dock');
+        if (oldNode) oldNode.remove();
+        </script>
+        """,
+        height=0,
+    )
 
 
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
@@ -1801,75 +1886,11 @@ with tab1:
             )
             st.info(f"**{t('recommended_action', lang)}:** {disease_advice(detected_class, lang)}")
 
-            st.markdown(
-                """
-                <style>
-                .assistant-launch-dock {
-                    position: fixed;
-                    right: 2rem;
-                    bottom: 2rem;
-                    z-index: 999;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 0.55rem;
-                }
-                .assistant-launch-visual {
-                    width: 108px;
-                    height: 108px;
-                    border-radius: 999px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: radial-gradient(circle at 30% 30%, rgba(255,177,66,.95), rgba(211,78,28,.95));
-                    box-shadow: 0 18px 34px rgba(0,0,0,.35), 0 0 0 10px rgba(255,172,64,.08);
-                    animation: agribot-float 2.1s ease-in-out infinite;
-                    border: 3px solid rgba(255,255,255,.18);
-                    pointer-events: none;
-                }
-                .assistant-launch-visual img {
-                    width: 88px;
-                    height: 88px;
-                    object-fit: contain;
-                    border-radius: 50%;
-                }
-                .assistant-launch-caption {
-                    max-width: 220px;
-                    text-align: center;
-                    color: #dfe8d9;
-                    font-size: 0.92rem;
-                    text-shadow: 0 2px 10px rgba(0,0,0,.35);
-                }
-                @keyframes agribot-float {
-                    0% { transform: translateY(0px) scale(1); }
-                    50% { transform: translateY(-14px) scale(1.03); }
-                    100% { transform: translateY(0px) scale(1); }
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
+            inject_helper_icon(
+                ASSISTANT_ICON,
+                t("assistant_hint", lang),
+                t("assistant_note", lang),
             )
-
-            dock_col_left, dock_col_right = st.columns([5, 1.25])
-            with dock_col_right:
-                st.markdown(
-                    f"""
-                    <div class="assistant-launch-dock">
-                        <div class="assistant-launch-visual">
-                            <img src="{ASSISTANT_ICON}" alt="{t('assistant_note', lang)}" />
-                        </div>
-                        <div class="assistant-launch-caption">{t('assistant_hint', lang)}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                if st.button(
-                    t("assistant_note", lang),
-                    key="assistant_disease_button",
-                    use_container_width=True,
-                ):
-                    st.session_state.pending_chat_prompt = build_disease_prompt(detected_class, lang)
-                    trigger_tab_switch(t("tab_chat", lang))
 
             if "healthy" not in detected_class.lower() and detected_conv_name:
                 st.markdown(
@@ -1889,6 +1910,8 @@ with tab1:
                         st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
                 except Exception as exc:
                     st.error(f"{t('visualization_error', lang)}: {exc}")
+    else:
+        remove_helper_icon()
 
 with tab2:
     st.markdown(f"## 🚜 {t('crop_heading', lang)}")
