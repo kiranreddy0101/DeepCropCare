@@ -2111,7 +2111,8 @@ st.markdown(
         font-weight: 600;
         margin-bottom: 0.35rem;
     }
-    div.stButton > button {
+    div.stButton > button,
+    div.stDownloadButton > button {
         width: 100% !important;
         white-space: nowrap !important;
         font-weight: bold !important;
@@ -2121,6 +2122,16 @@ st.markdown(
         padding: 0.55rem 1rem !important;
         font-size: 1rem !important;
         border: none !important;
+    }
+    div.stDownloadButton > button:hover,
+    div.stButton > button:hover {
+        background-color: #23913c !important;
+        color: white !important;
+    }
+    div.stDownloadButton > button:focus,
+    div.stButton > button:focus {
+        box-shadow: 0 0 0 0.18rem rgba(40, 167, 69, 0.28) !important;
+        color: white !important;
     }
     [data-baseweb="tab-list"] button {
         color: rgba(236, 244, 236, 0.72) !important;
@@ -2235,7 +2246,7 @@ st.markdown(
     }
     .email-panel {
         max-width: 760px;
-        margin: 1rem auto 0;
+        margin: 0.9rem auto 0;
         padding: 0.85rem 1.1rem;
         border-radius: 18px;
         background: rgba(255, 255, 255, 0.04);
@@ -2244,10 +2255,6 @@ st.markdown(
     .email-panel h4 {
         margin: 0;
         text-align: center;
-    }
-    .email-input-row {
-        max-width: 760px;
-        margin: 0.75rem auto 0;
     }
     .detail-card {
         background: rgba(255, 255, 255, 0.05);
