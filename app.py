@@ -1,11 +1,13 @@
 import os
 import time
+from urllib.parse import quote
 import cv2
 import google.generativeai as genai
 import joblib
 import numpy as np
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 import tensorflow as tf
 from dotenv import load_dotenv
 from PIL import Image
@@ -75,6 +77,15 @@ LANGUAGE_LABELS = {
         "generic_error": "Error",
         "reset_chat": "Reset Chat",
         "system_instruction": "You are a professional Agronomist AI. The user's plant has {disease}. Reply in English. Be concise, use bullet points, and provide expert farming advice.",
+        "assistant_hint": "Tap the helper bot for a simple explanation, cure, prevention, and care plan.",
+        "assistant_note": "Agronomist helper",
+        "assistant_auto_prompt": "Explain the detected disease {disease} in simple words. Give a detailed but easy-to-understand answer with these sections: 1. What this disease is. 2. Main symptoms farmers can notice. 3. Cure or treatment steps to follow now. 4. Prevention tips for the next few days and next season. 5. Fertilizer and plant care advice. 6. Simple do and don't points. Keep the tone practical and farmer-friendly.",
+        "assistant_fallback_title": "Quick Agronomist Guide",
+        "assistant_fallback_description": "This looks like {disease}. It can stress the plant and reduce growth if not managed early.",
+        "assistant_fallback_symptoms": "Check for spots, color changes, wilting, damaged leaf areas, or poor plant vigor.",
+        "assistant_fallback_cure": "Remove badly affected leaves, improve airflow, avoid leaf wetness for long periods, and follow the recommended treatment below.",
+        "assistant_fallback_prevention": "Use clean tools, avoid overcrowding, monitor plants daily, and act early when symptoms first appear.",
+        "assistant_fallback_fertilizer": "Recommended care: {advice}",
         "about_heading": "About DeepCropCare",
         "mission_title": "The Mission",
         "mission_body": "DeepCropCare is a cutting-edge agricultural platform designed to empower farmers with data-driven insights. By merging Deep Learning for leaf diagnostics and Machine Learning for crop suitability, we provide a 360-degree view of your farm's potential and health.",
@@ -150,6 +161,15 @@ LANGUAGE_LABELS = {
         "generic_error": "त्रुटि",
         "reset_chat": "चैट रीसेट करें",
         "system_instruction": "आप एक पेशेवर कृषि विशेषज्ञ एआई हैं। उपयोगकर्ता के पौधे में {disease} है। केवल हिंदी में उत्तर दें। संक्षिप्त रहें, बुलेट पॉइंट्स का उपयोग करें और विशेषज्ञ कृषि सलाह दें।",
+        "assistant_hint": "सरल विवरण, उपचार, बचाव और देखभाल योजना के लिए सहायक बॉट पर टैप करें।",
+        "assistant_note": "कृषि सहायक",
+        "assistant_auto_prompt": "पता चली हुई बीमारी {disease} को बहुत आसान हिंदी में समझाइए। उत्तर को इन भागों में दीजिए: 1. यह बीमारी क्या है। 2. किसान कौन से मुख्य लक्षण देख सकते हैं। 3. अभी कौन सा उपचार करना चाहिए। 4. अगले कुछ दिनों और अगले सीजन के लिए बचाव के तरीके। 5. उर्वरक और पौध देखभाल सलाह। 6. आसान क्या करें और क्या न करें। उत्तर व्यावहारिक और किसान-मित्र होना चाहिए।",
+        "assistant_fallback_title": "त्वरित कृषि मार्गदर्शिका",
+        "assistant_fallback_description": "यह {disease} जैसा दिख रहा है। समय पर नियंत्रण न करने पर पौधे की वृद्धि और उत्पादन प्रभावित हो सकते हैं।",
+        "assistant_fallback_symptoms": "धब्बे, रंग बदलना, मुरझाना, पत्ती का खराब होना या पौधे की कमजोरी जैसे लक्षण देखें।",
+        "assistant_fallback_cure": "बहुत प्रभावित पत्तियाँ हटाएँ, हवा का प्रवाह बढ़ाएँ, पत्तियों पर लंबे समय तक नमी न रहने दें और नीचे दी गई सलाह का पालन करें।",
+        "assistant_fallback_prevention": "साफ औज़ार रखें, पौधों को बहुत घना न लगाएँ, रोज़ निगरानी करें और शुरुआती लक्षण पर तुरंत कार्रवाई करें।",
+        "assistant_fallback_fertilizer": "अनुशंसित देखभाल: {advice}",
         "about_heading": "डीपक्रॉपकेयर के बारे में",
         "mission_title": "हमारा मिशन",
         "mission_body": "डीपक्रॉपकेयर एक उन्नत कृषि मंच है जो किसानों को डेटा-आधारित जानकारी देकर सशक्त बनाता है। पत्ती रोग पहचान के लिए डीप लर्निंग और फसल उपयुक्तता के लिए मशीन लर्निंग को जोड़कर यह आपकी खेती की क्षमता और स्वास्थ्य का समग्र दृश्य देता है।",
@@ -225,6 +245,15 @@ LANGUAGE_LABELS = {
         "generic_error": "లోపం",
         "reset_chat": "చాట్ రీసెట్ చేయండి",
         "system_instruction": "మీరు ఒక ప్రొఫెషనల్ వ్యవసాయ నిపుణుడు ఏఐ. వినియోగదారుడి మొక్కకు {disease} ఉంది. తెలుగు లో మాత్రమే జవాబివ్వండి. సంక్షిప్తంగా, బుల్లెట్ పాయింట్లలో నిపుణుల వ్యవసాయ సలహా ఇవ్వండి.",
+        "assistant_hint": "సులభమైన వివరణ, చికిత్స, నివారణ, సంరక్షణ కోసం సహాయక బాట్‌పై ట్యాప్ చేయండి.",
+        "assistant_note": "వ్యవసాయ సహాయకుడు",
+        "assistant_auto_prompt": "గుర్తించిన వ్యాధి {disease} ను చాలా సులభమైన తెలుగులో వివరించండి. జవాబును ఈ భాగాలుగా ఇవ్వండి: 1. ఈ వ్యాధి ఏమిటి. 2. రైతు గమనించే ప్రధాన లక్షణాలు. 3. ఇప్పుడు చేయాల్సిన చికిత్స. 4. వచ్చే కొన్ని రోజులు మరియు వచ్చే సీజన్‌కు నివారణ సూచనలు. 5. ఎరువు మరియు మొక్క సంరక్షణ సలహా. 6. సులభమైన చేయాల్సినవి, చేయకూడనివి. జవాబు రైతులకు సులభంగా అర్థమయ్యేలా ఉండాలి.",
+        "assistant_fallback_title": "త్వరిత వ్యవసాయ మార్గదర్శి",
+        "assistant_fallback_description": "ఇది {disease} లాగా కనిపిస్తోంది. తొందరగా నియంత్రించకపోతే మొక్క పెరుగుదల మరియు దిగుబడిపై ప్రభావం పడుతుంది.",
+        "assistant_fallback_symptoms": "మచ్చలు, రంగు మార్పు, వాడిపోవడం, ఆకు దెబ్బతినడం లేదా మొక్క బలహీనత వంటి లక్షణాలు చూడండి.",
+        "assistant_fallback_cure": "బాగా సోకిన ఆకులు తొలగించండి, గాలి సరిగా ఆడేలా చూడండి, ఆకులపై ఎక్కువసేపు తేమ ఉండనివ్వకండి మరియు క్రింది సలహాను పాటించండి.",
+        "assistant_fallback_prevention": "పరికరాలు శుభ్రంగా ఉంచండి, మొక్కలు గట్టిగా నింపవద్దు, రోజూ గమనించండి, మొదటి లక్షణాలకే చర్య తీసుకోండి.",
+        "assistant_fallback_fertilizer": "సిఫార్సు చేసిన సంరక్షణ: {advice}",
         "about_heading": "డీప్‌క్రాప్‌కేర్ గురించి",
         "mission_title": "మా లక్ష్యం",
         "mission_body": "డీప్‌క్రాప్‌కేర్ రైతులకు డేటా ఆధారిత అవగాహనను అందించే ఆధునిక వ్యవసాయ వేదిక. ఆకు వ్యాధి నిర్ధారణకు డీప్ లెర్నింగ్ మరియు పంట అనుకూలతకు మెషీన్ లెర్నింగ్‌ను కలిపి మీ పొలం సామర్థ్యం మరియు ఆరోగ్యంపై సమగ్ర దృశ్యాన్ని అందిస్తుంది.",
@@ -1421,8 +1450,83 @@ def crop_text(crop_key, field, lang):
     return CROP_METADATA[crop_key][field].get(lang) or CROP_METADATA[crop_key][field]["en"]
 
 
-def build_class_options(lang):
-    return [disease_display(name, lang) for name in CLASS_NAMES]
+def build_assistant_icon_data_uri():
+    svg = """
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'>
+      <defs>
+        <linearGradient id='g1' x1='0' x2='1'>
+          <stop offset='0%' stop-color='#ff8a3d'/>
+          <stop offset='100%' stop-color='#d84c1b'/>
+        </linearGradient>
+      </defs>
+      <rect x='40' y='18' rx='18' ry='18' width='56' height='44' fill='url(#g1)' stroke='#a53b17' stroke-width='3'/>
+      <rect x='48' y='28' rx='8' ry='8' width='40' height='26' fill='#242424'/>
+      <rect x='56' y='34' width='7' height='8' fill='#ffe65e'/>
+      <rect x='73' y='34' width='7' height='8' fill='#ffe65e'/>
+      <rect x='63' y='46' width='12' height='4' rx='2' fill='#ffe65e'/>
+      <circle cx='38' cy='38' r='6' fill='#ffd84d'/>
+      <circle cx='101' cy='38' r='6' fill='#ffd84d'/>
+      <rect x='54' y='64' rx='10' ry='10' width='28' height='28' fill='url(#g1)' stroke='#a53b17' stroke-width='3'/>
+      <line x1='54' y1='74' x2='34' y2='88' stroke='#3c3c3c' stroke-width='6' stroke-linecap='round'/>
+      <line x1='82' y1='74' x2='102' y2='88' stroke='#3c3c3c' stroke-width='6' stroke-linecap='round'/>
+      <line x1='63' y1='92' x2='55' y2='118' stroke='#3c3c3c' stroke-width='6' stroke-linecap='round'/>
+      <line x1='74' y1='92' x2='84' y2='118' stroke='#3c3c3c' stroke-width='6' stroke-linecap='round'/>
+      <circle cx='29' cy='92' r='4' fill='#3c3c3c'/>
+      <path d='M15 80 h18 a10 10 0 0 1 10 10 v18 a10 10 0 0 1 -10 10 h-18 z' fill='#f39a1d' stroke='#bd6d0a' stroke-width='3'/>
+      <path d='M33 82 q12 0 16 8' fill='none' stroke='#f7c14b' stroke-width='4' stroke-linecap='round'/>
+      <path d='M22 95 q7 -6 14 0' fill='none' stroke='#49a7ff' stroke-width='5' stroke-linecap='round'/>
+      <circle cx='22' cy='110' r='2.5' fill='#49a7ff'/>
+      <circle cx='26' cy='116' r='2.5' fill='#49a7ff'/>
+    </svg>
+    """
+    return f"data:image/svg+xml;utf8,{quote(svg)}"
+
+
+ASSISTANT_ICON = build_assistant_icon_data_uri()
+
+
+def build_disease_prompt(class_name, lang):
+    return t("assistant_auto_prompt", lang).format(disease=disease_display(class_name, lang))
+
+
+def build_fallback_disease_report(class_name, lang):
+    disease_name = disease_display(class_name, lang)
+    advice = disease_advice(class_name, lang)
+    return "\n\n".join(
+        [
+            f"### {t('assistant_fallback_title', lang)}",
+            t("assistant_fallback_description", lang).format(disease=disease_name),
+            f"**Symptoms:** {t('assistant_fallback_symptoms', lang)}",
+            f"**Cure:** {t('assistant_fallback_cure', lang)}",
+            f"**Prevention:** {t('assistant_fallback_prevention', lang)}",
+            f"**Fertilizer & Care:** {t('assistant_fallback_fertilizer', lang).format(advice=advice)}",
+        ]
+    )
+
+
+def inject_tab_switch(tab_text):
+    safe_text = tab_text.replace("\\", "\\\\").replace("'", "\\'")
+    components.html(
+        f"""
+        <script>
+        const targetText = '{safe_text}';
+        let attempts = 0;
+        const timer = setInterval(() => {{
+          attempts += 1;
+          const tabs = window.parent.document.querySelectorAll('button[role="tab"]');
+          const target = Array.from(tabs).find((tab) => tab.innerText.includes(targetText));
+          if (target) {{
+            target.click();
+            clearInterval(timer);
+          }}
+          if (attempts > 30) {{
+            clearInterval(timer);
+          }}
+        }}, 150);
+        </script>
+        """,
+        height=0,
+    )
 
 
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
@@ -1576,6 +1680,10 @@ if "weather_temp" not in st.session_state:
     st.session_state.weather_temp = 25.0
 if "weather_hum" not in st.session_state:
     st.session_state.weather_hum = 70.0
+if "last_detected_class" not in st.session_state:
+    st.session_state.last_detected_class = None
+if "last_detection_confidence" not in st.session_state:
+    st.session_state.last_detection_confidence = None
 
 header_left, header_right = st.columns([5, 1.5], vertical_alignment="top")
 with header_right:
@@ -1619,6 +1727,15 @@ tab1, tab2, tab3, tab4 = st.tabs(
     ]
 )
 
+if st.query_params.get("assistant") == "1" and st.session_state.last_detected_class:
+    st.session_state.pending_chat_prompt = build_disease_prompt(st.session_state.last_detected_class, lang)
+    st.session_state.target_tab = t("tab_chat", lang)
+    st.query_params.clear()
+
+if st.session_state.get("target_tab"):
+    inject_tab_switch(st.session_state.target_tab)
+    st.session_state.target_tab = None
+
 with tab1:
     st.markdown(f"## 🌿 {t('disease_heading', lang)}")
     uploaded_file = st.file_uploader(t("upload_leaf", lang), type=["jpg", "png", "jpeg"])
@@ -1651,41 +1768,103 @@ with tab1:
                     confidence = float(np.max(prediction) * 100)
                     full_class_name = CLASS_NAMES[idx]
                     st.session_state.last_detected_disease = disease_display(full_class_name, lang)
+                    st.session_state.last_detected_class = full_class_name
+                    st.session_state.last_detection_confidence = confidence
 
                     progress_bar.empty()
-                    st.markdown(
-                        f"<br><h3 style='text-align: center;'>{t('analysis_complete', lang)}</h3>",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        f"""
-                        <div class='prediction-card'>
-                            <h2>{disease_display(full_class_name, lang)}</h2>
-                            <h3>{t('confidence', lang)}: {confidence:.2f}%</h3>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                    st.info(f"**{t('recommended_action', lang)}:** {disease_advice(full_class_name, lang)}")
-
-                    if "healthy" not in full_class_name.lower() and detected_conv_name:
-                        st.markdown(
-                            f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
-                            unsafe_allow_html=True,
-                        )
-                        try:
-                            heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                            overlay = overlay_gradcam(img_resized, heatmap)
-                            col_a, col_b = st.columns(2)
-                            with col_a:
-                                st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
-                            with col_b:
-                                st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
-                        except Exception as exc:
-                            st.error(f"{t('visualization_error', lang)}: {exc}")
                 else:
                     progress_bar.empty()
                     st.error(t("disease_model_missing", lang))
+
+        if st.session_state.last_detected_class:
+            detected_class = st.session_state.last_detected_class
+            detected_confidence = st.session_state.last_detection_confidence or 0.0
+
+            st.markdown(
+                f"<br><h3 style='text-align: center;'>{t('analysis_complete', lang)}</h3>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"""
+                <div class='prediction-card'>
+                    <h2>{disease_display(detected_class, lang)}</h2>
+                    <h3>{t('confidence', lang)}: {detected_confidence:.2f}%</h3>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.info(f"**{t('recommended_action', lang)}:** {disease_advice(detected_class, lang)}")
+
+            st.markdown(
+                f"""
+                <style>
+                .assistant-launch-wrap {{
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 1.25rem 0 1.5rem;
+                }}
+                .assistant-launch {{
+                    width: 108px;
+                    height: 108px;
+                    border-radius: 999px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: radial-gradient(circle at 30% 30%, rgba(255,177,66,.95), rgba(211,78,28,.95));
+                    box-shadow: 0 18px 34px rgba(0,0,0,.35), 0 0 0 10px rgba(255,172,64,.08);
+                    animation: agribot-float 2.1s ease-in-out infinite;
+                    text-decoration: none;
+                    border: 3px solid rgba(255,255,255,.18);
+                }}
+                .assistant-launch img {{
+                    width: 88px;
+                    height: 88px;
+                    object-fit: contain;
+                    border-radius: 50%;
+                }}
+                .assistant-launch-text {{
+                    margin-top: 0.7rem;
+                    font-size: 0.98rem;
+                    color: #dfe8d9;
+                    text-align: center;
+                    max-width: 360px;
+                }}
+                @keyframes agribot-float {{
+                    0% {{ transform: translateY(0px) scale(1); }}
+                    50% {{ transform: translateY(-14px) scale(1.03); }}
+                    100% {{ transform: translateY(0px) scale(1); }}
+                }}
+                </style>
+                <div class="assistant-launch-wrap">
+                    <a class="assistant-launch" href="?assistant=1" title="{t('assistant_note', lang)}">
+                        <img src="{ASSISTANT_ICON}" alt="{t('assistant_note', lang)}" />
+                    </a>
+                    <div class="assistant-launch-text">{t('assistant_hint', lang)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            if "healthy" not in detected_class.lower() and detected_conv_name:
+                st.markdown(
+                    f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
+                    unsafe_allow_html=True,
+                )
+                try:
+                    img_resized = image.resize((224, 224))
+                    img_arr = img_to_array(img_resized) / 255.0
+                    img_arr = np.expand_dims(img_arr, axis=0)
+                    heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                    overlay = overlay_gradcam(img_resized, heatmap)
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
+                    with col_b:
+                        st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
+                except Exception as exc:
+                    st.error(f"{t('visualization_error', lang)}: {exc}")
 
 with tab2:
     st.markdown(f"## 🚜 {t('crop_heading', lang)}")
@@ -1791,11 +1970,10 @@ with tab3:
     model_id = "gemini-2.5-flash-lite"
     api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
 
-    if not api_key:
-        st.error(t("api_missing", lang))
-        st.stop()
-
-    genai.configure(api_key=api_key)
+    if api_key:
+        genai.configure(api_key=api_key)
+    else:
+        st.warning(t("api_missing", lang))
 
     if st.session_state.get("chat_language") != lang:
         st.session_state.pop("chat_session", None)
@@ -1805,11 +1983,28 @@ with tab3:
     if "messages" not in st.session_state:
         st.session_state.messages = [{"role": "assistant", "content": t("chat_welcome", lang)}]
 
-    if "chat_session" not in st.session_state:
+    if api_key and "chat_session" not in st.session_state:
         disease_context = st.session_state.get("last_detected_disease", t("general_farming", lang))
         system_instruction = t("system_instruction", lang).format(disease=disease_context)
         model = genai.GenerativeModel(model_name=model_id, system_instruction=system_instruction)
         st.session_state.chat_session = model.start_chat(history=[])
+
+    pending_prompt = st.session_state.get("pending_chat_prompt")
+    if pending_prompt and st.session_state.get("last_auto_prompt") != pending_prompt:
+        st.session_state.messages.append({"role": "user", "content": pending_prompt})
+        with st.spinner(t("chat_spinner", lang)):
+            try:
+                if api_key and "chat_session" in st.session_state:
+                    response = st.session_state.chat_session.send_message(pending_prompt)
+                    ai_response = response.text
+                else:
+                    ai_response = build_fallback_disease_report(st.session_state.last_detected_class, lang)
+            except Exception:
+                ai_response = build_fallback_disease_report(st.session_state.last_detected_class, lang)
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            st.session_state.last_auto_prompt = pending_prompt
+            st.session_state.pending_chat_prompt = None
+            st.rerun()
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
@@ -1823,8 +2018,14 @@ with tab3:
 
         with st.spinner(t("chat_spinner", lang)):
             try:
-                response = st.session_state.chat_session.send_message(prompt)
-                ai_response = response.text
+                if api_key and "chat_session" in st.session_state:
+                    response = st.session_state.chat_session.send_message(prompt)
+                    ai_response = response.text
+                else:
+                    ai_response = build_fallback_disease_report(
+                        st.session_state.get("last_detected_class") or "Background_without_leaves",
+                        lang,
+                    )
                 st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 with st.chat_message("assistant"):
                     st.markdown(ai_response)
