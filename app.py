@@ -2288,17 +2288,47 @@ disease_model, crop_model, detected_conv_name = load_resources()
 st.markdown(
     """
     <style>
+    :root {
+        --app-bg: radial-gradient(circle at top right, #1a2e1a, #0e1117);
+        --app-text: #eef6ee;
+        --muted-text: #d8e6d3;
+        --subtle-text: #a3a3a3;
+        --panel-bg: rgba(255, 255, 255, 0.05);
+        --panel-border: rgba(255, 255, 255, 0.1);
+        --input-bg: rgba(255, 255, 255, 0.1);
+        --input-text: #eef6ee;
+        --header-bg: rgba(14, 17, 23, 0.78);
+        --tab-text: rgba(236, 244, 236, 0.72);
+        --uploader-bg: rgba(255, 255, 255, 0.07);
+        --uploader-border: rgba(255, 255, 255, 0.14);
+    }
+    @media (prefers-color-scheme: light) {
+        :root {
+            --app-bg: radial-gradient(circle at top right, #f3fbf1, #ffffff);
+            --app-text: #162316;
+            --muted-text: #314131;
+            --subtle-text: #556455;
+            --panel-bg: rgba(255, 255, 255, 0.88);
+            --panel-border: rgba(22, 35, 22, 0.12);
+            --input-bg: #ffffff;
+            --input-text: #162316;
+            --header-bg: rgba(255, 255, 255, 0.88);
+            --tab-text: rgba(22, 35, 22, 0.72);
+            --uploader-bg: rgba(255, 255, 255, 0.96);
+            --uploader-border: rgba(22, 35, 22, 0.14);
+        }
+    }
     .block-container {
         padding-top: 2.4rem !important;
         max-width: 95%;
     }
     .stApp {
-        background: radial-gradient(circle at top right, #1a2e1a, #0e1117);
+        background: var(--app-bg);
         background-attachment: fixed;
-        color: #eef6ee;
+        color: var(--app-text);
     }
     .stApp, .stApp p, .stApp label, .stApp span, .stApp li, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
-        color: #eef6ee;
+        color: var(--app-text);
     }
     .stApp::before {
         content: "";
@@ -2314,7 +2344,7 @@ st.markdown(
         padding-bottom: 1rem;
     }
     .language-label {
-        color: #d8e6d3;
+        color: var(--muted-text);
         font-size: 0.95rem;
         font-weight: 600;
         margin-bottom: 0.35rem;
@@ -2342,7 +2372,7 @@ st.markdown(
         color: white !important;
     }
     [data-baseweb="tab-list"] button {
-        color: rgba(236, 244, 236, 0.72) !important;
+        color: var(--tab-text) !important;
     }
     [data-baseweb="tab-list"] button[aria-selected="true"] {
         color: #ff6b6b !important;
@@ -2355,11 +2385,11 @@ st.markdown(
     [data-testid="stTextInput"] label,
     [data-testid="stSelectbox"] label,
     [data-testid="stSlider"] label {
-        color: #eef6ee !important;
+        color: var(--app-text) !important;
     }
     [data-testid="stFileUploader"] section {
-        background: rgba(255, 255, 255, 0.07) !important;
-        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        background: var(--uploader-bg) !important;
+        border: 1px solid var(--uploader-border) !important;
     }
     [data-testid="stFileUploader"] small,
     [data-testid="stFileUploader"] p {
@@ -2368,43 +2398,49 @@ st.markdown(
     [data-testid="stFileUploader"] svg,
     [data-testid="stFileUploader"] button,
     [data-testid="stFileUploader"] section div {
-        color: #eef6ee !important;
+        color: var(--app-text) !important;
     }
     [data-testid="stFileUploader"] button {
         background: #214d2d !important;
-        border: 1px solid rgba(255,255,255,0.16) !important;
+        border: 1px solid var(--uploader-border) !important;
         color: #eef6ee !important;
     }
     [data-testid="stFileUploaderFileName"],
     [data-testid="stFileUploaderFileData"] {
-        color: #eef6ee !important;
+        color: var(--app-text) !important;
     }
     [data-baseweb="select"] > div {
-        background: rgba(255, 255, 255, 0.1) !important;
-        color: #eef6ee !important;
+        background: var(--input-bg) !important;
+        color: var(--input-text) !important;
+        border: 1px solid var(--panel-border) !important;
     }
     [data-baseweb="select"] * {
-        color: #eef6ee !important;
+        color: var(--input-text) !important;
     }
-    [data-baseweb="input"] input {
-        color: #eef6ee !important;
+    [data-baseweb="input"] input,
+    [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input,
+    [data-testid="stNumberInput"] button,
+    [data-testid="stTextInput"] textarea {
+        color: var(--input-text) !important;
+        background: var(--input-bg) !important;
     }
     [data-testid="stHeader"] {
-        background: rgba(14, 17, 23, 0.78) !important;
+        background: var(--header-bg) !important;
     }
     [data-testid="stHeader"] * {
-        color: #eef6ee !important;
+        color: var(--app-text) !important;
     }
     button[kind="header"],
     [data-testid="stToolbar"] button,
     [data-testid="stDecoration"] {
-        color: #eef6ee !important;
+        color: var(--app-text) !important;
     }
     .prediction-card {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--panel-bg);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--panel-border);
         border-radius: 20px;
         padding: 30px;
         text-align: center;
@@ -2418,7 +2454,7 @@ st.markdown(
         margin: 0;
     }
     .prediction-card h3 {
-        color: #ffffff !important;
+        color: var(--app-text) !important;
         opacity: 0.92;
         margin: 0.5rem 0 0;
     }
@@ -2427,8 +2463,8 @@ st.markdown(
         margin: 0 auto;
     }
     .report-summary {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
         border-radius: 18px;
         padding: 1rem 1.1rem;
         margin: 1rem 0 1.25rem;
@@ -2457,11 +2493,11 @@ st.markdown(
         text-align: center;
         font-size: 1.1rem;
         font-weight: 700;
-        color: #eef6ee !important;
+        color: var(--app-text) !important;
     }
     .detail-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
         border-radius: 14px;
         padding: 18px 20px;
         margin-bottom: 15px;
@@ -2470,10 +2506,16 @@ st.markdown(
         margin: 0;
         font-size: 1.05rem;
         line-height: 1.6;
-        color: #eef6ee !important;
+        color: var(--app-text) !important;
     }
     .stTextInput input {
-        color: #eef6ee !important;
+        color: var(--input-text) !important;
+    }
+    [data-testid="stNumberInput"] button svg,
+    [data-testid="stSelectbox"] svg,
+    [data-testid="stSlider"] * {
+        color: var(--app-text) !important;
+        fill: var(--app-text) !important;
     }
     </style>
     """,
