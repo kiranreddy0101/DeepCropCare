@@ -1579,16 +1579,17 @@ if "weather_hum" not in st.session_state:
 
 header_left, header_right = st.columns([5, 1.5], vertical_alignment="top")
 with header_right:
-    st.markdown(
-        f"<div class='language-label'>{t('language_selector', st.session_state.language)}</div>",
-        unsafe_allow_html=True,
-    )
+    label_placeholder = st.empty()
     selected_language = st.selectbox(
         t("language_selector", st.session_state.language),
         options=list(LANGUAGES.keys()),
         format_func=lambda code: LANGUAGES[code],
         index=list(LANGUAGES.keys()).index(st.session_state.language),
         label_visibility="collapsed",
+    )
+    label_placeholder.markdown(
+        f"<div class='language-label'>{t('language_selector', selected_language)}</div>",
+        unsafe_allow_html=True,
     )
 
 if selected_language != st.session_state.language:
