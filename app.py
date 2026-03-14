@@ -1721,26 +1721,24 @@ def _draw_rounded_image(canvas, image_obj, box, radius=32):
 
 
 def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
-    page_width, page_height = 2480, 3508
-    margin = 180
-    title_font = _get_pdf_font(lang, 72)
-    heading_font = _get_pdf_font(lang, 46)
-    body_font = _get_pdf_font(lang, 38)
-    footer_font = _get_pdf_font(lang, 28)
-    line_height = 56
+    page_width, page_height = 612, 792
+    margin = 54
+    title_font = _get_pdf_font(lang, 20)
+    heading_font = _get_pdf_font(lang, 15)
+    body_font = _get_pdf_font(lang, 13)
+    line_height = 20
     body_lines = [_normalize_pdf_text_line(line) for line in body_text.splitlines()]
     pages = []
 
     current_page = Image.new("RGB", (page_width, page_height), "white")
     draw = ImageDraw.Draw(current_page)
     draw.text((margin, margin), title, font=title_font, fill="black")
-    y = margin + 120
+    y = margin + 36
     max_text_width = page_width - (margin * 2)
-    page_number = 1
 
     for raw_line in body_lines:
         if not raw_line:
-            y += line_height // 2
+            y += 10
             continue
 
         is_heading = raw_line.isupper() or (raw_line.endswith(":") and len(raw_line) < 55)
@@ -1748,24 +1746,20 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
         wrapped_lines = _wrap_pdf_line(draw, raw_line, font, max_text_width)
 
         required_height = len(wrapped_lines) * line_height
-        if y + required_height > page_height - margin - 120:
-            draw.text((page_width - margin - 120, page_height - margin), str(page_number), font=footer_font, fill="black")
+        if y + required_height > page_height - margin:
             pages.append(current_page)
             current_page = Image.new("RGB", (page_width, page_height), "white")
             draw = ImageDraw.Draw(current_page)
             draw.text((margin, margin), title, font=title_font, fill="black")
-            y = margin + 120
-            page_number += 1
+            y = margin + 36
 
         for wrapped_line in wrapped_lines:
             draw.text((margin, y), wrapped_line, font=font, fill="black")
             y += line_height
 
-    draw.text((page_width - margin - 120, page_height - margin), str(page_number), font=footer_font, fill="black")
     pages.append(current_page)
 
     if image_blocks:
-        page_number += 1
         for start in range(0, len(image_blocks), 2):
             image_page = Image.new("RGB", (page_width, page_height), "white")
             image_draw = ImageDraw.Draw(image_page)
@@ -1773,21 +1767,19 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
 
             chunk = image_blocks[start : start + 2]
             slots = [
-                (margin, 420, page_width - margin, 1650),
-                (margin, 1830, page_width - margin, page_height - margin - 120),
+                (margin, 120, page_width - margin, 360),
+                (margin, 460, page_width - margin, page_height - margin),
             ]
 
             for (label, image_obj), box in zip(chunk, slots):
                 label_text = _normalize_pdf_text_line(label)
-                image_draw.text((box[0], box[1] - 90), label_text, font=heading_font, fill="black")
+                image_draw.text((box[0], box[1] - 24), label_text, font=heading_font, fill="black")
                 _draw_rounded_image(image_page, image_obj, box, radius=1)
 
-            image_draw.text((page_width - margin - 120, page_height - margin), str(page_number), font=footer_font, fill="black")
             pages.append(image_page)
-            page_number += 1
 
     buffer = BytesIO()
-    pages[0].save(buffer, format="PDF", save_all=True, append_images=pages[1:], resolution=300.0)
+    pages[0].save(buffer, format="PDF", save_all=True, append_images=pages[1:], resolution=72.0)
     return buffer.getvalue()
 
 
