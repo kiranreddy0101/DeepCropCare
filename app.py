@@ -1,6 +1,8 @@
 import os
+import smtplib
 import time
 from io import BytesIO
+from email.message import EmailMessage
 from urllib.parse import quote
 
 import cv2
@@ -65,6 +67,13 @@ LANGUAGE_LABELS = {
         "report_crop_conditions": "Optimal Conditions",
         "report_crop_fertilizer": "Fertilizer and Care",
         "report_crop_tip": "Pro Tip",
+        "email_address": "Recipient Email",
+        "send_email": "Send Email",
+        "email_sent": "Email sent successfully.",
+        "email_failed": "Unable to send email.",
+        "email_config_missing": "Email service is not configured. Add SMTP settings in Streamlit secrets or environment variables.",
+        "email_required": "Enter a valid email address.",
+        "email_report_heading": "Send Report by Email",
         "heatmap_title": "AI Heatmap: Detected Infection Zones",
         "original_scan": "Original Scan",
         "infection_hotspots": "Infection Hotspots",
@@ -172,6 +181,13 @@ LANGUAGE_LABELS = {
         "report_crop_conditions": "उत्तम परिस्थितियाँ",
         "report_crop_fertilizer": "उर्वरक और देखभाल",
         "report_crop_tip": "विशेष सुझाव",
+        "email_address": "प्राप्तकर्ता ईमेल",
+        "send_email": "ईमेल भेजें",
+        "email_sent": "ईमेल सफलतापूर्वक भेज दिया गया।",
+        "email_failed": "ईमेल भेजा नहीं जा सका।",
+        "email_config_missing": "ईमेल सेवा कॉन्फ़िगर नहीं है। Streamlit secrets या environment variables में SMTP सेटिंग्स जोड़ें।",
+        "email_required": "कृपया सही ईमेल पता दर्ज करें।",
+        "email_report_heading": "ईमेल द्वारा रिपोर्ट भेजें",
         "heatmap_title": "एआई हीटमैप: पहचाने गए संक्रमण क्षेत्र",
         "original_scan": "मूल स्कैन",
         "infection_hotspots": "संक्रमण हॉटस्पॉट",
@@ -279,6 +295,13 @@ LANGUAGE_LABELS = {
         "report_crop_conditions": "అనుకూల పరిస్థితులు",
         "report_crop_fertilizer": "ఎరువు మరియు సంరక్షణ",
         "report_crop_tip": "ప్రో చిట్కా",
+        "email_address": "స్వీకర్త ఈమెయిల్",
+        "send_email": "ఈమెయిల్ పంపండి",
+        "email_sent": "ఈమెయిల్ విజయవంతంగా పంపబడింది.",
+        "email_failed": "ఈమెయిల్ పంపలేకపోయాం.",
+        "email_config_missing": "ఈమెయిల్ సేవ సెట్ కాలేదు. Streamlit secrets లేదా environment variables లో SMTP సెట్టింగ్స్ జోడించండి.",
+        "email_required": "సరైన ఈమెయిల్ చిరునామా ఇవ్వండి.",
+        "email_report_heading": "ఈమెయిల్ ద్వారా రిపోర్ట్ పంపండి",
         "heatmap_title": "ఏఐ హీట్‌మ్యాప్: గుర్తించిన సంక్రమణ ప్రాంతాలు",
         "original_scan": "మూల స్కాన్",
         "infection_hotspots": "సంక్రమణ హాట్‌స్పాట్లు",
@@ -1679,40 +1702,53 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
     margin = 90
     title_font = _get_pdf_font(lang, 34)
     body_font = _get_pdf_font(lang, 22)
+    subtitle_font = _get_pdf_font(lang, 26)
+    hero_font = _get_pdf_font(lang, 54)
     line_height = 34
     pages = []
 
-    current_page = Image.new("RGB", (page_width, page_height), "white")
+    current_page = Image.new("RGB", (page_width, page_height), "#f5f7f2")
     draw = ImageDraw.Draw(current_page)
-    y = margin
-    draw.text((margin, y), title, font=title_font, fill="#14361c")
-    y += 70
+    draw.rounded_rectangle((40, 40, page_width - 40, 300), radius=40, fill="#173c22")
+    draw.text((margin, 100), "DeepCropCare", font=hero_font, fill="white")
+    draw.text((margin, 185), title, font=title_font, fill="#cde6d3")
+    draw.rounded_rectangle((margin, 340, page_width - margin, page_height - margin), radius=34, fill="white")
+    y = 390
 
     for raw_line in body_text.splitlines():
-        font = title_font if raw_line.strip().endswith(":") and len(raw_line) < 40 else body_font
+        is_heading = raw_line.strip().endswith(":") and len(raw_line) < 40
+        font = subtitle_font if is_heading else body_font
         lines = _wrap_pdf_line(draw, raw_line or " ", font, page_width - (margin * 2))
         for line in lines:
             if y > page_height - margin - line_height:
                 pages.append(current_page)
-                current_page = Image.new("RGB", (page_width, page_height), "white")
+                current_page = Image.new("RGB", (page_width, page_height), "#f5f7f2")
                 draw = ImageDraw.Draw(current_page)
-                y = margin
-            draw.text((margin, y), line, font=font, fill="#222222")
+                draw.rounded_rectangle((margin, margin, page_width - margin, page_height - margin), radius=34, fill="white")
+                y = margin + 40
+            if is_heading:
+                draw.rounded_rectangle((margin, y - 10, page_width - margin, y + 36), radius=18, fill="#e8f3ea")
+                draw.text((margin + 18, y), line, font=font, fill="#173c22")
+            else:
+                draw.text((margin, y), line, font=font, fill="#222222")
             y += line_height
         y += 6
 
     pages.append(current_page)
 
     for label, image_obj in image_blocks or []:
-        image_page = Image.new("RGB", (page_width, page_height), "white")
+        image_page = Image.new("RGB", (page_width, page_height), "#f5f7f2")
         image_draw = ImageDraw.Draw(image_page)
-        image_draw.text((margin, margin), label, font=title_font, fill="#14361c")
+        image_draw.rounded_rectangle((50, 50, page_width - 50, page_height - 50), radius=34, fill="white")
+        image_draw.rounded_rectangle((margin, margin, page_width - margin, 220), radius=28, fill="#173c22")
+        image_draw.text((margin + 24, margin + 46), "DeepCropCare Visual Report", font=title_font, fill="white")
+        image_draw.text((margin + 24, margin + 110), label, font=subtitle_font, fill="#d6eadc")
         image_copy = image_obj.convert("RGB")
         available_width = page_width - (margin * 2)
-        available_height = page_height - (margin * 2) - 90
+        available_height = page_height - (margin * 2) - 240
         image_copy.thumbnail((available_width, available_height))
         x = (page_width - image_copy.width) // 2
-        y = margin + 90 + max(0, (available_height - image_copy.height) // 2)
+        y = margin + 250 + max(0, (available_height - image_copy.height) // 2)
         image_page.paste(image_copy, (x, y))
         pages.append(image_page)
 
@@ -2104,6 +2140,18 @@ st.markdown(
         color: white !important;
         background: #1f7a3e;
     }
+    .email-panel {
+        max-width: 760px;
+        margin: 1rem auto 0;
+        padding: 1rem 1.1rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .email-panel h4 {
+        margin: 0 0 0.8rem;
+        text-align: center;
+    }
     .detail-card {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2115,6 +2163,9 @@ st.markdown(
         margin: 0;
         font-size: 1.05rem;
         line-height: 1.6;
+        color: #eef6ee !important;
+    }
+    .stTextInput input {
         color: #eef6ee !important;
     }
     </style>
@@ -2139,6 +2190,44 @@ if "disease_result_ready" not in st.session_state:
     st.session_state.disease_result_ready = False
 if "crop_result" not in st.session_state:
     st.session_state.crop_result = None
+if "disease_email_to" not in st.session_state:
+    st.session_state.disease_email_to = ""
+if "crop_email_to" not in st.session_state:
+    st.session_state.crop_email_to = ""
+
+
+def send_email_with_attachment(to_email, subject, body, attachment_bytes, filename):
+    smtp_host = st.secrets.get("SMTP_HOST") or os.getenv("SMTP_HOST")
+    smtp_port = st.secrets.get("SMTP_PORT") or os.getenv("SMTP_PORT") or 587
+    smtp_username = st.secrets.get("SMTP_USERNAME") or os.getenv("SMTP_USERNAME")
+    smtp_password = st.secrets.get("SMTP_PASSWORD") or os.getenv("SMTP_PASSWORD")
+    smtp_from = st.secrets.get("SMTP_FROM_EMAIL") or os.getenv("SMTP_FROM_EMAIL") or smtp_username
+    smtp_use_ssl = str(st.secrets.get("SMTP_USE_SSL") or os.getenv("SMTP_USE_SSL") or "false").lower() == "true"
+
+    if not all([smtp_host, smtp_port, smtp_username, smtp_password, smtp_from]):
+        return False, "missing_config"
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = smtp_from
+    message["To"] = to_email
+    message.set_content(body)
+    message.add_attachment(attachment_bytes, maintype="application", subtype="pdf", filename=filename)
+
+    try:
+        port = int(smtp_port)
+        if smtp_use_ssl:
+            with smtplib.SMTP_SSL(smtp_host, port, timeout=20) as server:
+                server.login(smtp_username, smtp_password)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(smtp_host, port, timeout=20) as server:
+                server.starttls()
+                server.login(smtp_username, smtp_password)
+                server.send_message(message)
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
 
 header_left, header_right = st.columns([5, 1.5], vertical_alignment="top")
 with header_right:
@@ -2315,10 +2404,39 @@ with tab1:
                     key="download_disease_report",
                 )
             with action_col2:
-                st.markdown(
-                    f"<a class='report-email-link' href='{mailto_link}'>{t('report_email', lang)}</a>",
-                    unsafe_allow_html=True,
+                send_disease_email = st.button(
+                    t("report_email", lang),
+                    use_container_width=True,
+                    key="send_disease_report_button",
                 )
+            st.markdown(
+                f"<div class='email-panel'><h4>{t('email_report_heading', lang)}</h4></div>",
+                unsafe_allow_html=True,
+            )
+            _, disease_email_col, _ = st.columns([1, 1.5, 1])
+            with disease_email_col:
+                disease_email = st.text_input(
+                    t("email_address", lang),
+                    key="disease_email_to",
+                    placeholder="name@example.com",
+                )
+            if send_disease_email:
+                if "@" not in disease_email or "." not in disease_email:
+                    st.error(t("email_required", lang))
+                else:
+                    success, error_code = send_email_with_attachment(
+                        disease_email,
+                        t("report_subject", lang),
+                        disease_email_body,
+                        disease_pdf,
+                        report_filename,
+                    )
+                    if success:
+                        st.success(t("email_sent", lang))
+                    elif error_code == "missing_config":
+                        st.error(t("email_config_missing", lang))
+                    else:
+                        st.error(f"{t('email_failed', lang)}: {error_code}")
             st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.session_state.last_uploaded_signature = None
@@ -2401,10 +2519,6 @@ with tab2:
         crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
         crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
         crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
-        crop_mailto_link = (
-            f"mailto:?subject={quote(t('crop_report_subject', lang))}"
-            f"&body={quote(crop_email_body)}"
-        )
         inf1, inf2 = st.columns(2)
         st.markdown(
             f"""
@@ -2455,10 +2569,39 @@ with tab2:
                 key="download_crop_report",
             )
         with crop_action_col2:
-            st.markdown(
-                f"<a class='report-email-link' href='{crop_mailto_link}'>{t('crop_report_email', lang)}</a>",
-                unsafe_allow_html=True,
+            send_crop_email = st.button(
+                t("crop_report_email", lang),
+                use_container_width=True,
+                key="send_crop_report_button",
             )
+        st.markdown(
+            f"<div class='email-panel'><h4>{t('email_report_heading', lang)}</h4></div>",
+            unsafe_allow_html=True,
+        )
+        _, crop_email_col, _ = st.columns([1, 1.5, 1])
+        with crop_email_col:
+            crop_email = st.text_input(
+                t("email_address", lang),
+                key="crop_email_to",
+                placeholder="name@example.com",
+            )
+        if send_crop_email:
+            if "@" not in crop_email or "." not in crop_email:
+                st.error(t("email_required", lang))
+            else:
+                success, error_code = send_email_with_attachment(
+                    crop_email,
+                    t("crop_report_subject", lang),
+                    crop_email_body,
+                    crop_pdf,
+                    f"deepcropcare-crop-report-{crop}.pdf",
+                )
+                if success:
+                    st.success(t("email_sent", lang))
+                elif error_code == "missing_config":
+                    st.error(t("email_config_missing", lang))
+                else:
+                    st.error(f"{t('email_failed', lang)}: {error_code}")
 
 with tab3:
     st.markdown(f"## 💬 {t('chat_heading', lang)}")
