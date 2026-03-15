@@ -1761,6 +1761,18 @@ def _pick_pdf_font_path(lang):
     return None
 
 
+def _validate_pdf_font_path(font_path, lang):
+    if not font_path:
+        return None
+    filename = Path(font_path).name.lower()
+    if "variablefont" in filename:
+        raise RuntimeError(
+            f"Unsupported variable font for language '{lang}': {Path(font_path).name}. "
+            "Please add a static Regular font file instead."
+        )
+    return font_path
+
+
 def _get_pdf_font(lang, size):
     font_path = _pick_pdf_font_path(lang)
     if font_path:
@@ -2059,7 +2071,7 @@ def _configure_pdf_font(pdf, lang):
     if lang == "en":
         return "Times"
 
-    font_path = _pick_pdf_font_path(lang)
+    font_path = _validate_pdf_font_path(_pick_pdf_font_path(lang), lang)
     family = f"DeepCropCare-{lang}"
     if not font_path:
         raise RuntimeError(
