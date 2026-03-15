@@ -2619,7 +2619,7 @@ st.markdown(
         max-width: 95%;
     }
     .stApp {
-        background: radial-gradient(circle at top right, #1a2e1a, #0e1117);
+        background: linear-gradient(180deg, #1c6cf0 0%, #1763e7 42%, #0f1117 100%);
         background-attachment: fixed;
         color: #eef6ee;
     }
@@ -2635,9 +2635,160 @@ st.markdown(
         pointer-events: none;
     }
     .top-header {
+        position: relative;
+        overflow: hidden;
+        min-height: 78vh;
+        border-radius: 34px;
+        padding: 1.3rem 1.5rem 0;
+        background:
+            radial-gradient(circle at 50% 0%, rgba(255,255,255,0.14), transparent 24%),
+            linear-gradient(180deg, #1f6ef2 0%, #1967eb 100%);
+        box-shadow: 0 30px 80px rgba(8, 25, 66, 0.22);
+        border: 1px solid rgba(255,255,255,0.14);
+    }
+    .hero-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 3;
+    }
+    .hero-nav-group {
+        display: flex;
+        align-items: center;
+        gap: 2.3rem;
+        flex-wrap: wrap;
+    }
+    .hero-nav-item {
+        font-family: "Courier New", monospace;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #f4f1e7 !important;
+        opacity: 0.95;
+    }
+    .hero-brand {
+        position: absolute;
+        left: 50%;
+        top: 1rem;
+        transform: translateX(-50%) rotate(-7deg);
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        color: #f7f1e5 !important;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .hero-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 62px;
+        padding: 0.95rem 1.5rem;
+        border-radius: 18px;
+        background: #f5f1e7;
+        color: #1e62d8 !important;
+        font-family: "Courier New", monospace;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+    .hero-stage {
+        position: relative;
+        min-height: 62vh;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 4rem 1rem 0;
+    }
+    .hero-wordmark {
+        position: absolute;
+        top: 6%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: clamp(5rem, 18vw, 15rem);
+        line-height: 0.86;
+        font-weight: 900;
+        letter-spacing: -0.06em;
+        color: #f3efe5 !important;
+        text-transform: uppercase;
         text-align: center;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
+        z-index: 1;
+        pointer-events: none;
+    }
+    .hero-globe {
+        position: relative;
+        width: min(92%, 980px);
+        aspect-ratio: 1.15 / 0.72;
+        border-radius: 50% 50% 0 0 / 72% 72% 0 0;
+        background:
+            radial-gradient(circle at 30% 28%, rgba(183, 255, 95, 0.28), transparent 18%),
+            radial-gradient(circle at 68% 33%, rgba(215, 255, 154, 0.18), transparent 16%),
+            radial-gradient(circle at 54% 58%, rgba(8, 61, 12, 0.45), transparent 26%),
+            linear-gradient(180deg, #5caa1d 0%, #2d7a0f 48%, #15560b 100%);
+        box-shadow:
+            inset 0 0 0 3px rgba(255,255,255,0.06),
+            inset 0 -18px 40px rgba(0,0,0,0.18),
+            0 28px 70px rgba(5, 26, 8, 0.28);
+        overflow: hidden;
+        z-index: 2;
+    }
+    .hero-globe::before,
+    .hero-globe::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.32;
+        background:
+            radial-gradient(circle at 18% 18%, transparent 0 11%, rgba(238,255,221,0.8) 11.5% 12.2%, transparent 12.6%),
+            radial-gradient(circle at 42% 14%, transparent 0 10%, rgba(238,255,221,0.8) 10.5% 11.2%, transparent 11.6%),
+            radial-gradient(circle at 66% 22%, transparent 0 10%, rgba(238,255,221,0.8) 10.5% 11.2%, transparent 11.6%),
+            radial-gradient(circle at 84% 28%, transparent 0 10%, rgba(238,255,221,0.8) 10.5% 11.2%, transparent 11.6%);
+        background-size: 38% 36%;
+    }
+    .hero-globe::after {
+        inset: 10% 8% auto 8%;
+        height: 50%;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 40%, rgba(0,0,0,0.26), transparent 56%);
+        opacity: 0.55;
+    }
+    .hero-copy {
+        position: absolute;
+        left: 50%;
+        bottom: 7%;
+        transform: translateX(-50%);
+        width: min(72%, 760px);
+        text-align: center;
+        z-index: 3;
+    }
+    .hero-copy p {
+        color: #f5f8fb !important;
+        font-size: clamp(1.05rem, 2.2vw, 1.55rem);
+        line-height: 1.38;
+        margin: 0 0 1.2rem;
+        text-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    }
+    .hero-cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 62px;
+        padding: 0.9rem 1.7rem;
+        border-radius: 18px;
+        background: #f5f1e7;
+        color: #1b4f3f !important;
+        font-family: "Courier New", monospace;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.14);
     }
     .language-label {
         color: #d8e6d3;
@@ -2844,9 +2995,42 @@ st.markdown(
     .stTextInput input {
         color: #eef6ee !important;
     }
+    @media (max-width: 900px) {
+        .top-header {
+            min-height: 64vh;
+            padding: 1rem 1rem 0;
+        }
+        .hero-nav {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.9rem;
+        }
+        .hero-nav-group {
+            justify-content: center;
+            gap: 1rem 1.4rem;
+        }
+        .hero-brand {
+            position: static;
+            transform: rotate(-6deg);
+            text-align: center;
+            margin-bottom: 0.4rem;
+        }
+        .hero-wordmark {
+            top: 14%;
+            font-size: clamp(4rem, 24vw, 8rem);
+        }
+        .hero-globe {
+            width: 100%;
+            aspect-ratio: 1 / 0.9;
+        }
+        .hero-copy {
+            width: 82%;
+            bottom: 5%;
+        }
+    }
     @media (prefers-color-scheme: light) {
         .stApp {
-            background: radial-gradient(circle at top right, #eef6ea, #f8fbf5) !important;
+            background: linear-gradient(180deg, #d8e9ff 0%, #edf4ff 42%, #f7fafc 100%) !important;
             color: #111111 !important;
         }
         .stApp,
@@ -2918,6 +3102,16 @@ st.markdown(
         }
         .report-summary strong {
             color: #0f5f9e !important;
+        }
+        .top-header {
+            background:
+                radial-gradient(circle at 50% 0%, rgba(255,255,255,0.4), transparent 24%),
+                linear-gradient(180deg, #2c79f4 0%, #1a68eb 100%) !important;
+        }
+        .hero-nav-item,
+        .hero-brand,
+        .hero-copy p {
+            color: #f7f4eb !important;
         }
     }
     </style>
@@ -3014,10 +3208,26 @@ with header_left:
     st.markdown(
         f"""
         <div class="top-header">
-            <h1 style="font-size: 3.5rem; color: #28a745; margin-bottom: 0;">🌱 {t("hero_title", lang)}</h1>
-            <p style="font-size: 1.1rem; color: #a3a3a3; margin-top: -5px; font-weight: 300;">
-                {t("hero_subtitle", lang)}
-            </p>
+            <div class="hero-nav">
+                <div class="hero-nav-group">
+                    <span class="hero-nav-item">{t("tab_disease", lang)}</span>
+                    <span class="hero-nav-item">{t("tab_crop", lang)}</span>
+                    <span class="hero-nav-item">{t("tab_chat", lang)}</span>
+                </div>
+                <div class="hero-brand">{t("hero_title", lang)}</div>
+                <div class="hero-nav-group" style="justify-content:flex-end;">
+                    <span class="hero-nav-item">{t("tab_info", lang)}</span>
+                    <span class="hero-chip">{t("run_analysis", lang)}</span>
+                </div>
+            </div>
+            <div class="hero-stage">
+                <div class="hero-wordmark">Grow<br/>Smart</div>
+                <div class="hero-globe"></div>
+                <div class="hero-copy">
+                    <p>{t("hero_subtitle", lang)} Analyze leaves, uncover disease signals, and make every crop decision with confidence.</p>
+                    <div class="hero-cta">{t("disease_heading", lang)}</div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
