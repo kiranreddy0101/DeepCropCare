@@ -2903,10 +2903,6 @@ with tab1:
                 """,
                 unsafe_allow_html=True,
             )
-            st.caption(
-                f"Grad-CAM status: class=`{detected_class}`, layer=`{detected_conv_name or DEFAULT_GRADCAM_LAYER}`, "
-                f"eligible={'yes' if heatmap_available else 'no'}"
-            )
 
             inject_helper_icon(
                 ASSISTANT_ICON,
