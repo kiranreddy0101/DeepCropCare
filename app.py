@@ -2375,7 +2375,12 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
 
 def overlay_gradcam(original_img, heatmap, alpha=0.4):
     original_img = np.array(original_img)
+    heatmap = np.asarray(heatmap, dtype=np.float32)
+    heatmap = np.nan_to_num(heatmap, nan=0.0, posinf=1.0, neginf=0.0)
+    if heatmap.ndim != 2:
+        raise ValueError(f"Unexpected heatmap shape: {heatmap.shape}")
     heatmap = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
+    heatmap = np.clip(heatmap, 0.0, 1.0)
     heatmap = np.uint8(255 * heatmap)
     heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
     overlay_img = cv2.addWeighted(original_img, 1 - alpha, heatmap_color, alpha, 0)
@@ -2921,8 +2926,8 @@ with tab1:
                             st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
                     else:
                         st.warning("Grad-CAM returned no heatmap for this prediction.")
-                except Exception:
-                    st.warning("Grad-CAM failed while rendering the heatmap.")
+                except Exception as exc:
+                    st.warning(f"Grad-CAM failed while rendering the heatmap: {exc}")
             disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
             _, action_col1, _ = st.columns([1.2, 1, 1.2])
             with action_col1:
