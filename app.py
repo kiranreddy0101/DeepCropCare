@@ -3107,7 +3107,7 @@ st.markdown(
         opacity: 1;
         transform: translateY(-1px);
     }
-    .feature-launcher [data-testid="stButton"] button {
+    .feature-launcher div[data-testid="stButton"] > button {
         min-height: 108px !important;
         border-radius: 28px !important;
         background: rgba(255,255,255,0.05) !important;
@@ -3120,12 +3120,12 @@ st.markdown(
         white-space: pre-line !important;
         transition: transform 140ms ease-out, background 140ms ease-out, border-color 140ms ease-out, box-shadow 140ms ease-out !important;
     }
-    .feature-launcher [data-testid="stButton"] button:hover {
+    .feature-launcher div[data-testid="stButton"] > button:hover {
         transform: scale(1.02);
         background: rgba(255,255,255,0.1) !important;
         border-color: rgba(120,255,188,0.26) !important;
     }
-    .feature-launcher [data-testid="stButton"] button[kind="primary"] {
+    .feature-launcher div[data-testid="stButton"] > button[kind="primary"] {
         background: linear-gradient(180deg, rgba(132,255,192,0.22), rgba(18,69,48,0.34)) !important;
         border: 1px solid rgba(132,255,192,0.72) !important;
         box-shadow:
@@ -3138,7 +3138,7 @@ st.markdown(
         color: #ffffff !important;
         position: relative;
     }
-    .feature-launcher [data-testid="stButton"] button[kind="primary"]::after {
+    .feature-launcher div[data-testid="stButton"] > button[kind="primary"]::after {
         content: "";
         position: absolute;
         inset: auto 18% 10px 18%;
@@ -3573,7 +3573,7 @@ feature_cols = st.columns(4, gap="small")
 selected_feature = st.session_state.active_feature
 for col, feature_key in zip(feature_cols, feature_labels.keys()):
     button_label, caption_label = feature_labels[feature_key]
-    is_active = selected_feature == feature_key
+    is_active = st.session_state.active_feature == feature_key
     with col:
         st.markdown(
             f"<div class='feature-button-caption{' active' if is_active else ''}'>{caption_label}</div>",
@@ -3585,9 +3585,11 @@ for col, feature_key in zip(feature_cols, feature_labels.keys()):
             use_container_width=True,
             type="primary" if is_active else "secondary",
         ):
-            selected_feature = feature_key
-            st.session_state.active_feature = feature_key
+            if st.session_state.active_feature != feature_key:
+                st.session_state.active_feature = feature_key
+                st.rerun()
 st.markdown("</div>", unsafe_allow_html=True)
+selected_feature = st.session_state.active_feature
 
 if selected_feature == "disease":
     st.markdown(
