@@ -2232,18 +2232,19 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
     return bytes(pdf.output())
 
 
-def inject_scroll_to_section(section_id):
-    safe_id = section_id.replace("\\", "\\\\").replace("'", "\\'")
+def inject_tab_switch(tab_text):
+    safe_text = tab_text.replace("\\", "\\\\").replace("'", "\\'")
     components.html(
         f"""
         <script>
-        const targetId = '{safe_id}';
+        const targetText = '{safe_text}';
         let attempts = 0;
         const timer = setInterval(() => {{
           attempts += 1;
-          const target = window.parent.document.getElementById(targetId);
+          const tabs = window.parent.document.querySelectorAll('button[role="tab"]');
+          const target = Array.from(tabs).find((tab) => tab.innerText.includes(targetText));
           if (target) {{
-            target.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+            target.click();
             clearInterval(timer);
           }}
           if (attempts > 30) {{
@@ -3153,20 +3154,14 @@ st.markdown(
         color: rgba(233, 245, 238, 0.68) !important;
         font-size: 0.92rem;
     }
-    .feature-button-caption {
-        text-align: center;
-        margin: 0.2rem 0 0.45rem;
-        color: rgba(233, 245, 238, 0.76) !important;
-        font-size: 0.92rem;
-        font-weight: 700;
-        transition: color 180ms ease, transform 180ms ease, opacity 180ms ease;
+    [data-baseweb="tab-list"] {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin: 0.35rem 0 1rem !important;
+        padding: 0 !important;
     }
-    .feature-button-caption.active {
-        color: #ffffff !important;
-        opacity: 1;
-        transform: translateY(-1px);
-    }
-    .feature-launcher div[data-testid="stButton"] > button {
+    [data-baseweb="tab-list"] button {
         min-height: 108px !important;
         border-radius: 28px !important;
         background: rgba(255,255,255,0.05) !important;
@@ -3177,14 +3172,15 @@ st.markdown(
         font-weight: 800 !important;
         line-height: 1.35 !important;
         white-space: pre-line !important;
-        transition: transform 140ms ease-out, background 140ms ease-out, border-color 140ms ease-out, box-shadow 140ms ease-out !important;
+        transition: transform 120ms ease-out, background 120ms ease-out, border-color 120ms ease-out, box-shadow 120ms ease-out !important;
     }
-    .feature-launcher div[data-testid="stButton"] > button:hover {
+    [data-baseweb="tab-list"] button:hover {
         transform: scale(1.02);
         background: rgba(255,255,255,0.1) !important;
         border-color: rgba(120,255,188,0.26) !important;
+        color: #ffffff !important;
     }
-    .feature-launcher div[data-testid="stButton"] > button[kind="primary"] {
+    [data-baseweb="tab-list"] button[aria-selected="true"] {
         background: linear-gradient(180deg, rgba(132,255,192,0.22), rgba(18,69,48,0.34)) !important;
         border: 1px solid rgba(132,255,192,0.72) !important;
         box-shadow:
@@ -3195,16 +3191,6 @@ st.markdown(
             0 0 24px rgba(118,255,184,0.16) !important;
         transform: scale(0.96);
         color: #ffffff !important;
-        position: relative;
-    }
-    .feature-launcher div[data-testid="stButton"] > button[kind="primary"]::after {
-        content: "";
-        position: absolute;
-        inset: auto 18% 10px 18%;
-        height: 3px;
-        border-radius: 999px;
-        background: linear-gradient(90deg, rgba(141,255,187,0.92) 0%, rgba(221,255,232,0.98) 100%);
-        box-shadow: 0 0 14px rgba(118,255,184,0.35);
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] small,
@@ -3530,8 +3516,6 @@ if "disease_email_to" not in st.session_state:
     st.session_state.disease_email_to = ""
 if "crop_email_to" not in st.session_state:
     st.session_state.crop_email_to = ""
-if "active_feature" not in st.session_state:
-    st.session_state.active_feature = "disease"
 if "last_disease_render_key" not in st.session_state:
     st.session_state.last_disease_render_key = None
 if "last_disease_report_text" not in st.session_state:
@@ -3614,47 +3598,22 @@ with header_left:
         unsafe_allow_html=True,
     )
 
-feature_labels = {
-    "disease": (f"🌿\n{t('tab_disease', lang)}", f"{t('tab_disease', lang)}"),
-    "crop": (f"🌾\n{t('tab_crop', lang)}", f"{t('tab_crop', lang)}"),
-    "chat": (f"💬\n{t('tab_chat', lang)}", f"{t('tab_chat', lang)}"),
-    "info": (f"📘\n{t('tab_info', lang)}", f"{t('tab_info', lang)}"),
-}
-
-if st.session_state.get("target_section") == "chat-section":
-    st.session_state.active_feature = "chat"
-    st.session_state.target_section = None
-
 st.markdown(f"<div class='feature-dock-title'>{t('choose_workspace', lang)}</div>", unsafe_allow_html=True)
 st.markdown(f"<div class='feature-launcher-note'>{t('launcher_note', lang)}</div>", unsafe_allow_html=True)
-st.markdown("<div class='feature-launcher'>", unsafe_allow_html=True)
-feature_cols = st.columns(4, gap="small")
-selected_feature = st.session_state.active_feature
-for col, feature_key in zip(feature_cols, feature_labels.keys()):
-    button_label, caption_label = feature_labels[feature_key]
-    is_active = st.session_state.active_feature == feature_key
-    with col:
-        st.markdown(
-            f"<div class='feature-button-caption{' active' if is_active else ''}'>{caption_label}</div>",
-            unsafe_allow_html=True,
-        )
-        if st.button(
-            button_label,
-            key=f"feature_switch_{feature_key}",
-            use_container_width=True,
-            type="primary" if is_active else "secondary",
-        ):
-            if st.session_state.active_feature != feature_key:
-                st.session_state.active_feature = feature_key
-                st.rerun()
-st.markdown("</div>", unsafe_allow_html=True)
-selected_feature = st.session_state.active_feature
-inject_feature_launcher_feedback(
-    feature_labels[selected_feature][0].replace("\n", " "),
-    [label.replace("\n", " ") for label, _ in feature_labels.values()],
+tab_disease, tab_crop, tab_chat, tab_info = st.tabs(
+    [
+        f"🌿\n{t('tab_disease', lang)}",
+        f"🌾\n{t('tab_crop', lang)}",
+        f"💬\n{t('tab_chat', lang)}",
+        f"📘\n{t('tab_info', lang)}",
+    ]
 )
 
-if selected_feature == "disease":
+if st.session_state.get("target_tab"):
+    inject_tab_switch(st.session_state.target_tab)
+    st.session_state.target_tab = None
+
+with tab_disease:
     st.markdown(
         f"""
         <div class='feature-stage'>
@@ -3793,7 +3752,7 @@ if selected_feature == "disease":
             helper_clicked = st.button(t("assistant_trigger", lang), key="assistant_trigger_button")
             if helper_clicked:
                 st.session_state.pending_chat_prompt = build_disease_prompt(detected_class, lang)
-                st.session_state.active_feature = "chat"
+                st.session_state.target_tab = t("tab_chat", lang)
                 st.rerun()
 
             if heatmap_available:
@@ -3881,7 +3840,7 @@ if selected_feature == "disease":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-elif selected_feature == "crop":
+with tab_crop:
     remove_helper_icon()
     st.markdown(
         f"""
@@ -4056,7 +4015,7 @@ elif selected_feature == "crop":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-elif selected_feature == "chat":
+with tab_chat:
     st.markdown(
         f"""
         <div class='feature-stage'>
@@ -4143,7 +4102,7 @@ elif selected_feature == "chat":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-elif selected_feature == "info":
+with tab_info:
     remove_helper_icon()
     st.markdown(
         f"""
