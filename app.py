@@ -1716,11 +1716,9 @@ def build_crop_report_text(crop_key, lang, inputs):
     crop_name = crop_text(crop_key, "name", lang)
     lines = [
         "DeepCropCare",
-        t("crop_report_subject", lang),
-        "",
-        f"{t('report_generated_on', lang)}: {time.strftime('%Y-%m-%d %H:%M:%S')}",
         f"{t('report_crop_name', lang)}: {crop_name}",
         "",
+        f"{t('report_generated_on', lang)}: {time.strftime('%Y-%m-%d %H:%M:%S')}",
         f"{t('report_input_summary', lang)}:",
         f"{t('nitrogen', lang)}: {inputs['nitrogen']}",
         f"{t('phosphorus', lang)}: {inputs['phosphorus']}",
@@ -2159,7 +2157,8 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
     first_line = lines[0] if lines else "DeepCropCare"
     second_line = next((line for line in lines[1:] if line), title)
     write_line(first_line, 103, 20, align="C")
-    write_line(second_line, 142, 20, align="C")
+    second_color = (18, 122, 63) if second_line.startswith(t("report_crop_name", lang) + ":") else (0, 0, 0)
+    write_line(second_line, 142, 20, color=second_color, align="C")
     y = 212
 
     for raw_line in lines[2:]:
@@ -2176,6 +2175,8 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
         text_to_draw = raw_line.title() if is_heading and raw_line.isascii() else raw_line
         if not is_heading and raw_line.startswith(t("report_detected_disease", lang) + ":"):
             fill = (255, 0, 0)
+        if not is_heading and raw_line.startswith(t("report_crop_name", lang) + ":"):
+            fill = (18, 122, 63)
         font_size = 14 if is_heading else 12
         line_step = 29 if is_heading else 24
         pdf.set_font(font_family, size=font_size)
@@ -3446,6 +3447,16 @@ if "crop_email_to" not in st.session_state:
     st.session_state.crop_email_to = ""
 if "active_feature" not in st.session_state:
     st.session_state.active_feature = "disease"
+if "last_disease_render_key" not in st.session_state:
+    st.session_state.last_disease_render_key = None
+if "last_disease_report_text" not in st.session_state:
+    st.session_state.last_disease_report_text = ""
+if "last_disease_pdf" not in st.session_state:
+    st.session_state.last_disease_pdf = None
+if "last_disease_report_images" not in st.session_state:
+    st.session_state.last_disease_report_images = []
+if "last_heatmap_display" not in st.session_state:
+    st.session_state.last_heatmap_display = None
 
 
 def send_email_with_attachment(to_email, subject, body, attachment_bytes, filename):
@@ -3496,16 +3507,13 @@ with header_right:
         t("language_selector", st.session_state.language),
         options=list(LANGUAGES.keys()),
         format_func=lambda code: LANGUAGES[code],
-        index=list(LANGUAGES.keys()).index(st.session_state.language),
+        key="language",
         label_visibility="collapsed",
     )
     label_placeholder.markdown(
         f"<div class='language-label'>{t('language_selector', selected_language)}</div>",
         unsafe_allow_html=True,
     )
-
-if selected_language != st.session_state.language:
-    st.session_state.language = selected_language
 
 lang = st.session_state.language
 
@@ -3616,14 +3624,52 @@ if selected_feature == "disease":
                 and "healthy" not in detected_class_lower
                 and detected_class != "Background_without_leaves"
             )
-            report_images = [(t("original_scan", lang), image)]
-            report_text = build_disease_report_text(
+            render_key = (
+                upload_signature,
                 detected_class,
-                detected_confidence,
+                round(detected_confidence, 4),
                 lang,
-                uploaded_file.name if uploaded_file else "",
-                heatmap_available,
+                bool(heatmap_available),
             )
+            if st.session_state.last_disease_render_key != render_key:
+                report_images = [(t("original_scan", lang), image.copy())]
+                heatmap_bundle = None
+                if heatmap_available:
+                    try:
+                        img_resized, img_arr = preprocess_disease_image(image)
+                        heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                        if heatmap is not None:
+                            overlay = overlay_gradcam(img_resized, heatmap)
+                            report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
+                            heatmap_bundle = {
+                                "original": img_resized.copy(),
+                                "overlay": overlay.copy(),
+                            }
+                    except Exception as exc:
+                        heatmap_bundle = {"error": str(exc)}
+
+                report_text = build_disease_report_text(
+                    detected_class,
+                    detected_confidence,
+                    lang,
+                    uploaded_file.name if uploaded_file else "",
+                    heatmap_available,
+                )
+                st.session_state.last_disease_render_key = render_key
+                st.session_state.last_disease_report_text = report_text
+                st.session_state.last_disease_report_images = report_images
+                st.session_state.last_heatmap_display = heatmap_bundle
+                st.session_state.last_disease_pdf = build_pdf_report_bytes(
+                    t("report_subject", lang),
+                    report_text,
+                    lang,
+                    report_images,
+                )
+
+            report_text = st.session_state.last_disease_report_text
+            report_images = st.session_state.last_disease_report_images
+            heatmap_bundle = st.session_state.last_heatmap_display
+            disease_pdf = st.session_state.last_disease_pdf
             report_filename = f"deepcropcare-report-{detected_class.replace(' ', '-').replace('/', '-')}.txt"
             report_filename = report_filename.replace(".txt", ".pdf")
             disease_email_body = f"{t('report_email_body_intro', lang)}\n\n{report_text}"
@@ -3660,26 +3706,28 @@ if selected_feature == "disease":
                 st.rerun()
 
             if heatmap_available:
-                try:
-                    img_resized, img_arr = preprocess_disease_image(image)
-                    heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                    if heatmap is not None:
-                        st.markdown(
-                            f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
-                            unsafe_allow_html=True,
+                if heatmap_bundle and "overlay" in heatmap_bundle:
+                    st.markdown(
+                        f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
+                        unsafe_allow_html=True,
+                    )
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.image(
+                            heatmap_bundle["original"],
+                            caption=t("original_scan", lang),
+                            use_container_width=True,
                         )
-                        overlay = overlay_gradcam(img_resized, heatmap)
-                        report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
-                        with col_b:
-                            st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
-                    else:
-                        st.warning("Grad-CAM returned no heatmap for this prediction.")
-                except Exception as exc:
-                    st.warning(f"Grad-CAM failed while rendering the heatmap: {exc}")
-            disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
+                    with col_b:
+                        st.image(
+                            heatmap_bundle["overlay"],
+                            caption=t("infection_hotspots", lang),
+                            use_container_width=True,
+                        )
+                elif heatmap_bundle and heatmap_bundle.get("error"):
+                    st.warning(f"Grad-CAM failed while rendering the heatmap: {heatmap_bundle['error']}")
+                else:
+                    st.warning("Grad-CAM returned no heatmap for this prediction.")
             _, action_col1, _ = st.columns([1.2, 1, 1.2])
             with action_col1:
                 st.download_button(
@@ -3733,6 +3781,11 @@ if selected_feature == "disease":
     else:
         st.session_state.last_uploaded_signature = None
         st.session_state.disease_result_ready = False
+        st.session_state.last_disease_render_key = None
+        st.session_state.last_disease_report_text = ""
+        st.session_state.last_disease_pdf = None
+        st.session_state.last_disease_report_images = []
+        st.session_state.last_heatmap_display = None
         remove_helper_icon()
 
     st.markdown("</div>", unsafe_allow_html=True)
