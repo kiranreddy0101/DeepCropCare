@@ -2835,7 +2835,12 @@ with tab1:
         if st.session_state.disease_result_ready and st.session_state.last_detected_class:
             detected_class = st.session_state.last_detected_class
             detected_confidence = st.session_state.last_detection_confidence or 0.0
-            heatmap_available = bool(detected_conv_name)
+            detected_class_lower = detected_class.lower()
+            heatmap_available = (
+                bool(detected_conv_name)
+                and "healthy" not in detected_class_lower
+                and detected_class != "Background_without_leaves"
+            )
             report_images = [(t("original_scan", lang), image)]
             report_text = build_disease_report_text(
                 detected_class,
