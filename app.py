@@ -8,6 +8,7 @@ from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import quote
+
 import cv2
 import google.generativeai as genai
 import joblib
@@ -2557,6 +2558,14 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
             return value[0]
         return value
 
+    def _prepare_model_inputs(model_inputs, array):
+        if isinstance(model_inputs, dict):
+            first_key = next(iter(model_inputs.keys()), None)
+            return {first_key: array} if first_key else array
+        if isinstance(model_inputs, (list, tuple)):
+            return [array]
+        return array
+
     base_inputs = getattr(base_model, "inputs", None)
     target_output = _unwrap_tensor(getattr(target_layer, "output", None))
     base_output = _unwrap_tensor(getattr(base_model, "output", None))
@@ -2582,7 +2591,8 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
     classifier_model = tf.keras.models.Model(classifier_input, x)
 
     with tf.GradientTape() as tape:
-        conv_outputs, base_outputs = base_feature_model(img_array, training=False)
+        prepared_inputs = _prepare_model_inputs(base_inputs, img_array)
+        conv_outputs, base_outputs = base_feature_model(prepared_inputs, training=False)
         if conv_outputs is None or base_outputs is None:
             return None
         tape.watch(conv_outputs)
@@ -3637,11 +3647,11 @@ with tab_disease:
 
         col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
         with col_img:
-            st.image(image, caption=t("uploaded_specimen", lang), use_container_width=True)
+            st.image(image, caption=t("uploaded_specimen", lang), width="stretch")
 
         _, center_col, _ = st.columns([1, 1, 1])
         with center_col:
-            run_btn = st.button(t("run_analysis", lang), use_container_width=True)
+            run_btn = st.button(t("run_analysis", lang), width="stretch")
 
         if run_btn:
             progress_bar = st.progress(0)
@@ -3768,13 +3778,13 @@ with tab_disease:
                         st.image(
                             heatmap_bundle["original"],
                             caption=t("original_scan", lang),
-                            use_container_width=True,
+                            width="stretch",
                         )
                     with col_b:
                         st.image(
                             heatmap_bundle["overlay"],
                             caption=t("infection_hotspots", lang),
-                            use_container_width=True,
+                            width="stretch",
                         )
                 elif heatmap_bundle and heatmap_bundle.get("error"):
                     st.warning(f"Grad-CAM failed while rendering the heatmap: {heatmap_bundle['error']}")
@@ -3787,7 +3797,7 @@ with tab_disease:
                     data=disease_pdf,
                     file_name=report_filename,
                     mime="application/pdf",
-                    use_container_width=True,
+                    width="stretch",
                     key="download_disease_report",
                 )
             st.markdown(
@@ -3808,7 +3818,7 @@ with tab_disease:
             with disease_send_col:
                 send_disease_email = st.button(
                     t("send_email", lang),
-                    use_container_width=True,
+                    width="stretch",
                     key="send_disease_report_button",
                     disabled=not disease_email_ready,
                 )
@@ -3866,7 +3876,7 @@ with tab_crop:
     with col_weather:
         st.write(f"### 🌦️ {t('weather_heading', lang)}")
         city = st.text_input(t("city_input", lang), "Hyderabad")
-        if st.button(t("fetch_weather", lang), use_container_width=True):
+        if st.button(t("fetch_weather", lang), width="stretch"):
             temp, hum, err = get_weather(city, lang)
             if not err:
                 st.session_state.weather_temp = float(temp)
@@ -3885,7 +3895,7 @@ with tab_crop:
     st.markdown("<br>", unsafe_allow_html=True)
     _, btn_col, _ = st.columns([1, 1, 1])
     with btn_col:
-        predict_btn = st.button(t("recommend_crop", lang), use_container_width=True)
+        predict_btn = st.button(t("recommend_crop", lang), width="stretch")
 
     if predict_btn:
         if crop_model:
@@ -3972,7 +3982,7 @@ with tab_crop:
                 data=crop_pdf,
                 file_name=f"deepcropcare-crop-report-{crop}.pdf",
                 mime="application/pdf",
-                use_container_width=True,
+                width="stretch",
                 key="download_crop_report",
             )
         st.markdown(
@@ -3993,7 +4003,7 @@ with tab_crop:
         with crop_send_col:
             send_crop_email = st.button(
                 t("send_email", lang),
-                use_container_width=True,
+                width="stretch",
                 key="send_crop_report_button",
                 disabled=not crop_email_ready,
             )
