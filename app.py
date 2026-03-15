@@ -2308,21 +2308,40 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
         return None
 
     try:
-        target_layer = model.get_layer(last_conv_layer_name)
+        base_model_name, target_layer_name = last_conv_layer_name.split("/", 1)
+        base_model = model.get_layer(base_model_name)
+        target_layer = base_model.get_layer(target_layer_name)
     except Exception:
         return None
 
-    model_inputs = getattr(model, "inputs", None)
-    model_outputs = getattr(model, "outputs", None)
-    target_output = getattr(target_layer, "output", None)
-    if not model_inputs or not model_outputs or target_output is None:
+    if not isinstance(base_model, tf.keras.Model):
         return None
 
-    grad_model = tf.keras.models.Model(model_inputs, [target_output, model_outputs[0]])
+    try:
+        base_feature_model = tf.keras.models.Model(
+            base_model.inputs,
+            [target_layer.output, base_model.output],
+        )
+    except Exception:
+        return None
+
+    classifier_input = tf.keras.Input(shape=base_model.output.shape[1:])
+    x = classifier_input
+    base_index = model.layers.index(base_model)
+    for layer in model.layers[base_index + 1:]:
+        if isinstance(layer, (tf.keras.layers.BatchNormalization, tf.keras.layers.Dropout)):
+            x = layer(x, training=False)
+        else:
+            x = layer(x)
+    classifier_model = tf.keras.models.Model(classifier_input, x)
 
     with tf.GradientTape() as tape:
-        conv_outputs, predictions = grad_model(img_array)
-        if conv_outputs is None or predictions is None:
+        conv_outputs, base_outputs = base_feature_model(img_array, training=False)
+        if conv_outputs is None or base_outputs is None:
+            return None
+        tape.watch(conv_outputs)
+        predictions = classifier_model(base_outputs, training=False)
+        if predictions is None:
             return None
         predictions = tf.squeeze(predictions)
         if pred_index is None:
@@ -2362,6 +2381,14 @@ def preprocess_disease_image(image, img_size=(224, 224)):
 
 def _find_last_conv_layer_in_model(model):
     for layer in reversed(model.layers):
+        if isinstance(layer, tf.keras.Model):
+            for nested_layer in reversed(layer.layers):
+                if isinstance(nested_layer, (tf.keras.layers.Conv2D, tf.keras.layers.DepthwiseConv2D)):
+                    return f"{layer.name}/{nested_layer.name}"
+                output_shape = getattr(getattr(nested_layer, "output", None), "shape", None)
+                if output_shape is not None and len(output_shape) == 4:
+                    if not any(token in nested_layer.name.lower() for token in ["flatten", "gap", "pool", "input"]):
+                        return f"{layer.name}/{nested_layer.name}"
         if isinstance(layer, tf.keras.layers.Conv2D):
             return layer.name
         output_shape = getattr(layer, "output_shape", None)
