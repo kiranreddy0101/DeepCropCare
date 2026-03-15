@@ -2637,158 +2637,260 @@ st.markdown(
     .top-header {
         position: relative;
         overflow: hidden;
-        min-height: 56vh;
-        border-radius: 30px;
-        padding: 1.1rem 1.3rem 0;
+        min-height: 0;
+        border-radius: 32px;
+        padding: 1.4rem;
         background:
-            radial-gradient(circle at 50% 0%, rgba(255,255,255,0.14), transparent 24%),
-            linear-gradient(180deg, #1f6ef2 0%, #1967eb 100%);
-        box-shadow: 0 30px 80px rgba(8, 25, 66, 0.22);
-        border: 1px solid rgba(255,255,255,0.14);
+            radial-gradient(circle at top left, rgba(93, 245, 173, 0.18), transparent 30%),
+            radial-gradient(circle at 85% 15%, rgba(255,255,255,0.14), transparent 20%),
+            linear-gradient(135deg, #0d1830 0%, #133e90 46%, #19a06d 100%);
+        box-shadow: 0 26px 80px rgba(6, 14, 36, 0.28);
+        border: 1px solid rgba(255,255,255,0.12);
+        animation: fadeLift 700ms ease both;
+    }
+    .top-header::before {
+        content: "";
+        position: absolute;
+        inset: -20% auto auto -10%;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(86, 246, 175, 0.18) 0%, rgba(86, 246, 175, 0) 68%);
+        filter: blur(10px);
+        animation: drift 14s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .top-header::after {
+        content: "";
+        position: absolute;
+        right: -100px;
+        bottom: -120px;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 70%);
+        animation: drift 18s ease-in-out infinite reverse;
+        pointer-events: none;
+    }
+    .hero-shell {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
+        gap: 1.2rem;
+        align-items: stretch;
+    }
+    .hero-main,
+    .hero-side {
+        position: relative;
+        overflow: hidden;
+        border-radius: 26px;
+        border: 1px solid rgba(255,255,255,0.12);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .hero-main {
+        padding: 1.4rem;
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.06)),
+            linear-gradient(135deg, rgba(10,20,50,0.42), rgba(8,105,88,0.2));
+    }
+    .hero-side {
+        padding: 1.2rem;
+        background:
+            radial-gradient(circle at top right, rgba(120, 255, 188, 0.18), transparent 28%),
+            linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
     }
     .hero-nav {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        margin-bottom: 0.4rem;
-        position: relative;
-        z-index: 3;
+        flex-wrap: wrap;
+        margin-bottom: 1.3rem;
     }
     .hero-nav-group {
         display: flex;
         align-items: center;
-        gap: 1.4rem;
         flex-wrap: wrap;
+        gap: 0.65rem;
     }
     .hero-nav-item {
-        font-family: "Courier New", monospace;
-        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        padding: 0.48rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(245, 248, 240, 0.92) !important;
+        font-size: 0.84rem;
         font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #f4f1e7 !important;
-        opacity: 0.95;
+        letter-spacing: 0.04em;
+        transition: transform 220ms ease, background 220ms ease, border-color 220ms ease;
+    }
+    .hero-nav-item:hover {
+        transform: translateY(-1px);
+        background: rgba(255,255,255,0.12);
+        border-color: rgba(255,255,255,0.16);
     }
     .hero-brand {
-        position: absolute;
-        left: 50%;
-        top: 0.6rem;
-        transform: translateX(-50%) rotate(-7deg);
-        font-size: clamp(1.65rem, 3vw, 2.6rem);
+        font-size: clamp(1.45rem, 2.4vw, 2rem);
         font-weight: 900;
-        letter-spacing: 0.05em;
-        color: #f7f1e5 !important;
-        text-transform: uppercase;
-        white-space: nowrap;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        color: #f6f7ef !important;
     }
     .hero-chip {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 52px;
-        padding: 0.8rem 1.25rem;
+        min-height: 46px;
+        padding: 0.8rem 1.15rem;
         border-radius: 16px;
-        background: #f5f1e7;
-        color: #1e62d8 !important;
-        font-family: "Courier New", monospace;
-        font-size: 0.9rem;
-        font-weight: 700;
+        background: linear-gradient(135deg, #f8f4e7 0%, #dff7e9 100%);
+        color: #103b42 !important;
+        font-size: 0.84rem;
+        font-weight: 800;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+        box-shadow: 0 14px 34px rgba(4, 10, 28, 0.22);
+        transition: transform 240ms ease, box-shadow 240ms ease;
     }
-    .hero-stage {
-        position: relative;
-        min-height: 43vh;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding: 2.8rem 1rem 0;
+    .hero-chip:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(4, 10, 28, 0.28);
     }
-    .hero-wordmark {
-        position: absolute;
-        top: 12%;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: clamp(4rem, 14vw, 9rem);
-        line-height: 0.86;
+    .hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 0.45rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(123, 255, 199, 0.12);
+        border: 1px solid rgba(123, 255, 199, 0.18);
+        color: #dffbef !important;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+    }
+    .hero-title {
+        margin: 0;
+        font-size: clamp(2.6rem, 5vw, 4.8rem);
+        line-height: 0.96;
         font-weight: 900;
         letter-spacing: -0.06em;
-        color: #f3efe5 !important;
-        text-transform: uppercase;
-        text-align: center;
-        z-index: 1;
-        pointer-events: none;
+        color: #f8faf5 !important;
+        max-width: 11ch;
     }
-    .hero-globe {
-        position: relative;
-        width: min(74%, 760px);
-        aspect-ratio: 1.12 / 0.72;
-        border-radius: 50% 50% 0 0 / 72% 72% 0 0;
-        background:
-            radial-gradient(circle at 30% 28%, rgba(183, 255, 95, 0.28), transparent 18%),
-            radial-gradient(circle at 68% 33%, rgba(215, 255, 154, 0.18), transparent 16%),
-            radial-gradient(circle at 54% 58%, rgba(8, 61, 12, 0.45), transparent 26%),
-            linear-gradient(180deg, #5caa1d 0%, #2d7a0f 48%, #15560b 100%);
-        box-shadow:
-            inset 0 0 0 3px rgba(255,255,255,0.06),
-            inset 0 -18px 40px rgba(0,0,0,0.18),
-            0 28px 70px rgba(5, 26, 8, 0.28);
-        overflow: hidden;
-        z-index: 2;
+    .hero-subtext {
+        margin: 1rem 0 0;
+        max-width: 58ch;
+        color: rgba(240, 248, 243, 0.88) !important;
+        font-size: clamp(1rem, 1.6vw, 1.15rem);
+        line-height: 1.65;
     }
-    .hero-globe::before,
-    .hero-globe::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        opacity: 0.32;
-        background:
-            radial-gradient(circle at 18% 18%, transparent 0 11%, rgba(238,255,221,0.8) 11.5% 12.2%, transparent 12.6%),
-            radial-gradient(circle at 42% 14%, transparent 0 10%, rgba(238,255,221,0.8) 10.5% 11.2%, transparent 11.6%),
-            radial-gradient(circle at 66% 22%, transparent 0 10%, rgba(238,255,221,0.8) 10.5% 11.2%, transparent 11.6%),
-            radial-gradient(circle at 84% 28%, transparent 0 10%, rgba(238,255,221,0.8) 10.5% 11.2%, transparent 11.6%);
-        background-size: 38% 36%;
-    }
-    .hero-globe::after {
-        inset: 10% 8% auto 8%;
-        height: 50%;
-        border-radius: 50%;
-        background: radial-gradient(circle at 50% 40%, rgba(0,0,0,0.26), transparent 56%);
-        opacity: 0.55;
-    }
-    .hero-copy {
-        position: absolute;
-        left: 50%;
-        bottom: 9%;
-        transform: translateX(-50%);
-        width: min(52%, 620px);
-        text-align: center;
-        z-index: 3;
-    }
-    .hero-copy p {
-        color: #f5f8fb !important;
-        font-size: clamp(0.95rem, 1.7vw, 1.3rem);
-        line-height: 1.38;
-        margin: 0 0 0.9rem;
-        text-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    .hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+        margin-top: 1.25rem;
     }
     .hero-cta {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         min-height: 52px;
-        padding: 0.8rem 1.45rem;
+        padding: 0.9rem 1.35rem;
         border-radius: 16px;
-        background: #f5f1e7;
-        color: #1b4f3f !important;
-        font-family: "Courier New", monospace;
-        font-size: 0.92rem;
-        font-weight: 700;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #f8faf5 !important;
+        font-size: 0.9rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: transform 220ms ease, background 220ms ease, border-color 220ms ease;
+    }
+    .hero-cta:hover {
+        transform: translateY(-2px);
+        background: rgba(255,255,255,0.16);
+        border-color: rgba(255,255,255,0.22);
+    }
+    .hero-secondary {
+        color: rgba(233, 245, 238, 0.8) !important;
+        font-size: 0.94rem;
+        font-weight: 600;
+    }
+    .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.9rem;
+        margin-top: 1.1rem;
+    }
+    .hero-card {
+        padding: 1rem;
+        border-radius: 18px;
+        background: rgba(7, 18, 40, 0.24);
+        border: 1px solid rgba(255,255,255,0.08);
+        transition: transform 220ms ease, background 220ms ease;
+    }
+    .hero-card:hover {
+        transform: translateY(-2px);
+        background: rgba(12, 24, 52, 0.32);
+    }
+    .hero-card-label {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: rgba(220, 242, 229, 0.7) !important;
+        font-size: 0.74rem;
+        font-weight: 800;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.14);
+    }
+    .hero-card-value {
+        display: block;
+        color: #f8faf5 !important;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+    .hero-side-title {
+        margin: 0 0 0.9rem;
+        color: #f8faf5 !important;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+    .hero-side-copy {
+        margin: 0;
+        color: rgba(235, 245, 240, 0.86) !important;
+        line-height: 1.65;
+        font-size: 0.98rem;
+    }
+    .hero-side-stack {
+        display: grid;
+        gap: 0.85rem;
+        margin-top: 1rem;
+    }
+    .hero-side-panel {
+        padding: 1rem;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.09);
+    }
+    .hero-side-panel strong {
+        color: #f8faf5 !important;
+    }
+    @keyframes drift {
+        0%, 100% { transform: translate3d(0, 0, 0); }
+        50% { transform: translate3d(0, -14px, 0); }
+    }
+    @keyframes fadeLift {
+        0% { opacity: 0; transform: translateY(16px); }
+        100% { opacity: 1; transform: translateY(0); }
     }
     .language-label {
         color: #d8e6d3;
@@ -2807,11 +2909,13 @@ st.markdown(
         padding: 0.55rem 1rem !important;
         font-size: 1rem !important;
         border: none !important;
+        transition: transform 220ms ease, background-color 220ms ease, box-shadow 220ms ease !important;
     }
     div.stDownloadButton > button:hover,
     div.stButton > button:hover {
         background-color: #23913c !important;
         color: white !important;
+        transform: translateY(-1px);
     }
     div.stDownloadButton > button:focus,
     div.stButton > button:focus {
@@ -2820,9 +2924,14 @@ st.markdown(
     }
     [data-baseweb="tab-list"] button {
         color: rgba(236, 244, 236, 0.72) !important;
+        transition: color 220ms ease, transform 220ms ease, opacity 220ms ease !important;
     }
     [data-baseweb="tab-list"] button[aria-selected="true"] {
         color: #ff6b6b !important;
+    }
+    [data-baseweb="tab-list"] button:hover {
+        transform: translateY(-1px);
+        color: #ffffff !important;
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] small,
@@ -2837,6 +2946,12 @@ st.markdown(
     [data-testid="stFileUploader"] section {
         background: rgba(255, 255, 255, 0.07) !important;
         border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        transition: transform 220ms ease, border-color 220ms ease, background 220ms ease !important;
+    }
+    [data-testid="stFileUploader"] section:hover {
+        transform: translateY(-1px);
+        border-color: rgba(120, 255, 188, 0.28) !important;
+        background: rgba(255, 255, 255, 0.09) !important;
     }
     [data-testid="stFileUploader"] small,
     [data-testid="stFileUploader"] p {
@@ -2926,6 +3041,7 @@ st.markdown(
         margin: 20px 0;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
         border-bottom: 4px solid #28a745;
+        animation: fadeLift 650ms ease both;
     }
     .prediction-card h2 {
         color: #28a745 !important;
@@ -2997,35 +3113,21 @@ st.markdown(
     }
     @media (max-width: 900px) {
         .top-header {
-            min-height: 48vh;
-            padding: 1rem 1rem 0;
+            padding: 1rem;
+        }
+        .hero-shell {
+            grid-template-columns: 1fr;
         }
         .hero-nav {
             flex-direction: column;
-            align-items: stretch;
-            gap: 0.9rem;
+            align-items: flex-start;
         }
-        .hero-nav-group {
-            justify-content: center;
-            gap: 1rem 1.4rem;
+        .hero-title {
+            font-size: clamp(2.25rem, 11vw, 3.4rem);
+            max-width: none;
         }
-        .hero-brand {
-            position: static;
-            transform: rotate(-6deg);
-            text-align: center;
-            margin-bottom: 0.4rem;
-        }
-        .hero-wordmark {
-            top: 18%;
-            font-size: clamp(3.5rem, 22vw, 6.5rem);
-        }
-        .hero-globe {
-            width: 92%;
-            aspect-ratio: 1 / 0.88;
-        }
-        .hero-copy {
-            width: 78%;
-            bottom: 7%;
+        .hero-grid {
+            grid-template-columns: 1fr;
         }
     }
     @media (prefers-color-scheme: light) {
@@ -3106,11 +3208,19 @@ st.markdown(
         .top-header {
             background:
                 radial-gradient(circle at 50% 0%, rgba(255,255,255,0.4), transparent 24%),
-                linear-gradient(180deg, #2c79f4 0%, #1a68eb 100%) !important;
+                linear-gradient(135deg, #2c79f4 0%, #1d6bed 45%, #11978d 100%) !important;
         }
         .hero-nav-item,
         .hero-brand,
-        .hero-copy p {
+        .hero-subtext,
+        .hero-secondary,
+        .hero-card-label,
+        .hero-card-value,
+        .hero-side-title,
+        .hero-side-copy,
+        .hero-side-panel,
+        .hero-kicker,
+        .hero-title {
             color: #f7f4eb !important;
         }
     }
@@ -3208,24 +3318,55 @@ with header_left:
     st.markdown(
         f"""
         <div class="top-header">
-            <div class="hero-nav">
-                <div class="hero-nav-group">
-                    <span class="hero-nav-item">{t("tab_disease", lang)}</span>
-                    <span class="hero-nav-item">{t("tab_crop", lang)}</span>
-                    <span class="hero-nav-item">{t("tab_chat", lang)}</span>
+            <div class="hero-shell">
+                <div class="hero-main">
+                    <div class="hero-nav">
+                        <div class="hero-nav-group">
+                            <span class="hero-nav-item">{t("tab_disease", lang)}</span>
+                            <span class="hero-nav-item">{t("tab_crop", lang)}</span>
+                            <span class="hero-nav-item">{t("tab_chat", lang)}</span>
+                        </div>
+                        <div class="hero-brand">{t("hero_title", lang)}</div>
+                        <div class="hero-nav-group" style="justify-content:flex-end;">
+                            <span class="hero-nav-item">{t("tab_info", lang)}</span>
+                            <span class="hero-chip">{t("run_analysis", lang)}</span>
+                        </div>
+                    </div>
+                    <div class="hero-kicker">Plant Intelligence Platform</div>
+                    <h1 class="hero-title">Sharper crop decisions, calmer farming days.</h1>
+                    <p class="hero-subtext">{t("hero_subtitle", lang)}</p>
+                    <div class="hero-actions">
+                        <div class="hero-cta">{t("disease_heading", lang)}</div>
+                        <span class="hero-secondary">Fast scans, cleaner reports, multilingual guidance.</span>
+                    </div>
+                    <div class="hero-grid">
+                        <div class="hero-card">
+                            <span class="hero-card-label">Core workflow</span>
+                            <span class="hero-card-value">Leaf diagnosis, crop planning, and agronomist support in one flow.</span>
+                        </div>
+                        <div class="hero-card">
+                            <span class="hero-card-label">Experience</span>
+                            <span class="hero-card-value">Smoother interactions, polished motion, and a cleaner reading experience.</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="hero-brand">{t("hero_title", lang)}</div>
-                <div class="hero-nav-group" style="justify-content:flex-end;">
-                    <span class="hero-nav-item">{t("tab_info", lang)}</span>
-                    <span class="hero-chip">{t("run_analysis", lang)}</span>
-                </div>
-            </div>
-            <div class="hero-stage">
-                <div class="hero-wordmark">Grow<br/>Smart</div>
-                <div class="hero-globe"></div>
-                <div class="hero-copy">
-                    <p>{t("hero_subtitle", lang)} Analyze leaves, uncover disease signals, and make every crop decision with confidence.</p>
-                    <div class="hero-cta">{t("disease_heading", lang)}</div>
+                <div class="hero-side">
+                    <h3 class="hero-side-title">Built for real field use</h3>
+                    <p class="hero-side-copy">Upload a leaf, review the prediction, export the report, and move on with clear action instead of UI clutter.</p>
+                    <div class="hero-side-stack">
+                        <div class="hero-side-panel">
+                            <strong>{t("tab_disease", lang)}</strong><br/>
+                            Visual disease detection with Grad-CAM support.
+                        </div>
+                        <div class="hero-side-panel">
+                            <strong>{t("tab_crop", lang)}</strong><br/>
+                            Soil-aware crop suggestions and weather-assisted insights.
+                        </div>
+                        <div class="hero-side-panel">
+                            <strong>{t("tab_chat", lang)}</strong><br/>
+                            Multilingual follow-up help without leaving the workspace.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
