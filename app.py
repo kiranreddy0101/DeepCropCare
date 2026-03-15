@@ -2,6 +2,8 @@ import os
 import smtplib
 import time
 import json
+import hashlib
+import tempfile
 from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
@@ -16,6 +18,9 @@ import streamlit as st
 import streamlit.components.v1 as components
 import tensorflow as tf
 from dotenv import load_dotenv
+from fpdf import FPDF
+from fontTools.ttLib import TTFont
+from fontTools.varLib.instancer import instantiateVariableFont
 from PIL import Image, ImageDraw, ImageFont
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
@@ -123,6 +128,11 @@ LANGUAGE_LABELS = {
         "assistant_fallback_cure": "Remove badly affected leaves, improve airflow, avoid leaf wetness for long periods, and follow the recommended treatment below.",
         "assistant_fallback_prevention": "Use clean tools, avoid overcrowding, monitor plants daily, and act early when symptoms first appear.",
         "assistant_fallback_fertilizer": "Recommended care: {advice}",
+        "label_symptoms": "Symptoms",
+        "label_cure": "Cure",
+        "label_prevention": "Prevention",
+        "label_fertilizer_care": "Fertilizer & Care",
+        "heatmap_images_title": "AI Heatmap Images",
         "about_heading": "About DeepCropCare",
         "mission_title": "The Mission",
         "mission_body": "DeepCropCare is a cutting-edge agricultural platform designed to empower farmers with data-driven insights. By merging Deep Learning for leaf diagnostics and Machine Learning for crop suitability, we provide a 360-degree view of your farm's potential and health.",
@@ -237,6 +247,11 @@ LANGUAGE_LABELS = {
         "assistant_fallback_cure": "बहुत प्रभावित पत्तियाँ हटाएँ, हवा का प्रवाह बढ़ाएँ, पत्तियों पर लंबे समय तक नमी न रहने दें और नीचे दी गई सलाह का पालन करें।",
         "assistant_fallback_prevention": "साफ औज़ार रखें, पौधों को बहुत घना न लगाएँ, रोज़ निगरानी करें और शुरुआती लक्षण पर तुरंत कार्रवाई करें।",
         "assistant_fallback_fertilizer": "अनुशंसित देखभाल: {advice}",
+        "label_symptoms": "लक्षण",
+        "label_cure": "उपचार",
+        "label_prevention": "रोकथाम",
+        "label_fertilizer_care": "उर्वरक और देखभाल",
+        "heatmap_images_title": "एआई हीटमैप चित्र",
         "about_heading": "डीपक्रॉपकेयर के बारे में",
         "mission_title": "हमारा मिशन",
         "mission_body": "डीपक्रॉपकेयर एक उन्नत कृषि मंच है जो किसानों को डेटा-आधारित जानकारी देकर सशक्त बनाता है। पत्ती रोग पहचान के लिए डीप लर्निंग और फसल उपयुक्तता के लिए मशीन लर्निंग को जोड़कर यह आपकी खेती की क्षमता और स्वास्थ्य का समग्र दृश्य देता है।",
@@ -351,6 +366,11 @@ LANGUAGE_LABELS = {
         "assistant_fallback_cure": "బాగా సోకిన ఆకులు తొలగించండి, గాలి సరిగా ఆడేలా చూడండి, ఆకులపై ఎక్కువసేపు తేమ ఉండనివ్వకండి మరియు క్రింది సలహాను పాటించండి.",
         "assistant_fallback_prevention": "పరికరాలు శుభ్రంగా ఉంచండి, మొక్కలు గట్టిగా నింపవద్దు, రోజూ గమనించండి, మొదటి లక్షణాలకే చర్య తీసుకోండి.",
         "assistant_fallback_fertilizer": "సిఫార్సు చేసిన సంరక్షణ: {advice}",
+        "label_symptoms": "లక్షణాలు",
+        "label_cure": "చికిత్స",
+        "label_prevention": "నివారణ",
+        "label_fertilizer_care": "ఎరువు మరియు సంరక్షణ",
+        "heatmap_images_title": "ఏఐ హీట్‌మ్యాప్ చిత్రాలు",
         "about_heading": "డీప్‌క్రాప్‌కేర్ గురించి",
         "mission_title": "మా లక్ష్యం",
         "mission_body": "డీప్‌క్రాప్‌కేర్ రైతులకు డేటా ఆధారిత అవగాహనను అందించే ఆధునిక వ్యవసాయ వేదిక. ఆకు వ్యాధి నిర్ధారణకు డీప్ లెర్నింగ్ మరియు పంట అనుకూలతకు మెషీన్ లెర్నింగ్‌ను కలిపి మీ పొలం సామర్థ్యం మరియు ఆరోగ్యంపై సమగ్ర దృశ్యాన్ని అందిస్తుంది.",
@@ -986,6 +1006,11 @@ DISEASE_METADATA_ALIASES = {
     "Wheat_leaf_stripe_rust": "Wheat_leaf_leaf_stripe_rust",
 }
 
+PREDICTION_CLASS_OVERRIDES = {
+    "Wheat_leaf_stripe_rust": "Wheatleaf_septoria",
+    "Wheat_leaf_leaf_stripe_rust": "Wheatleaf_septoria",
+}
+
 
 def load_class_names():
     class_names_path = Path(__file__).resolve().parent / "training_outputs" / "class_names.json"
@@ -1584,6 +1609,10 @@ def disease_advice(class_name, lang):
     return meta["advice"].get(lang) or meta["advice"].get("en") or t("na", lang)
 
 
+def normalize_predicted_class(class_name):
+    return PREDICTION_CLASS_OVERRIDES.get(class_name, class_name)
+
+
 def crop_text(crop_key, field, lang):
     return CROP_METADATA[crop_key][field].get(lang) or CROP_METADATA[crop_key][field]["en"]
 
@@ -1634,10 +1663,10 @@ def build_fallback_disease_report(class_name, lang):
         [
             f"### {t('assistant_fallback_title', lang)}",
             t("assistant_fallback_description", lang).format(disease=disease_name),
-            f"**Symptoms:** {t('assistant_fallback_symptoms', lang)}",
-            f"**Cure:** {t('assistant_fallback_cure', lang)}",
-            f"**Prevention:** {t('assistant_fallback_prevention', lang)}",
-            f"**Fertilizer & Care:** {t('assistant_fallback_fertilizer', lang).format(advice=advice)}",
+            f"**{t('label_symptoms', lang)}:** {t('assistant_fallback_symptoms', lang)}",
+            f"**{t('label_cure', lang)}:** {t('assistant_fallback_cure', lang)}",
+            f"**{t('label_prevention', lang)}:** {t('assistant_fallback_prevention', lang)}",
+            f"**{t('label_fertilizer_care', lang)}:** {t('assistant_fallback_fertilizer', lang).format(advice=advice)}",
         ]
     )
 
@@ -1687,31 +1716,86 @@ def build_crop_report_text(crop_key, lang, inputs):
 
 
 def _pick_pdf_font_path(lang):
-    candidates = ["/System/Library/Fonts/Supplemental/Arial Unicode.ttf"]
+    app_dir = Path(__file__).resolve().parent
+    bundled_font_dir = app_dir / "fonts"
+    candidates = [
+        bundled_font_dir / "ArialUnicode.ttf",
+        bundled_font_dir / "Arial Unicode.ttf",
+        bundled_font_dir / "NotoSans-Regular.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
     if lang == "hi":
         candidates.extend(
             [
+                bundled_font_dir / "NotoSansDevanagari-Regular.ttf",
+                bundled_font_dir / "NotoSerifDevanagari-Regular.ttf",
                 "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc",
                 "/System/Library/Fonts/Supplemental/DevanagariMT.ttc",
+                "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSansDevanagari-Regular.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSerifDevanagari-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSerifDevanagari-Regular.ttf",
             ]
         )
     elif lang == "te":
         candidates.extend(
             [
+                bundled_font_dir / "NotoSansTelugu-Regular.ttf",
+                bundled_font_dir / "NotoSerifTelugu-Regular.ttf",
                 "/System/Library/Fonts/Supplemental/Telugu Sangam MN.ttc",
                 "/System/Library/Fonts/Supplemental/Telugu MN.ttc",
+                "/usr/share/fonts/truetype/noto/NotoSansTelugu-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSansTelugu-Regular.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSerifTelugu-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSerifTelugu-Regular.ttf",
             ]
         )
     candidates.extend(
         [
+            bundled_font_dir / "Arial.ttf",
             "/System/Library/Fonts/Supplemental/Arial.ttf",
             "/System/Library/Fonts/Supplemental/Helvetica.ttc",
         ]
     )
     for path in candidates:
         if os.path.exists(path):
-            return path
+            return str(path)
     return None
+
+
+def _validate_pdf_font_path(font_path, lang):
+    if not font_path:
+        return None
+    return font_path
+
+
+def _ensure_static_pdf_font(font_path):
+    if not font_path:
+        return None
+
+    font_path = Path(font_path)
+    try:
+        font = TTFont(str(font_path))
+    except Exception:
+        return str(font_path)
+
+    if "fvar" not in font and "gvar" not in font:
+        return str(font_path)
+
+    temp_dir = Path(tempfile.gettempdir()) / "deepcropcare-fonts"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    font_hash = hashlib.sha1(str(font_path).encode("utf-8")).hexdigest()[:12]
+    static_path = temp_dir / f"{font_path.stem}-{font_hash}-static.ttf"
+    if static_path.exists():
+        return str(static_path)
+
+    axes = {axis.axisTag: axis.defaultValue for axis in font["fvar"].axes}
+    static_font = instantiateVariableFont(font, axes, inplace=False)
+    static_font.save(str(static_path))
+    return str(static_path)
 
 
 def _get_pdf_font(lang, size):
@@ -2008,70 +2092,110 @@ def _draw_rounded_image(canvas, image_obj, box, radius=32):
     canvas.paste(image_copy, (paste_x, paste_y), mask)
 
 
-def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
+def _configure_pdf_font(pdf, lang):
     if lang == "en":
-        return _build_vector_pdf_report_bytes(title, body_text, lang, image_blocks)
+        return "Times"
 
+    font_path = _validate_pdf_font_path(_pick_pdf_font_path(lang), lang)
+    family = f"DeepCropCare-{lang}"
+    if not font_path:
+        raise RuntimeError(
+            f"Missing Unicode font for language '{lang}'. Add a compatible font file under "
+            f"'{Path(__file__).resolve().parent / 'fonts'}'."
+        )
+    pdf.add_font(family, fname=_ensure_static_pdf_font(font_path))
+    pdf.set_text_shaping(True)
+    return family
+
+
+def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
     page_width, page_height = 612, 792
-    margin = 54
-    title_font = _get_pdf_font(lang, 20)
-    heading_font = _get_pdf_font(lang, 15)
-    body_font = _get_pdf_font(lang, 13)
-    line_height = 20
-    body_lines = [_normalize_pdf_text_line(line) for line in body_text.splitlines()]
-    pages = []
+    left_margin = 72
+    right_margin = 72
+    max_text_width = page_width - left_margin - right_margin
+    raw_lines = [_normalize_pdf_text_line(line) for line in body_text.splitlines()]
+    lines = [line for line in raw_lines if line or line == ""]
+    pdf = FPDF(unit="pt", format="Letter")
+    pdf.set_auto_page_break(auto=False)
+    pdf.set_margins(left_margin, 0, right_margin)
+    pdf.add_page()
+    font_family = _configure_pdf_font(pdf, lang)
 
-    current_page = Image.new("RGB", (page_width, page_height), "white")
-    draw = ImageDraw.Draw(current_page)
-    draw.text((margin, margin), title, font=title_font, fill="black")
-    y = margin + 36
-    max_text_width = page_width - (margin * 2)
+    def write_line(text, y, size, color=(0, 0, 0), align="L"):
+        pdf.set_text_color(*color)
+        pdf.set_font(font_family, size=size)
+        pdf.set_xy(left_margin, y)
+        pdf.multi_cell(max_text_width, size + 6, text, align=align)
 
-    for raw_line in body_lines:
+    first_line = lines[0] if lines else "DeepCropCare"
+    second_line = next((line for line in lines[1:] if line), title)
+    write_line(first_line, 103, 20, align="C")
+    write_line(second_line, 142, 20, align="C")
+    y = 212
+
+    for raw_line in lines[2:]:
         if not raw_line:
-            y += 10
+            y += 16
             continue
 
-        is_heading = raw_line.isupper() or (raw_line.endswith(":") and len(raw_line) < 55)
-        font = heading_font if is_heading else body_font
-        wrapped_lines = _wrap_pdf_line(draw, raw_line, font, max_text_width)
-
-        required_height = len(wrapped_lines) * line_height
-        if y + required_height > page_height - margin:
-            pages.append(current_page)
-            current_page = Image.new("RGB", (page_width, page_height), "white")
-            draw = ImageDraw.Draw(current_page)
-            draw.text((margin, margin), title, font=title_font, fill="black")
-            y = margin + 36
-
-        for wrapped_line in wrapped_lines:
-            draw.text((margin, y), wrapped_line, font=font, fill="black")
-            y += line_height
-
-    pages.append(current_page)
+        is_heading = (
+            raw_line == t("assistant_fallback_title", lang)
+            or raw_line.isupper()
+            or (raw_line.endswith(":") and len(raw_line) < 55)
+        )
+        fill = (15, 71, 97) if is_heading else (0, 0, 0)
+        text_to_draw = raw_line.title() if is_heading and raw_line.isascii() else raw_line
+        if not is_heading and raw_line.startswith(t("report_detected_disease", lang) + ":"):
+            fill = (255, 0, 0)
+        font_size = 14 if is_heading else 12
+        line_step = 29 if is_heading else 24
+        pdf.set_font(font_family, size=font_size)
+        required_height = max(line_step, pdf.multi_cell(max_text_width, line_step, text_to_draw, dry_run=True, output="HEIGHT"))
+        if y + required_height > 720:
+            pdf.add_page()
+            y = 90
+        pdf.set_text_color(*fill)
+        pdf.set_font(font_family, size=font_size)
+        pdf.set_xy(left_margin, y)
+        pdf.multi_cell(max_text_width, line_step, text_to_draw)
+        y = pdf.get_y()
 
     if image_blocks:
         for start in range(0, len(image_blocks), 2):
-            image_page = Image.new("RGB", (page_width, page_height), "white")
-            image_draw = ImageDraw.Draw(image_page)
-            image_draw.text((margin, margin), "AI Heatmap Images", font=title_font, fill="black")
+            pdf.add_page()
+            heatmap_title = t("heatmap_images_title", lang)
+            write_line(heatmap_title, 103, 20, align="C")
 
             chunk = image_blocks[start : start + 2]
             slots = [
-                (margin, 120, page_width - margin, 360),
-                (margin, 460, page_width - margin, page_height - margin),
+                (72, 170, 540, 360),
+                (72, 440, 540, 700),
             ]
 
             for (label, image_obj), box in zip(chunk, slots):
-                label_text = _normalize_pdf_text_line(label)
-                image_draw.text((box[0], box[1] - 24), label_text, font=heading_font, fill="black")
-                _draw_rounded_image(image_page, image_obj, box, radius=1)
+                normalized_label = _normalize_pdf_text_line(label)
+                label_text = normalized_label.title() if normalized_label.isascii() else normalized_label
+                pdf.set_text_color(0, 0, 0)
+                pdf.set_font(font_family, size=14)
+                pdf.set_xy(box[0], box[1] - 24)
+                pdf.multi_cell(box[2] - box[0], 18, label_text)
 
-            pages.append(image_page)
+                image_rgb = image_obj.convert("RGB")
+                box_x1, box_y1, box_x2, box_y2 = box
+                max_width = box_x2 - box_x1
+                max_height = box_y2 - box_y1
+                scale = min(max_width / image_rgb.width, max_height / image_rgb.height)
+                draw_width = image_rgb.width * scale
+                draw_height = image_rgb.height * scale
+                x = box_x1 + ((max_width - draw_width) / 2)
+                y_img = box_y1 + ((max_height - draw_height) / 2)
 
-    buffer = BytesIO()
-    pages[0].save(buffer, format="PDF", save_all=True, append_images=pages[1:], resolution=72.0)
-    return buffer.getvalue()
+                image_buffer = BytesIO()
+                image_rgb.save(image_buffer, format="PNG")
+                image_buffer.seek(0)
+                pdf.image(image_buffer, x=x, y=y_img, w=draw_width, h=draw_height)
+
+    return bytes(pdf.output())
 
 
 def inject_tab_switch(tab_text):
@@ -2854,7 +2978,7 @@ with tab1:
                     prediction = disease_model.predict(img_arr, verbose=0)
                     idx = int(np.argmax(prediction))
                     confidence = float(np.max(prediction) * 100)
-                    full_class_name = CLASS_NAMES[idx]
+                    full_class_name = normalize_predicted_class(CLASS_NAMES[idx])
                     st.session_state.last_detected_disease = disease_display(full_class_name, lang)
                     st.session_state.last_detected_class = full_class_name
                     st.session_state.last_detection_confidence = confidence
