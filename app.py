@@ -1718,15 +1718,7 @@ def build_crop_report_text(crop_key, lang, inputs):
 def _pick_pdf_font_path(lang):
     app_dir = Path(__file__).resolve().parent
     bundled_font_dir = app_dir / "fonts"
-    candidates = [
-        bundled_font_dir / "ArialUnicode.ttf",
-        bundled_font_dir / "Arial Unicode.ttf",
-        bundled_font_dir / "NotoSans-Regular.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
-        "/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ]
+    candidates = []
     if lang == "hi":
         candidates.extend(
             [
@@ -1755,6 +1747,17 @@ def _pick_pdf_font_path(lang):
                 "/usr/share/fonts/opentype/noto/NotoSerifTelugu-Regular.ttf",
             ]
         )
+    candidates.extend(
+        [
+            bundled_font_dir / "ArialUnicode.ttf",
+            bundled_font_dir / "Arial Unicode.ttf",
+            bundled_font_dir / "NotoSans-Regular.ttf",
+            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        ]
+    )
     candidates.extend(
         [
             bundled_font_dir / "Arial.ttf",
