@@ -9,6 +9,7 @@ from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import quote
+
 import cv2
 import joblib
 import numpy as np
@@ -60,6 +61,10 @@ LANGUAGE_LABELS = {
         "feature_chat_subtitle": "Ask follow-up questions, simplify agronomy advice, and keep the conversation connected to the latest diagnosis.",
         "feature_info_subtitle": "A quick look at the computer vision stack, crop recommendation pipeline, and interpretability layer behind the app.",
         "disease_heading": "Plant Disease Analysis",
+        "upload_mode_label": "Choose input source",
+        "browse_files": "Browse Files",
+        "camera": "Camera",
+        "capture_leaf": "Capture leaf image",
         "upload_leaf": "Upload leaf image",
         "uploaded_specimen": "Uploaded Specimen",
         "run_analysis": "Run Diagnostic Analysis",
@@ -188,6 +193,10 @@ LANGUAGE_LABELS = {
         "feature_chat_subtitle": "आगे के प्रश्न पूछें, कृषि सलाह को सरल बनाएं और बातचीत को नवीनतम निदान से जोड़े रखें।",
         "feature_info_subtitle": "कंप्यूटर विज़न, फसल सिफारिश पाइपलाइन और व्याख्यात्मक एआई पर एक त्वरित नज़र।",
         "disease_heading": "पौध रोग विश्लेषण",
+        "upload_mode_label": "इनपुट स्रोत चुनें",
+        "browse_files": "फ़ाइल चुनें",
+        "camera": "कैमरा",
+        "capture_leaf": "पत्ती की तस्वीर लें",
         "upload_leaf": "पत्ती की छवि अपलोड करें",
         "uploaded_specimen": "अपलोड किया गया नमूना",
         "run_analysis": "डायग्नोस्टिक विश्लेषण चलाएँ",
@@ -316,6 +325,10 @@ LANGUAGE_LABELS = {
         "feature_chat_subtitle": "ఫాలో-అప్ ప్రశ్నలు అడిగి, వ్యవసాయ సలహాను సరళీకరించి, తాజా నిర్ధారణకు సంభాషణను అనుసంధానంగా ఉంచండి.",
         "feature_info_subtitle": "కంప్యూటర్ విజన్, పంట సిఫార్సు పైప్‌లైన్ మరియు ఇంటర్‌ప్రిటబిలిటీ లేయర్‌పై ఒక త్వరిత దర్శనం.",
         "disease_heading": "మొక్కల వ్యాధి విశ్లేషణ",
+        "upload_mode_label": "ఇన్‌పుట్ మూలాన్ని ఎంచుకోండి",
+        "browse_files": "ఫైళ్లు ఎంచుకోండి",
+        "camera": "కెమెరా",
+        "capture_leaf": "ఆకు ఫోటో తీయండి",
         "upload_leaf": "ఆకు చిత్రాన్ని అప్‌లోడ్ చేయండి",
         "uploaded_specimen": "అప్‌లోడ్ చేసిన నమూనా",
         "run_analysis": "నిర్ధారణ విశ్లేషణ ప్రారంభించండి",
@@ -3238,6 +3251,48 @@ st.markdown(
         color: rgba(233, 245, 238, 0.68) !important;
         font-size: 0.92rem;
     }
+    .upload-mode-label {
+        margin: 0.2rem 0 0.5rem;
+        color: rgba(233, 245, 238, 0.78) !important;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+    .upload-mode-shell {
+        margin: 0.25rem 0 0.9rem;
+    }
+    .upload-mode-shell [data-testid="stButton"] button {
+        min-height: 54px !important;
+        border-radius: 18px !important;
+        font-size: 0.96rem !important;
+        font-weight: 800 !important;
+    }
+    [data-testid="stCameraInput"] > label {
+        display: none !important;
+    }
+    [data-testid="stCameraInput"] {
+        margin-top: 0.1rem;
+    }
+    [data-testid="stCameraInput"] > div {
+        background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)) !important;
+        border: 1px solid rgba(255,255,255,0.14) !important;
+        border-radius: 22px !important;
+        padding: 0.5rem !important;
+        box-shadow: 0 16px 36px rgba(6, 14, 36, 0.16) !important;
+    }
+    [data-testid="stCameraInput"] video,
+    [data-testid="stCameraInput"] img {
+        border-radius: 18px !important;
+    }
+    [data-testid="stCameraInput"] button {
+        background: linear-gradient(180deg, #3cbf67, #23913c) !important;
+        color: #f8fff2 !important;
+        border: none !important;
+        border-radius: 14px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 10px 20px rgba(18, 53, 16, 0.18) !important;
+    }
     [data-baseweb="tab-list"] {
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3606,6 +3661,8 @@ if "last_uploaded_signature" not in st.session_state:
     st.session_state.last_uploaded_signature = None
 if "disease_result_ready" not in st.session_state:
     st.session_state.disease_result_ready = False
+if "disease_upload_mode" not in st.session_state:
+    st.session_state.disease_upload_mode = "browse"
 if "crop_result" not in st.session_state:
     st.session_state.crop_result = None
 if "disease_email_to" not in st.session_state:
@@ -3718,10 +3775,37 @@ with tab_disease:
         """,
         unsafe_allow_html=True,
     )
-    uploaded_file = st.file_uploader(t("upload_leaf", lang), type=["jpg", "png", "jpeg"])
+    st.markdown(f"<div class='upload-mode-label'>{t('upload_mode_label', lang)}</div>", unsafe_allow_html=True)
+    st.markdown("<div class='upload-mode-shell'>", unsafe_allow_html=True)
+    mode_col1, mode_col2 = st.columns(2)
+    with mode_col1:
+        if st.button(f"📁 {t('browse_files', lang)}", key="browse_mode_button", width="stretch"):
+            st.session_state.disease_upload_mode = "browse"
+            st.session_state.last_uploaded_signature = None
+            st.session_state.disease_result_ready = False
+    with mode_col2:
+        if st.button(f"📷 {t('camera', lang)}", key="camera_mode_button", width="stretch"):
+            st.session_state.disease_upload_mode = "camera"
+            st.session_state.last_uploaded_signature = None
+            st.session_state.disease_result_ready = False
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    uploaded_file = None
+    if st.session_state.disease_upload_mode == "camera":
+        uploaded_file = st.camera_input(t("capture_leaf", lang), key="disease_camera_capture")
+    else:
+        uploaded_file = st.file_uploader(
+            t("upload_leaf", lang),
+            type=["jpg", "png", "jpeg"],
+            key="disease_file_upload",
+        )
 
     if uploaded_file:
-        upload_signature = (uploaded_file.name, getattr(uploaded_file, "size", None))
+        upload_signature = (
+            st.session_state.disease_upload_mode,
+            uploaded_file.name,
+            getattr(uploaded_file, "size", None),
+        )
         if upload_signature != st.session_state.last_uploaded_signature:
             st.session_state.last_uploaded_signature = upload_signature
             st.session_state.last_detected_class = None
