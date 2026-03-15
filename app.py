@@ -960,7 +960,6 @@ DEFAULT_DISEASE_FALLBACK = {
 
 DEFAULT_GRADCAM_LAYER = "mobilenetv2_1.00_224/out_relu"
 GRADCAM_CACHE_VERSION = "gradcam_v3"
-PDF_OUTPUT_LANG = "en"
 
 DISEASE_METADATA_ALIASES = {
     "Bitter Gourd___Downey_mildew": "Bitter Gourd__Downy_mildew",
@@ -2010,44 +2009,54 @@ def _draw_rounded_image(canvas, image_obj, box, radius=32):
 
 
 def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
-    if lang == "en":
-        return _build_vector_pdf_report_bytes(title, body_text, lang, image_blocks)
-
     page_width, page_height = 612, 792
-    margin = 54
+    left_margin = 72
+    right_margin = 72
+    top_margin = 90
+    max_text_width = page_width - left_margin - right_margin
     title_font = _get_pdf_font(lang, 20)
-    heading_font = _get_pdf_font(lang, 15)
-    body_font = _get_pdf_font(lang, 13)
-    line_height = 20
-    body_lines = [_normalize_pdf_text_line(line) for line in body_text.splitlines()]
+    subtitle_font = _get_pdf_font(lang, 20)
+    heading_font = _get_pdf_font(lang, 14)
+    body_font = _get_pdf_font(lang, 12)
+    wrap_draw = ImageDraw.Draw(Image.new("RGB", (page_width, page_height), "white"))
+    raw_lines = [_normalize_pdf_text_line(line) for line in body_text.splitlines()]
+    lines = [line for line in raw_lines if line or line == ""]
     pages = []
 
     current_page = Image.new("RGB", (page_width, page_height), "white")
     draw = ImageDraw.Draw(current_page)
-    draw.text((margin, margin), title, font=title_font, fill="black")
-    y = margin + 36
-    max_text_width = page_width - (margin * 2)
+    first_line = lines[0] if lines else "DeepCropCare"
+    second_line = next((line for line in lines[1:] if line), title)
+    first_width = draw.textlength(first_line, font=title_font)
+    second_width = draw.textlength(second_line, font=subtitle_font)
+    draw.text((max(left_margin, (page_width - first_width) / 2), 103), first_line, font=title_font, fill="black")
+    draw.text((max(left_margin, (page_width - second_width) / 2), 142), second_line, font=subtitle_font, fill="black")
+    y = 212
 
-    for raw_line in body_lines:
+    for raw_line in lines[2:]:
         if not raw_line:
-            y += 10
+            y += 16
             continue
 
-        is_heading = raw_line.isupper() or (raw_line.endswith(":") and len(raw_line) < 55)
+        is_heading = raw_line.isupper()
         font = heading_font if is_heading else body_font
-        wrapped_lines = _wrap_pdf_line(draw, raw_line, font, max_text_width)
+        fill = (15, 71, 97) if is_heading else "black"
+        text_to_draw = raw_line.title() if is_heading else raw_line
+        if not is_heading and raw_line.startswith(t("report_detected_disease", lang) + ":"):
+            fill = (255, 0, 0)
+        wrapped_lines = _wrap_pdf_line(wrap_draw, text_to_draw, font, max_text_width)
+        line_step = 29 if is_heading else 24
 
-        required_height = len(wrapped_lines) * line_height
-        if y + required_height > page_height - margin:
+        required_height = len(wrapped_lines) * line_step
+        if y + required_height > 720:
             pages.append(current_page)
             current_page = Image.new("RGB", (page_width, page_height), "white")
             draw = ImageDraw.Draw(current_page)
-            draw.text((margin, margin), title, font=title_font, fill="black")
-            y = margin + 36
+            y = top_margin
 
         for wrapped_line in wrapped_lines:
-            draw.text((margin, y), wrapped_line, font=font, fill="black")
-            y += line_height
+            draw.text((left_margin, y), wrapped_line, font=font, fill=fill)
+            y += line_step
 
     pages.append(current_page)
 
@@ -2055,16 +2064,23 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
         for start in range(0, len(image_blocks), 2):
             image_page = Image.new("RGB", (page_width, page_height), "white")
             image_draw = ImageDraw.Draw(image_page)
-            image_draw.text((margin, margin), "AI Heatmap Images", font=title_font, fill="black")
+            heatmap_title = t("heatmap_title", lang)
+            heatmap_title_width = image_draw.textlength(heatmap_title, font=title_font)
+            image_draw.text(
+                (max(left_margin, (page_width - heatmap_title_width) / 2), 103),
+                heatmap_title,
+                font=title_font,
+                fill="black",
+            )
 
             chunk = image_blocks[start : start + 2]
             slots = [
-                (margin, 120, page_width - margin, 360),
-                (margin, 460, page_width - margin, page_height - margin),
+                (72, 170, 540, 360),
+                (72, 440, 540, 700),
             ]
 
             for (label, image_obj), box in zip(chunk, slots):
-                label_text = _normalize_pdf_text_line(label)
+                label_text = _normalize_pdf_text_line(label).title()
                 image_draw.text((box[0], box[1] - 24), label_text, font=heading_font, fill="black")
                 _draw_rounded_image(image_page, image_obj, box, radius=1)
 
@@ -2876,18 +2892,10 @@ with tab1:
                 and detected_class != "Background_without_leaves"
             )
             report_images = [(t("original_scan", lang), image)]
-            pdf_report_images = [(t("original_scan", PDF_OUTPUT_LANG), image)]
             report_text = build_disease_report_text(
                 detected_class,
                 detected_confidence,
                 lang,
-                uploaded_file.name if uploaded_file else "",
-                heatmap_available,
-            )
-            pdf_report_text = build_disease_report_text(
-                detected_class,
-                detected_confidence,
-                PDF_OUTPUT_LANG,
                 uploaded_file.name if uploaded_file else "",
                 heatmap_available,
             )
@@ -2937,7 +2945,6 @@ with tab1:
                         )
                         overlay = overlay_gradcam(img_resized, heatmap)
                         report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
-                        pdf_report_images.append((t("infection_hotspots", PDF_OUTPUT_LANG), Image.fromarray(overlay)))
                         col_a, col_b = st.columns(2)
                         with col_a:
                             st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
@@ -2947,12 +2954,7 @@ with tab1:
                         st.warning("Grad-CAM returned no heatmap for this prediction.")
                 except Exception as exc:
                     st.warning(f"Grad-CAM failed while rendering the heatmap: {exc}")
-            disease_pdf = build_pdf_report_bytes(
-                t("report_subject", PDF_OUTPUT_LANG),
-                pdf_report_text,
-                PDF_OUTPUT_LANG,
-                pdf_report_images,
-            )
+            disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
             _, action_col1, _ = st.columns([1.2, 1, 1.2])
             with action_col1:
                 st.download_button(
@@ -3082,12 +3084,7 @@ with tab2:
         crop_inputs = st.session_state.crop_result["inputs"]
         crop_name = crop_text(crop, "name", lang)
         crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
-        crop_pdf_report_text = build_crop_report_text(crop, PDF_OUTPUT_LANG, crop_inputs)
-        crop_pdf = build_pdf_report_bytes(
-            t("crop_report_subject", PDF_OUTPUT_LANG),
-            crop_pdf_report_text,
-            PDF_OUTPUT_LANG,
-        )
+        crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
         crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
         st.markdown(
             f"""
