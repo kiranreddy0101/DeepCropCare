@@ -959,6 +959,7 @@ DEFAULT_DISEASE_FALLBACK = {
 }
 
 DEFAULT_GRADCAM_LAYER = "mobilenetv2_1.00_224/out_relu"
+GRADCAM_CACHE_VERSION = "gradcam_v3"
 
 DISEASE_METADATA_ALIASES = {
     "Bitter Gourd___Downey_mildew": "Bitter Gourd__Downy_mildew",
@@ -2436,7 +2437,8 @@ def get_weather(city_name, lang):
 
 
 @st.cache_resource
-def load_resources():
+def load_resources(cache_version=GRADCAM_CACHE_VERSION):
+    _ = cache_version
     disease_model, disease_model_path = load_disease_model()
 
     detected_name = None
@@ -2883,6 +2885,10 @@ with tab1:
                 """,
                 unsafe_allow_html=True,
             )
+            st.caption(
+                f"Grad-CAM status: class=`{detected_class}`, layer=`{detected_conv_name or DEFAULT_GRADCAM_LAYER}`, "
+                f"eligible={'yes' if heatmap_available else 'no'}"
+            )
 
             inject_helper_icon(
                 ASSISTANT_ICON,
@@ -2913,8 +2919,10 @@ with tab1:
                             st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
                         with col_b:
                             st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
+                    else:
+                        st.warning("Grad-CAM returned no heatmap for this prediction.")
                 except Exception:
-                    pass
+                    st.warning("Grad-CAM failed while rendering the heatmap.")
             disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
             _, action_col1, _ = st.columns([1.2, 1, 1.2])
             with action_col1:
