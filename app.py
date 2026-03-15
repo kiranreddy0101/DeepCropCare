@@ -123,6 +123,11 @@ LANGUAGE_LABELS = {
         "assistant_fallback_cure": "Remove badly affected leaves, improve airflow, avoid leaf wetness for long periods, and follow the recommended treatment below.",
         "assistant_fallback_prevention": "Use clean tools, avoid overcrowding, monitor plants daily, and act early when symptoms first appear.",
         "assistant_fallback_fertilizer": "Recommended care: {advice}",
+        "label_symptoms": "Symptoms",
+        "label_cure": "Cure",
+        "label_prevention": "Prevention",
+        "label_fertilizer_care": "Fertilizer & Care",
+        "heatmap_images_title": "AI Heatmap Images",
         "about_heading": "About DeepCropCare",
         "mission_title": "The Mission",
         "mission_body": "DeepCropCare is a cutting-edge agricultural platform designed to empower farmers with data-driven insights. By merging Deep Learning for leaf diagnostics and Machine Learning for crop suitability, we provide a 360-degree view of your farm's potential and health.",
@@ -237,6 +242,11 @@ LANGUAGE_LABELS = {
         "assistant_fallback_cure": "बहुत प्रभावित पत्तियाँ हटाएँ, हवा का प्रवाह बढ़ाएँ, पत्तियों पर लंबे समय तक नमी न रहने दें और नीचे दी गई सलाह का पालन करें।",
         "assistant_fallback_prevention": "साफ औज़ार रखें, पौधों को बहुत घना न लगाएँ, रोज़ निगरानी करें और शुरुआती लक्षण पर तुरंत कार्रवाई करें।",
         "assistant_fallback_fertilizer": "अनुशंसित देखभाल: {advice}",
+        "label_symptoms": "लक्षण",
+        "label_cure": "उपचार",
+        "label_prevention": "रोकथाम",
+        "label_fertilizer_care": "उर्वरक और देखभाल",
+        "heatmap_images_title": "एआई हीटमैप चित्र",
         "about_heading": "डीपक्रॉपकेयर के बारे में",
         "mission_title": "हमारा मिशन",
         "mission_body": "डीपक्रॉपकेयर एक उन्नत कृषि मंच है जो किसानों को डेटा-आधारित जानकारी देकर सशक्त बनाता है। पत्ती रोग पहचान के लिए डीप लर्निंग और फसल उपयुक्तता के लिए मशीन लर्निंग को जोड़कर यह आपकी खेती की क्षमता और स्वास्थ्य का समग्र दृश्य देता है।",
@@ -351,6 +361,11 @@ LANGUAGE_LABELS = {
         "assistant_fallback_cure": "బాగా సోకిన ఆకులు తొలగించండి, గాలి సరిగా ఆడేలా చూడండి, ఆకులపై ఎక్కువసేపు తేమ ఉండనివ్వకండి మరియు క్రింది సలహాను పాటించండి.",
         "assistant_fallback_prevention": "పరికరాలు శుభ్రంగా ఉంచండి, మొక్కలు గట్టిగా నింపవద్దు, రోజూ గమనించండి, మొదటి లక్షణాలకే చర్య తీసుకోండి.",
         "assistant_fallback_fertilizer": "సిఫార్సు చేసిన సంరక్షణ: {advice}",
+        "label_symptoms": "లక్షణాలు",
+        "label_cure": "చికిత్స",
+        "label_prevention": "నివారణ",
+        "label_fertilizer_care": "ఎరువు మరియు సంరక్షణ",
+        "heatmap_images_title": "ఏఐ హీట్‌మ్యాప్ చిత్రాలు",
         "about_heading": "డీప్‌క్రాప్‌కేర్ గురించి",
         "mission_title": "మా లక్ష్యం",
         "mission_body": "డీప్‌క్రాప్‌కేర్ రైతులకు డేటా ఆధారిత అవగాహనను అందించే ఆధునిక వ్యవసాయ వేదిక. ఆకు వ్యాధి నిర్ధారణకు డీప్ లెర్నింగ్ మరియు పంట అనుకూలతకు మెషీన్ లెర్నింగ్‌ను కలిపి మీ పొలం సామర్థ్యం మరియు ఆరోగ్యంపై సమగ్ర దృశ్యాన్ని అందిస్తుంది.",
@@ -1634,10 +1649,10 @@ def build_fallback_disease_report(class_name, lang):
         [
             f"### {t('assistant_fallback_title', lang)}",
             t("assistant_fallback_description", lang).format(disease=disease_name),
-            f"**Symptoms:** {t('assistant_fallback_symptoms', lang)}",
-            f"**Cure:** {t('assistant_fallback_cure', lang)}",
-            f"**Prevention:** {t('assistant_fallback_prevention', lang)}",
-            f"**Fertilizer & Care:** {t('assistant_fallback_fertilizer', lang).format(advice=advice)}",
+            f"**{t('label_symptoms', lang)}:** {t('assistant_fallback_symptoms', lang)}",
+            f"**{t('label_cure', lang)}:** {t('assistant_fallback_cure', lang)}",
+            f"**{t('label_prevention', lang)}:** {t('assistant_fallback_prevention', lang)}",
+            f"**{t('label_fertilizer_care', lang)}:** {t('assistant_fallback_fertilizer', lang).format(advice=advice)}",
         ]
     )
 
@@ -2038,10 +2053,14 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
             y += 16
             continue
 
-        is_heading = raw_line.isupper()
+        is_heading = (
+            raw_line == t("assistant_fallback_title", lang)
+            or raw_line.isupper()
+            or (raw_line.endswith(":") and len(raw_line) < 55)
+        )
         font = heading_font if is_heading else body_font
         fill = (15, 71, 97) if is_heading else "black"
-        text_to_draw = raw_line.title() if is_heading else raw_line
+        text_to_draw = raw_line.title() if is_heading and raw_line.isascii() else raw_line
         if not is_heading and raw_line.startswith(t("report_detected_disease", lang) + ":"):
             fill = (255, 0, 0)
         wrapped_lines = _wrap_pdf_line(wrap_draw, text_to_draw, font, max_text_width)
@@ -2064,7 +2083,7 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
         for start in range(0, len(image_blocks), 2):
             image_page = Image.new("RGB", (page_width, page_height), "white")
             image_draw = ImageDraw.Draw(image_page)
-            heatmap_title = t("heatmap_title", lang)
+            heatmap_title = t("heatmap_images_title", lang)
             heatmap_title_width = image_draw.textlength(heatmap_title, font=title_font)
             image_draw.text(
                 (max(left_margin, (page_width - heatmap_title_width) / 2), 103),
@@ -2080,7 +2099,8 @@ def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
             ]
 
             for (label, image_obj), box in zip(chunk, slots):
-                label_text = _normalize_pdf_text_line(label).title()
+                normalized_label = _normalize_pdf_text_line(label)
+                label_text = normalized_label.title() if normalized_label.isascii() else normalized_label
                 image_draw.text((box[0], box[1] - 24), label_text, font=heading_font, fill="black")
                 _draw_rounded_image(image_page, image_obj, box, radius=1)
 
