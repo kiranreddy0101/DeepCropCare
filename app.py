@@ -8,7 +8,6 @@ from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import quote
-
 import cv2
 import google.generativeai as genai
 import joblib
@@ -2901,6 +2900,87 @@ st.markdown(
         font-weight: 600;
         margin-bottom: 0.35rem;
     }
+    .hero-minimal {
+        position: relative;
+        padding: 1.4rem 0 0.4rem;
+        animation: fadeLift 680ms ease both;
+    }
+    .hero-minimal::before {
+        content: "";
+        position: absolute;
+        inset: -12% auto auto -6%;
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(129, 255, 184, 0.18) 0%, rgba(129, 255, 184, 0) 70%);
+        filter: blur(12px);
+        pointer-events: none;
+    }
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(116, 255, 171, 0.1);
+        border: 1px solid rgba(116, 255, 171, 0.16);
+        color: #def8e6 !important;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+    }
+    .hero-headline {
+        margin: 0;
+        font-size: clamp(2.6rem, 5vw, 5rem);
+        line-height: 0.92;
+        letter-spacing: -0.07em;
+        color: #f8faf5 !important;
+        font-weight: 900;
+        max-width: 10ch;
+    }
+    .hero-description {
+        margin: 1rem 0 0;
+        max-width: 56ch;
+        color: rgba(233, 245, 238, 0.86) !important;
+        line-height: 1.7;
+        font-size: 1.06rem;
+    }
+    .feature-dock-title {
+        margin: 1rem 0 0.65rem;
+        color: rgba(230, 245, 235, 0.82) !important;
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+    .feature-stage {
+        margin-top: 1rem;
+        padding: 1.35rem 1.35rem 1.5rem;
+        border-radius: 30px;
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04)),
+            radial-gradient(circle at top right, rgba(118,255,184,0.12), transparent 28%);
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 24px 60px rgba(7, 15, 36, 0.22);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        animation: fadeLift 560ms ease both;
+    }
+    .feature-stage-title {
+        margin: 0;
+        color: #f8faf5 !important;
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+    }
+    .feature-stage-subtitle {
+        margin: 0.35rem 0 1rem;
+        color: rgba(233, 245, 238, 0.82) !important;
+        max-width: 60ch;
+        line-height: 1.65;
+    }
     .section-anchor {
         position: relative;
         top: -88px;
@@ -2977,6 +3057,42 @@ st.markdown(
     [data-baseweb="tab-list"] button:hover {
         transform: translateY(-1px);
         color: #ffffff !important;
+    }
+    [role="radiogroup"] {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin: 0.1rem 0 0.8rem;
+    }
+    [role="radiogroup"] label {
+        margin: 0 !important;
+        min-height: 108px;
+        border-radius: 28px !important;
+        padding: 0.95rem 0.8rem !important;
+        background: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        transition: transform 220ms ease, background 220ms ease, border-color 220ms ease !important;
+    }
+    [role="radiogroup"] label:hover {
+        transform: translateY(-2px);
+        background: rgba(255,255,255,0.1) !important;
+        border-color: rgba(120,255,188,0.26) !important;
+    }
+    [role="radiogroup"] label p {
+        color: #eef6ee !important;
+        font-size: 1rem !important;
+        font-weight: 800 !important;
+        line-height: 1.35 !important;
+        text-align: center !important;
+        white-space: pre-line !important;
+    }
+    [role="radiogroup"] label:has(input:checked) {
+        background: linear-gradient(180deg, rgba(118,255,184,0.18), rgba(38,122,81,0.18)) !important;
+        border-color: rgba(118,255,184,0.34) !important;
+        box-shadow: 0 18px 34px rgba(8, 31, 24, 0.22);
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] small,
@@ -3174,6 +3290,12 @@ st.markdown(
         .hero-grid {
             grid-template-columns: 1fr;
         }
+        [role="radiogroup"] {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        [role="radiogroup"] label {
+            min-height: 92px;
+        }
     }
     @media (prefers-color-scheme: light) {
         .stApp {
@@ -3296,6 +3418,8 @@ if "disease_email_to" not in st.session_state:
     st.session_state.disease_email_to = ""
 if "crop_email_to" not in st.session_state:
     st.session_state.crop_email_to = ""
+if "active_feature" not in st.session_state:
+    st.session_state.active_feature = "disease"
 
 
 def send_email_with_attachment(to_email, subject, body, attachment_bytes, filename):
@@ -3362,236 +3486,384 @@ lang = st.session_state.language
 with header_left:
     st.markdown(
         f"""
-        <div class="top-header">
-            <div class="hero-shell">
-                <div class="hero-main">
-                    <div class="hero-nav">
-                        <div class="hero-nav-group">
-                            <a class="hero-nav-item" href="#disease-section">{t("tab_disease", lang)}</a>
-                            <a class="hero-nav-item" href="#crop-section">{t("tab_crop", lang)}</a>
-                            <a class="hero-nav-item" href="#chat-section">{t("tab_chat", lang)}</a>
-                        </div>
-                        <div class="hero-brand">{t("hero_title", lang)}</div>
-                        <div class="hero-nav-group" style="justify-content:flex-end;">
-                            <a class="hero-nav-item" href="#info-section">{t("tab_info", lang)}</a>
-                            <a class="hero-chip" href="#disease-section">{t("run_analysis", lang)}</a>
-                        </div>
-                    </div>
-                    <div class="hero-kicker">Plant Intelligence Platform</div>
-                    <h1 class="hero-title">Sharper crop decisions, calmer farming days.</h1>
-                    <p class="hero-subtext">{t("hero_subtitle", lang)}</p>
-                    <div class="hero-actions">
-                        <a class="hero-cta" href="#disease-section">{t("disease_heading", lang)}</a>
-                        <span class="hero-secondary">Fast scans, cleaner reports, multilingual guidance.</span>
-                    </div>
-                    <div class="hero-grid">
-                        <div class="hero-card">
-                            <span class="hero-card-label">Core workflow</span>
-                            <span class="hero-card-value">Leaf diagnosis, crop planning, and agronomist support in one flow.</span>
-                        </div>
-                        <div class="hero-card">
-                            <span class="hero-card-label">Experience</span>
-                            <span class="hero-card-value">Smoother interactions, polished motion, and a cleaner reading experience.</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="hero-side">
-                    <h3 class="hero-side-title">Built for real field use</h3>
-                    <p class="hero-side-copy">Upload a leaf, review the prediction, export the report, and move on with clear action instead of UI clutter.</p>
-                    <div class="hero-side-stack">
-                        <div class="hero-side-panel">
-                            <strong>{t("tab_disease", lang)}</strong><br/>
-                            Visual disease detection with Grad-CAM support.
-                        </div>
-                        <div class="hero-side-panel">
-                            <strong>{t("tab_crop", lang)}</strong><br/>
-                            Soil-aware crop suggestions and weather-assisted insights.
-                        </div>
-                        <div class="hero-side-panel">
-                            <strong>{t("tab_chat", lang)}</strong><br/>
-                            Multilingual follow-up help without leaving the workspace.
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="hero-minimal">
+            <div class="hero-badge">Leaf intelligence for modern farming</div>
+            <h1 class="hero-headline">{t("hero_title", lang)}</h1>
+            <p class="hero-description">{t("hero_subtitle", lang)} Diagnose plant stress, recommend the next crop, and ask follow-up questions inside one calm, precise workspace.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-if st.session_state.get("target_section"):
-    remove_helper_icon()
-    inject_scroll_to_section(st.session_state.target_section)
+feature_labels = {
+    "disease": f"🌿\n{t('tab_disease', lang)}",
+    "crop": f"🌾\n{t('tab_crop', lang)}",
+    "chat": f"💬\n{t('tab_chat', lang)}",
+    "info": f"📘\n{t('tab_info', lang)}",
+}
+
+if st.session_state.get("target_section") == "chat-section":
+    st.session_state.active_feature = "chat"
     st.session_state.target_section = None
 
-st.markdown("<div id='disease-section' class='section-anchor'></div>", unsafe_allow_html=True)
-st.markdown(
-    f"""
-    <div class='section-shell'>
-        <div class='section-kicker'>Disease Detection</div>
-        <h2 class='section-title'>🌿 {t('disease_heading', lang)}</h2>
-        <p class='section-subtitle'>Upload a leaf image, run the model, review the confidence and heatmap, then export the report without leaving the page.</p>
-    """,
-    unsafe_allow_html=True,
+st.markdown("<div class='feature-dock-title'>Choose a workspace</div>", unsafe_allow_html=True)
+selected_feature = st.radio(
+    "Feature",
+    options=list(feature_labels.keys()),
+    index=list(feature_labels.keys()).index(st.session_state.active_feature),
+    format_func=lambda key: feature_labels[key],
+    horizontal=True,
+    label_visibility="collapsed",
 )
-uploaded_file = st.file_uploader(t("upload_leaf", lang), type=["jpg", "png", "jpeg"])
+st.session_state.active_feature = selected_feature
 
-if uploaded_file:
-    upload_signature = (uploaded_file.name, getattr(uploaded_file, "size", None))
-    if upload_signature != st.session_state.last_uploaded_signature:
-        st.session_state.last_uploaded_signature = upload_signature
-        st.session_state.last_detected_class = None
-        st.session_state.last_detection_confidence = None
+if selected_feature == "disease":
+    st.markdown(
+        f"""
+        <div class='feature-stage'>
+            <h2 class='feature-stage-title'>🌿 {t('disease_heading', lang)}</h2>
+            <p class='feature-stage-subtitle'>Upload a leaf image, run the model, inspect the confidence and Grad-CAM heatmap, then export a polished report.</p>
+        """,
+        unsafe_allow_html=True,
+    )
+    uploaded_file = st.file_uploader(t("upload_leaf", lang), type=["jpg", "png", "jpeg"])
+
+    if uploaded_file:
+        upload_signature = (uploaded_file.name, getattr(uploaded_file, "size", None))
+        if upload_signature != st.session_state.last_uploaded_signature:
+            st.session_state.last_uploaded_signature = upload_signature
+            st.session_state.last_detected_class = None
+            st.session_state.last_detection_confidence = None
+            st.session_state.disease_result_ready = False
+        image = Image.open(uploaded_file).convert("RGB")
+
+        col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
+        with col_img:
+            st.image(image, caption=t("uploaded_specimen", lang), use_container_width=True)
+
+        _, center_col, _ = st.columns([1, 1, 1])
+        with center_col:
+            run_btn = st.button(t("run_analysis", lang), use_container_width=True)
+
+        if run_btn:
+            progress_bar = st.progress(0)
+            for percent_complete in range(100):
+                time.sleep(0.001)
+                progress_bar.progress(percent_complete + 1)
+
+            with st.spinner(t("identifying", lang)):
+                if disease_model:
+                    _, img_arr = preprocess_disease_image(image)
+
+                    prediction = disease_model.predict(img_arr, verbose=0)
+                    idx = int(np.argmax(prediction))
+                    confidence = float(np.max(prediction) * 100)
+                    full_class_name = normalize_predicted_class(CLASS_NAMES[idx])
+                    st.session_state.last_detected_disease = disease_display(full_class_name, lang)
+                    st.session_state.last_detected_class = full_class_name
+                    st.session_state.last_detection_confidence = confidence
+                    st.session_state.disease_result_ready = True
+
+                    progress_bar.empty()
+                else:
+                    progress_bar.empty()
+                    st.error(t("disease_model_missing", lang))
+
+        if st.session_state.disease_result_ready and st.session_state.last_detected_class:
+            detected_class = st.session_state.last_detected_class
+            detected_confidence = st.session_state.last_detection_confidence or 0.0
+            detected_class_lower = detected_class.lower()
+            heatmap_available = (
+                bool(disease_model)
+                and "healthy" not in detected_class_lower
+                and detected_class != "Background_without_leaves"
+            )
+            report_images = [(t("original_scan", lang), image)]
+            report_text = build_disease_report_text(
+                detected_class,
+                detected_confidence,
+                lang,
+                uploaded_file.name if uploaded_file else "",
+                heatmap_available,
+            )
+            report_filename = f"deepcropcare-report-{detected_class.replace(' ', '-').replace('/', '-')}.txt"
+            report_filename = report_filename.replace(".txt", ".pdf")
+            disease_email_body = f"{t('report_email_body_intro', lang)}\n\n{report_text}"
+
+            st.markdown("<div class='result-center'>", unsafe_allow_html=True)
+            st.markdown(
+                f"<br><h3 style='text-align: center;'>{t('analysis_complete', lang)}</h3>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"""
+                <div class='prediction-card'>
+                    <h2>{disease_display(detected_class, lang)}</h2>
+                    <h3>{t('confidence', lang)}: {detected_confidence:.2f}%</h3>
+                </div>
+                <div class='report-summary'>
+                    <strong>{t('recommended_action', lang)}:</strong> {disease_advice(detected_class, lang)}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            inject_helper_icon(
+                ASSISTANT_ICON,
+                t("assistant_hint", lang),
+                t("assistant_note", lang),
+                t("assistant_trigger", lang),
+                t("chat_spinner", lang),
+            )
+            helper_clicked = st.button(t("assistant_trigger", lang), key="assistant_trigger_button")
+            if helper_clicked:
+                st.session_state.pending_chat_prompt = build_disease_prompt(detected_class, lang)
+                st.session_state.active_feature = "chat"
+                st.rerun()
+
+            if heatmap_available:
+                try:
+                    img_resized, img_arr = preprocess_disease_image(image)
+                    heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                    if heatmap is not None:
+                        st.markdown(
+                            f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
+                            unsafe_allow_html=True,
+                        )
+                        overlay = overlay_gradcam(img_resized, heatmap)
+                        report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
+                        with col_b:
+                            st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
+                    else:
+                        st.warning("Grad-CAM returned no heatmap for this prediction.")
+                except Exception as exc:
+                    st.warning(f"Grad-CAM failed while rendering the heatmap: {exc}")
+            disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
+            _, action_col1, _ = st.columns([1.2, 1, 1.2])
+            with action_col1:
+                st.download_button(
+                    t("report_download", lang),
+                    data=disease_pdf,
+                    file_name=report_filename,
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="download_disease_report",
+                )
+            st.markdown(
+                f"<div class='email-heading'>{t('email_report_heading', lang)}</div>",
+                unsafe_allow_html=True,
+            )
+            disease_email_ready = is_email_configured()
+            if not disease_email_ready:
+                st.info(t("email_config_missing", lang))
+            _, disease_email_col, disease_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
+            with disease_email_col:
+                disease_email = st.text_input(
+                    t("email_address", lang),
+                    key="disease_email_to",
+                    placeholder="name@example.com",
+                    label_visibility="collapsed",
+                )
+            with disease_send_col:
+                send_disease_email = st.button(
+                    t("send_email", lang),
+                    use_container_width=True,
+                    key="send_disease_report_button",
+                    disabled=not disease_email_ready,
+                )
+            if send_disease_email:
+                if "@" not in disease_email or "." not in disease_email:
+                    st.error(t("email_required", lang))
+                else:
+                    success, error_code = send_email_with_attachment(
+                        disease_email,
+                        t("report_subject", lang),
+                        disease_email_body,
+                        disease_pdf,
+                        report_filename,
+                    )
+                    if success:
+                        st.success(t("email_sent", lang))
+                    elif error_code == "missing_config":
+                        st.info(t("email_config_missing", lang))
+                    else:
+                        st.error(f"{t('email_failed', lang)}: {error_code}")
+            st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.session_state.last_uploaded_signature = None
         st.session_state.disease_result_ready = False
-    image = Image.open(uploaded_file).convert("RGB")
+        remove_helper_icon()
 
-    col_s1, col_img, col_s2 = st.columns([1, 0.8, 1])
-    with col_img:
-        st.image(image, caption=t("uploaded_specimen", lang), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    _, center_col, _ = st.columns([1, 1, 1])
-    with center_col:
-        run_btn = st.button(t("run_analysis", lang), use_container_width=True)
+elif selected_feature == "crop":
+    remove_helper_icon()
+    st.markdown(
+        f"""
+        <div class='feature-stage'>
+            <h2 class='feature-stage-title'>🌾 {t('crop_heading', lang)}</h2>
+            <p class='feature-stage-subtitle'>Blend soil nutrients, rainfall, humidity, and temperature into a clearer crop recommendation with practical guidance.</p>
+        """,
+        unsafe_allow_html=True,
+    )
+    col_soil, col_weather = st.columns([1.5, 1])
 
-    if run_btn:
-        progress_bar = st.progress(0)
-        for percent_complete in range(100):
-            time.sleep(0.001)
-            progress_bar.progress(percent_complete + 1)
+    with col_soil:
+        st.write(f"### 🧪 {t('soil_parameters', lang)}")
+        n1, p1, k1 = st.columns(3)
+        nitrogen = n1.number_input(t("nitrogen", lang), 0, 200, 50)
+        phosphorus = p1.number_input(t("phosphorus", lang), 0, 200, 50)
+        potassium = k1.number_input(t("potassium", lang), 0, 200, 50)
+        ph = st.slider(t("soil_ph", lang), 0.0, 14.0, 6.5)
+        rain = st.number_input(t("rainfall", lang), 0.0, 1000.0, 100.0)
 
-        with st.spinner(t("identifying", lang)):
-            if disease_model:
-                _, img_arr = preprocess_disease_image(image)
-
-                prediction = disease_model.predict(img_arr, verbose=0)
-                idx = int(np.argmax(prediction))
-                confidence = float(np.max(prediction) * 100)
-                full_class_name = normalize_predicted_class(CLASS_NAMES[idx])
-                st.session_state.last_detected_disease = disease_display(full_class_name, lang)
-                st.session_state.last_detected_class = full_class_name
-                st.session_state.last_detection_confidence = confidence
-                st.session_state.disease_result_ready = True
-
-                progress_bar.empty()
+    with col_weather:
+        st.write(f"### 🌦️ {t('weather_heading', lang)}")
+        city = st.text_input(t("city_input", lang), "Kothur, Rangareddy")
+        if st.button(t("fetch_weather", lang), use_container_width=True):
+            temp, hum, err = get_weather(city, lang)
+            if not err:
+                st.session_state.weather_temp = float(temp)
+                st.session_state.weather_hum = float(hum)
+                st.success(f"{t('weather_success', lang)} {city}")
             else:
-                progress_bar.empty()
-                st.error(t("disease_model_missing", lang))
+                st.error(t("weather_error", lang))
 
-    if st.session_state.disease_result_ready and st.session_state.last_detected_class:
-        detected_class = st.session_state.last_detected_class
-        detected_confidence = st.session_state.last_detection_confidence or 0.0
-        detected_class_lower = detected_class.lower()
-        heatmap_available = (
-            bool(disease_model)
-            and "healthy" not in detected_class_lower
-            and detected_class != "Background_without_leaves"
+        st.session_state.weather_temp = st.number_input(
+            t("temp", lang), value=float(st.session_state.weather_temp), step=0.1
         )
-        report_images = [(t("original_scan", lang), image)]
-        report_text = build_disease_report_text(
-            detected_class,
-            detected_confidence,
-            lang,
-            uploaded_file.name if uploaded_file else "",
-            heatmap_available,
+        st.session_state.weather_hum = st.number_input(
+            t("humidity", lang), value=float(st.session_state.weather_hum), step=0.1
         )
-        report_filename = f"deepcropcare-report-{detected_class.replace(' ', '-').replace('/', '-')}.txt"
-        report_filename = report_filename.replace(".txt", ".pdf")
-        disease_email_body = f"{t('report_email_body_intro', lang)}\n\n{report_text}"
 
-        st.markdown("<div class='result-center'>", unsafe_allow_html=True)
-        st.markdown(
-            f"<br><h3 style='text-align: center;'>{t('analysis_complete', lang)}</h3>",
-            unsafe_allow_html=True,
-        )
+    st.markdown("<br>", unsafe_allow_html=True)
+    _, btn_col, _ = st.columns([1, 1, 1])
+    with btn_col:
+        predict_btn = st.button(t("recommend_crop", lang), use_container_width=True)
+
+    if predict_btn:
+        if crop_model:
+            features = np.array(
+                [[
+                    nitrogen,
+                    phosphorus,
+                    potassium,
+                    st.session_state.weather_temp,
+                    st.session_state.weather_hum,
+                    ph,
+                    rain,
+                ]]
+            )
+            prediction_idx = int(crop_model.predict(features)[0])
+            crop = LABEL_MAPPING[prediction_idx]
+        else:
+            st.error(t("crop_model_missing", lang))
+            crop = "rice"
+        st.session_state.crop_result = {
+            "crop": crop,
+            "inputs": {
+                "nitrogen": nitrogen,
+                "phosphorus": phosphorus,
+                "potassium": potassium,
+                "ph": ph,
+                "rain": rain,
+                "temp": st.session_state.weather_temp,
+                "hum": st.session_state.weather_hum,
+                "city": city,
+            },
+        }
+
+    if st.session_state.crop_result:
+        crop = st.session_state.crop_result["crop"]
+        crop_inputs = st.session_state.crop_result["inputs"]
+        crop_name = crop_text(crop, "name", lang)
+        crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
+        crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
+        crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
         st.markdown(
             f"""
             <div class='prediction-card'>
-                <h2>{disease_display(detected_class, lang)}</h2>
-                <h3>{t('confidence', lang)}: {detected_confidence:.2f}%</h3>
-            </div>
-            <div class='report-summary'>
-                <strong>{t('recommended_action', lang)}:</strong> {disease_advice(detected_class, lang)}
+                <h2>🌱 {t('recommended_crop', lang)}: {crop_name.upper()}</h2>
             </div>
             """,
             unsafe_allow_html=True,
         )
+        inf1, inf2 = st.columns(2)
+        with inf1:
+            st.markdown(f"### 📖 {t('description', lang)}")
+            st.markdown(
+                f"""
+                <div class="detail-card" style="border-left: 5px solid #28a745;">
+                    <p>
+                        {crop_text(crop, 'description', lang)}
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"""
+                <div class="detail-card" style="border-left: 5px solid #1c83e1;">
+                    <p><strong>🔍 {t('optimal_conditions', lang)}:</strong> {crop_text(crop, 'conditions', lang)}</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        inject_helper_icon(
-            ASSISTANT_ICON,
-            t("assistant_hint", lang),
-            t("assistant_note", lang),
-            t("assistant_trigger", lang),
-            t("chat_spinner", lang),
+        with inf2:
+            st.markdown(f"### 🧪 {t('fertilizer_care', lang)}")
+            st.warning(crop_text(crop, "fertilizer", lang))
+            st.success(f"**{t('pro_tip', lang)}:** {crop_text(crop, 'tips', lang)}")
+
+        st.markdown(
+            f"<br><h3 style='text-align: center;'>✅ {t('crop_analysis_complete', lang)}</h3>",
+            unsafe_allow_html=True,
         )
-        helper_clicked = st.button(t("assistant_trigger", lang), key="assistant_trigger_button")
-        if helper_clicked:
-            st.session_state.pending_chat_prompt = build_disease_prompt(detected_class, lang)
-            st.session_state.target_section = "chat-section"
-            st.rerun()
-
-        if heatmap_available:
-            try:
-                img_resized, img_arr = preprocess_disease_image(image)
-                heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                if heatmap is not None:
-                    st.markdown(
-                        f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
-                        unsafe_allow_html=True,
-                    )
-                    overlay = overlay_gradcam(img_resized, heatmap)
-                    report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
-                    with col_b:
-                        st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
-                else:
-                    st.warning("Grad-CAM returned no heatmap for this prediction.")
-            except Exception as exc:
-                st.warning(f"Grad-CAM failed while rendering the heatmap: {exc}")
-        disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
-        _, action_col1, _ = st.columns([1.2, 1, 1.2])
-        with action_col1:
+        _, crop_action_col1, _ = st.columns([1.2, 1, 1.2])
+        with crop_action_col1:
             st.download_button(
-                t("report_download", lang),
-                data=disease_pdf,
-                file_name=report_filename,
+                t("crop_report_download", lang),
+                data=crop_pdf,
+                file_name=f"deepcropcare-crop-report-{crop}.pdf",
                 mime="application/pdf",
                 use_container_width=True,
-                key="download_disease_report",
+                key="download_crop_report",
             )
         st.markdown(
             f"<div class='email-heading'>{t('email_report_heading', lang)}</div>",
             unsafe_allow_html=True,
         )
-        disease_email_ready = is_email_configured()
-        if not disease_email_ready:
+        crop_email_ready = is_email_configured()
+        if not crop_email_ready:
             st.info(t("email_config_missing", lang))
-        _, disease_email_col, disease_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
-        with disease_email_col:
-            disease_email = st.text_input(
+        _, crop_email_col, crop_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
+        with crop_email_col:
+            crop_email = st.text_input(
                 t("email_address", lang),
-                key="disease_email_to",
+                key="crop_email_to",
                 placeholder="name@example.com",
                 label_visibility="collapsed",
             )
-        with disease_send_col:
-            send_disease_email = st.button(
+        with crop_send_col:
+            send_crop_email = st.button(
                 t("send_email", lang),
                 use_container_width=True,
-                key="send_disease_report_button",
-                disabled=not disease_email_ready,
+                key="send_crop_report_button",
+                disabled=not crop_email_ready,
             )
-        if send_disease_email:
-            if "@" not in disease_email or "." not in disease_email:
+        if send_crop_email:
+            if "@" not in crop_email or "." not in crop_email:
                 st.error(t("email_required", lang))
             else:
                 success, error_code = send_email_with_attachment(
-                    disease_email,
-                    t("report_subject", lang),
-                    disease_email_body,
-                    disease_pdf,
-                    report_filename,
+                    crop_email,
+                    t("crop_report_subject", lang),
+                    crop_email_body,
+                    crop_pdf,
+                    f"deepcropcare-crop-report-{crop}.pdf",
                 )
                 if success:
                     st.success(t("email_sent", lang))
@@ -3599,313 +3871,132 @@ if uploaded_file:
                     st.info(t("email_config_missing", lang))
                 else:
                     st.error(f"{t('email_failed', lang)}: {error_code}")
-        st.markdown("</div>", unsafe_allow_html=True)
-else:
-    st.session_state.last_uploaded_signature = None
-    st.session_state.disease_result_ready = False
-    remove_helper_icon()
 
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("<div id='crop-section' class='section-anchor'></div>", unsafe_allow_html=True)
-st.markdown(
-    f"""
-    <div class='section-shell'>
-        <div class='section-kicker'>Crop Recommendation</div>
-        <h2 class='section-title'>🚜 {t('crop_heading', lang)}</h2>
-        <p class='section-subtitle'>Blend soil values, rainfall, temperature, and humidity into a more informed crop recommendation with report export built in.</p>
-    """,
-    unsafe_allow_html=True,
-)
-col_soil, col_weather = st.columns([1.5, 1])
-
-with col_soil:
-    st.write(f"### 🧪 {t('soil_parameters', lang)}")
-    n1, p1, k1 = st.columns(3)
-    nitrogen = n1.number_input(t("nitrogen", lang), 0, 200, 50)
-    phosphorus = p1.number_input(t("phosphorus", lang), 0, 200, 50)
-    potassium = k1.number_input(t("potassium", lang), 0, 200, 50)
-    ph = st.slider(t("soil_ph", lang), 0.0, 14.0, 6.5)
-    rain = st.number_input(t("rainfall", lang), 0.0, 1000.0, 100.0)
-
-with col_weather:
-    st.write(f"### 🌦️ {t('weather_heading', lang)}")
-    city = st.text_input(t("city_input", lang), "Kothur, Rangareddy")
-    if st.button(t("fetch_weather", lang), use_container_width=True):
-        temp, hum, err = get_weather(city, lang)
-        if not err:
-            st.session_state.weather_temp = float(temp)
-            st.session_state.weather_hum = float(hum)
-            st.success(f"{t('weather_success', lang)} {city}")
-        else:
-            st.error(t("weather_error", lang))
-
-    st.session_state.weather_temp = st.number_input(
-        t("temp", lang), value=float(st.session_state.weather_temp), step=0.1
-    )
-    st.session_state.weather_hum = st.number_input(
-        t("humidity", lang), value=float(st.session_state.weather_hum), step=0.1
-    )
-
-st.markdown("<br>", unsafe_allow_html=True)
-_, btn_col, _ = st.columns([1, 1, 1])
-with btn_col:
-    predict_btn = st.button(t("recommend_crop", lang), use_container_width=True)
-
-if predict_btn:
-    if crop_model:
-        features = np.array(
-            [[
-                nitrogen,
-                phosphorus,
-                potassium,
-                st.session_state.weather_temp,
-                st.session_state.weather_hum,
-                ph,
-                rain,
-            ]]
-        )
-        prediction_idx = int(crop_model.predict(features)[0])
-        crop = LABEL_MAPPING[prediction_idx]
-    else:
-        st.error(t("crop_model_missing", lang))
-        crop = "rice"
-    st.session_state.crop_result = {
-        "crop": crop,
-        "inputs": {
-            "nitrogen": nitrogen,
-            "phosphorus": phosphorus,
-            "potassium": potassium,
-            "ph": ph,
-            "rain": rain,
-            "temp": st.session_state.weather_temp,
-            "hum": st.session_state.weather_hum,
-            "city": city,
-        },
-    }
-
-if st.session_state.crop_result:
-    crop = st.session_state.crop_result["crop"]
-    crop_inputs = st.session_state.crop_result["inputs"]
-    crop_name = crop_text(crop, "name", lang)
-    crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
-    crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
-    crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
+elif selected_feature == "chat":
     st.markdown(
         f"""
-        <div class='prediction-card'>
-            <h2>🌱 {t('recommended_crop', lang)}: {crop_name.upper()}</h2>
-        </div>
+        <div class='feature-stage'>
+            <h2 class='feature-stage-title'>💬 {t('chat_heading', lang)}</h2>
+            <p class='feature-stage-subtitle'>Ask follow-up questions, simplify agronomy advice, and keep the conversation connected to the latest diagnosis.</p>
         """,
         unsafe_allow_html=True,
     )
-    inf1, inf2 = st.columns(2)
-    with inf1:
-        st.markdown(f"### 📖 {t('description', lang)}")
-        st.markdown(
-            f"""
-            <div class="detail-card" style="border-left: 5px solid #28a745;">
-                <p>
-                    {crop_text(crop, 'description', lang)}
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"""
-            <div class="detail-card" style="border-left: 5px solid #1c83e1;">
-                <p><strong>🔍 {t('optimal_conditions', lang)}:</strong> {crop_text(crop, 'conditions', lang)}</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    remove_helper_icon()
+    model_id = "gemini-2.5-flash-lite"
+    api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
 
-    with inf2:
-        st.markdown(f"### 🧪 {t('fertilizer_care', lang)}")
-        st.warning(crop_text(crop, "fertilizer", lang))
-        st.success(f"**{t('pro_tip', lang)}:** {crop_text(crop, 'tips', lang)}")
+    if api_key:
+        genai.configure(api_key=api_key)
+    else:
+        st.warning(t("api_missing", lang))
 
-    st.markdown(
-        f"<br><h3 style='text-align: center;'>✅ {t('crop_analysis_complete', lang)}</h3>",
-        unsafe_allow_html=True,
-    )
-    _, crop_action_col1, _ = st.columns([1.2, 1, 1.2])
-    with crop_action_col1:
-        st.download_button(
-            t("crop_report_download", lang),
-            data=crop_pdf,
-            file_name=f"deepcropcare-crop-report-{crop}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            key="download_crop_report",
-        )
-    st.markdown(
-        f"<div class='email-heading'>{t('email_report_heading', lang)}</div>",
-        unsafe_allow_html=True,
-    )
-    crop_email_ready = is_email_configured()
-    if not crop_email_ready:
-        st.info(t("email_config_missing", lang))
-    _, crop_email_col, crop_send_col, _ = st.columns([0.85, 1.2, 0.6, 0.85])
-    with crop_email_col:
-        crop_email = st.text_input(
-            t("email_address", lang),
-            key="crop_email_to",
-            placeholder="name@example.com",
-            label_visibility="collapsed",
-        )
-    with crop_send_col:
-        send_crop_email = st.button(
-            t("send_email", lang),
-            use_container_width=True,
-            key="send_crop_report_button",
-            disabled=not crop_email_ready,
-        )
-    if send_crop_email:
-        if "@" not in crop_email or "." not in crop_email:
-            st.error(t("email_required", lang))
-        else:
-            success, error_code = send_email_with_attachment(
-                crop_email,
-                t("crop_report_subject", lang),
-                crop_email_body,
-                crop_pdf,
-                f"deepcropcare-crop-report-{crop}.pdf",
-            )
-            if success:
-                st.success(t("email_sent", lang))
-            elif error_code == "missing_config":
-                st.info(t("email_config_missing", lang))
-            else:
-                st.error(f"{t('email_failed', lang)}: {error_code}")
+    if st.session_state.get("chat_language") != lang:
+        st.session_state.pop("chat_session", None)
+        st.session_state.pop("messages", None)
+        st.session_state.chat_language = lang
 
-st.markdown("</div>", unsafe_allow_html=True)
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{"role": "assistant", "content": t("chat_welcome", lang)}]
 
-st.markdown("<div id='chat-section' class='section-anchor'></div>", unsafe_allow_html=True)
-st.markdown(
-    f"""
-    <div class='section-shell'>
-        <div class='section-kicker'>Agronomist AI</div>
-        <h2 class='section-title'>💬 {t('chat_heading', lang)}</h2>
-        <p class='section-subtitle'>Ask follow-up questions, translate recommendations into simple actions, and keep the conversation tied to the latest diagnosis.</p>
-    """,
-    unsafe_allow_html=True,
-)
-remove_helper_icon()
-model_id = "gemini-2.5-flash-lite"
-api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if api_key and "chat_session" not in st.session_state:
+        disease_context = st.session_state.get("last_detected_disease", t("general_farming", lang))
+        system_instruction = t("system_instruction", lang).format(disease=disease_context)
+        model = genai.GenerativeModel(model_name=model_id, system_instruction=system_instruction)
+        st.session_state.chat_session = model.start_chat(history=[])
 
-if api_key:
-    genai.configure(api_key=api_key)
-else:
-    st.warning(t("api_missing", lang))
-
-if st.session_state.get("chat_language") != lang:
-    st.session_state.pop("chat_session", None)
-    st.session_state.pop("messages", None)
-    st.session_state.chat_language = lang
-
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": t("chat_welcome", lang)}]
-
-if api_key and "chat_session" not in st.session_state:
-    disease_context = st.session_state.get("last_detected_disease", t("general_farming", lang))
-    system_instruction = t("system_instruction", lang).format(disease=disease_context)
-    model = genai.GenerativeModel(model_name=model_id, system_instruction=system_instruction)
-    st.session_state.chat_session = model.start_chat(history=[])
-
-pending_prompt = st.session_state.get("pending_chat_prompt")
-if pending_prompt and st.session_state.get("last_auto_prompt") != pending_prompt:
-    st.session_state.messages.append({"role": "user", "content": pending_prompt})
-    with st.spinner(t("chat_spinner", lang)):
-        try:
-            if api_key and "chat_session" in st.session_state:
-                response = st.session_state.chat_session.send_message(pending_prompt)
-                ai_response = response.text
-            else:
+    pending_prompt = st.session_state.get("pending_chat_prompt")
+    if pending_prompt and st.session_state.get("last_auto_prompt") != pending_prompt:
+        st.session_state.messages.append({"role": "user", "content": pending_prompt})
+        with st.spinner(t("chat_spinner", lang)):
+            try:
+                if api_key and "chat_session" in st.session_state:
+                    response = st.session_state.chat_session.send_message(pending_prompt)
+                    ai_response = response.text
+                else:
+                    ai_response = build_fallback_disease_report(st.session_state.last_detected_class, lang)
+            except Exception:
                 ai_response = build_fallback_disease_report(st.session_state.last_detected_class, lang)
-        except Exception:
-            ai_response = build_fallback_disease_report(st.session_state.last_detected_class, lang)
-        st.session_state.messages.append({"role": "assistant", "content": ai_response})
-        st.session_state.last_auto_prompt = pending_prompt
-        st.session_state.pending_chat_prompt = None
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            st.session_state.last_auto_prompt = pending_prompt
+            st.session_state.pending_chat_prompt = None
+            st.rerun()
+
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    prompt = st.chat_input(t("chat_placeholder", lang))
+    if prompt:
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.spinner(t("chat_spinner", lang)):
+            try:
+                if api_key and "chat_session" in st.session_state:
+                    response = st.session_state.chat_session.send_message(prompt)
+                    ai_response = response.text
+                else:
+                    ai_response = build_fallback_disease_report(
+                        st.session_state.get("last_detected_class") or "Background_without_leaves",
+                        lang,
+                    )
+                st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                with st.chat_message("assistant"):
+                    st.markdown(ai_response)
+                st.rerun()
+            except Exception as exc:
+                if "429" in str(exc):
+                    st.error(t("quota_error", lang))
+                else:
+                    st.error(f"{t('generic_error', lang)}: {exc}")
+
+    st.divider()
+    if st.button(f"🗑️ {t('reset_chat', lang)}"):
+        st.session_state.pop("chat_session", None)
+        st.session_state.pop("messages", None)
         st.rerun()
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    st.markdown("</div>", unsafe_allow_html=True)
 
-prompt = st.chat_input(t("chat_placeholder", lang))
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+elif selected_feature == "info":
+    remove_helper_icon()
+    st.markdown(
+        f"""
+        <div class='feature-stage'>
+            <h2 class='feature-stage-title'>📘 {t('about_heading', lang)}</h2>
+            <p class='feature-stage-subtitle'>A quick look at the computer vision stack, crop recommendation pipeline, and interpretability layer behind the app.</p>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        ### 🚀 {t('mission_title', lang)}
+        {t('mission_body', lang)}
+        """
+    )
 
-    with st.spinner(t("chat_spinner", lang)):
-        try:
-            if api_key and "chat_session" in st.session_state:
-                response = st.session_state.chat_session.send_message(prompt)
-                ai_response = response.text
-            else:
-                ai_response = build_fallback_disease_report(
-                    st.session_state.get("last_detected_class") or "Background_without_leaves",
-                    lang,
-                )
-            st.session_state.messages.append({"role": "assistant", "content": ai_response})
-            with st.chat_message("assistant"):
-                st.markdown(ai_response)
-            st.rerun()
-        except Exception as exc:
-            if "429" in str(exc):
-                st.error(t("quota_error", lang))
-            else:
-                st.error(f"{t('generic_error', lang)}: {exc}")
+    st.divider()
 
-st.divider()
-if st.button(f"🗑️ {t('reset_chat', lang)}"):
-    st.session_state.pop("chat_session", None)
-    st.session_state.pop("messages", None)
-    st.rerun()
+    col_cv, col_ml = st.columns(2)
+    with col_cv:
+        st.markdown(f"#### 🧠 {t('cv_title', lang)}")
+        st.write(t("cv_body", lang))
 
-st.markdown("</div>", unsafe_allow_html=True)
+    with col_ml:
+        st.markdown(f"#### 📈 {t('ml_title', lang)}")
+        st.write(t("ml_body", lang))
 
-st.markdown("<div id='info-section' class='section-anchor'></div>", unsafe_allow_html=True)
-st.markdown(
-    f"""
-    <div class='section-shell'>
-        <div class='section-kicker'>Project Info</div>
-        <h2 class='section-title'>📘 {t('about_heading', lang)}</h2>
-        <p class='section-subtitle'>A quick look at the computer vision, crop recommendation logic, and interpretability layer behind the app.</p>
-    """,
-    unsafe_allow_html=True,
-)
-st.markdown(
-    f"""
-    ### 🚀 {t('mission_title', lang)}
-    {t('mission_body', lang)}
-    """
-)
+    with st.expander(f"🧪 {t('npk_title', lang)}"):
+        for line in LANGUAGE_LABELS[lang]["npk_body"]:
+            st.write(f"- {line}")
 
-st.divider()
-
-col_cv, col_ml = st.columns(2)
-with col_cv:
-    st.markdown(f"#### 🧠 {t('cv_title', lang)}")
-    st.write(t("cv_body", lang))
-
-with col_ml:
-    st.markdown(f"#### 📈 {t('ml_title', lang)}")
-    st.write(t("ml_body", lang))
-
-with st.expander(f"🧪 {t('npk_title', lang)}"):
-    for line in LANGUAGE_LABELS[lang]["npk_body"]:
-        st.write(f"- {line}")
-
-st.divider()
-st.markdown(f"### 🎯 {t('interpretability', lang)}")
-st.info(
-    f"**{t('target_layer', lang)}:** `{detected_conv_name or t('na', lang)}`. {t('target_layer_desc', lang)}"
-)
-st.caption(t("footer", lang))
-st.markdown("</div>", unsafe_allow_html=True)
+    st.divider()
+    st.markdown(f"### 🎯 {t('interpretability', lang)}")
+    st.info(
+        f"**{t('target_layer', lang)}:** `{detected_conv_name or t('na', lang)}`. {t('target_layer_desc', lang)}"
+    )
+    st.caption(t("footer", lang))
+    st.markdown("</div>", unsafe_allow_html=True)
