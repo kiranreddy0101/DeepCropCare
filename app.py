@@ -8,6 +8,7 @@ from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import quote
+
 import cv2
 import google.generativeai as genai
 import joblib
@@ -39,11 +40,19 @@ LANGUAGE_LABELS = {
         "page_title": "DeepCropCare",
         "hero_title": "DeepCropCare",
         "hero_subtitle": "Precision AI for Plant Health & Smarter Yields",
+        "hero_badge": "Leaf intelligence for modern farming",
+        "hero_description": "Diagnose plant stress, recommend the next crop, and ask follow-up questions inside one calm, precise workspace.",
         "language_selector": "Language",
         "tab_disease": "Disease Detection",
         "tab_crop": "Crop Recommendation",
         "tab_chat": "Agronomist AI",
         "tab_info": "Project Info",
+        "choose_workspace": "Choose a workspace",
+        "launcher_note": "Tap an icon to switch instantly between tools.",
+        "feature_disease_subtitle": "Upload a leaf image, run the model, inspect the confidence and Grad-CAM heatmap, then export a polished report.",
+        "feature_crop_subtitle": "Blend soil nutrients, rainfall, humidity, and temperature into a clearer crop recommendation with practical guidance.",
+        "feature_chat_subtitle": "Ask follow-up questions, simplify agronomy advice, and keep the conversation connected to the latest diagnosis.",
+        "feature_info_subtitle": "A quick look at the computer vision stack, crop recommendation pipeline, and interpretability layer behind the app.",
         "disease_heading": "Plant Disease Analysis",
         "upload_leaf": "Upload leaf image",
         "uploaded_specimen": "Uploaded Specimen",
@@ -158,11 +167,19 @@ LANGUAGE_LABELS = {
         "page_title": "डीपक्रॉपकेयर",
         "hero_title": "डीपक्रॉपकेयर",
         "hero_subtitle": "पौधों के स्वास्थ्य और बेहतर उपज के लिए सटीक एआई",
+        "hero_badge": "आधुनिक खेती के लिए पत्ती इंटेलिजेंस",
+        "hero_description": "पौधों पर तनाव पहचानें, अगली फसल सुझाएँ और एक शांत, सटीक कार्यक्षेत्र में आगे के प्रश्न पूछें।",
         "language_selector": "भाषा",
         "tab_disease": "रोग पहचान",
         "tab_crop": "फसल सिफारिश",
         "tab_chat": "कृषि विशेषज्ञ एआई",
         "tab_info": "परियोजना जानकारी",
+        "choose_workspace": "कार्यक्षेत्र चुनें",
+        "launcher_note": "उपकरण बदलने के लिए किसी आइकन पर टैप करें।",
+        "feature_disease_subtitle": "पत्ती की छवि अपलोड करें, मॉडल चलाएँ, विश्वास स्तर और Grad-CAM हीटमैप देखें, फिर एक साफ रिपोर्ट निर्यात करें।",
+        "feature_crop_subtitle": "मिट्टी के पोषक तत्व, वर्षा, आर्द्रता और तापमान को जोड़कर अधिक स्पष्ट फसल सिफारिश प्राप्त करें।",
+        "feature_chat_subtitle": "आगे के प्रश्न पूछें, कृषि सलाह को सरल बनाएं और बातचीत को नवीनतम निदान से जोड़े रखें।",
+        "feature_info_subtitle": "कंप्यूटर विज़न, फसल सिफारिश पाइपलाइन और व्याख्यात्मक एआई पर एक त्वरित नज़र।",
         "disease_heading": "पौध रोग विश्लेषण",
         "upload_leaf": "पत्ती की छवि अपलोड करें",
         "uploaded_specimen": "अपलोड किया गया नमूना",
@@ -277,11 +294,19 @@ LANGUAGE_LABELS = {
         "page_title": "డీప్‌క్రాప్‌కేర్",
         "hero_title": "డీప్‌క్రాప్‌కేర్",
         "hero_subtitle": "మొక్కల ఆరోగ్యం మరియు మెరుగైన దిగుబడికి ఖచ్చితమైన ఏఐ",
+        "hero_badge": "ఆధునిక వ్యవసాయానికి ఆకు ఇంటెలిజెన్స్",
+        "hero_description": "మొక్కల ఒత్తిడిని గుర్తించండి, తదుపరి పంటను సూచించండి మరియు ఒక ప్రశాంతమైన, ఖచ్చితమైన వర్క్‌స్పేస్‌లో ఫాలో-అప్ ప్రశ్నలు అడగండి.",
         "language_selector": "భాష",
         "tab_disease": "వ్యాధి గుర్తింపు",
         "tab_crop": "పంట సిఫార్సు",
         "tab_chat": "వ్యవసాయ నిపుణుడు ఏఐ",
         "tab_info": "ప్రాజెక్ట్ సమాచారం",
+        "choose_workspace": "వర్క్‌స్పేస్ ఎంచుకోండి",
+        "launcher_note": "పరికరాన్ని వెంటనే మార్చడానికి ఐకాన్‌పై ట్యాప్ చేయండి.",
+        "feature_disease_subtitle": "ఆకు చిత్రాన్ని అప్‌లోడ్ చేసి, మోడల్‌ను నడపండి, విశ్వాస స్థాయి మరియు Grad-CAM హీట్‌మ్యాప్‌ను పరిశీలించి, రిపోర్ట్‌ను ఎగుమతి చేయండి.",
+        "feature_crop_subtitle": "మట్టిపోషకాలు, వర్షపాతం, ఆర్ద్రత మరియు ఉష్ణోగ్రత ఆధారంగా మరింత స్పష్టమైన పంట సిఫార్సు పొందండి.",
+        "feature_chat_subtitle": "ఫాలో-అప్ ప్రశ్నలు అడిగి, వ్యవసాయ సలహాను సరళీకరించి, తాజా నిర్ధారణకు సంభాషణను అనుసంధానంగా ఉంచండి.",
+        "feature_info_subtitle": "కంప్యూటర్ విజన్, పంట సిఫార్సు పైప్‌లైన్ మరియు ఇంటర్‌ప్రిటబిలిటీ లేయర్‌పై ఒక త్వరిత దర్శనం.",
         "disease_heading": "మొక్కల వ్యాధి విశ్లేషణ",
         "upload_leaf": "ఆకు చిత్రాన్ని అప్‌లోడ్ చేయండి",
         "uploaded_specimen": "అప్‌లోడ్ చేసిన నమూనా",
@@ -2938,7 +2963,8 @@ st.markdown(
         letter-spacing: -0.07em;
         color: #f8faf5 !important;
         font-weight: 900;
-        max-width: 10ch;
+        max-width: none;
+        white-space: nowrap;
     }
     .hero-description {
         margin: 1rem 0 0;
@@ -3058,41 +3084,41 @@ st.markdown(
         transform: translateY(-1px);
         color: #ffffff !important;
     }
-    [role="radiogroup"] {
-        display: grid !important;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.85rem;
-        margin: 0.1rem 0 0.8rem;
+    .feature-launcher-note {
+        margin: 0.15rem 0 0.85rem;
+        color: rgba(233, 245, 238, 0.68) !important;
+        font-size: 0.92rem;
     }
-    [role="radiogroup"] label {
-        margin: 0 !important;
-        min-height: 108px;
+    .feature-button-caption {
+        text-align: center;
+        margin: 0.2rem 0 0.45rem;
+        color: rgba(233, 245, 238, 0.76) !important;
+        font-size: 0.92rem;
+        font-weight: 700;
+    }
+    .feature-button-caption.active {
+        color: #f8faf5 !important;
+    }
+    .feature-launcher [data-testid="stButton"] button {
+        min-height: 108px !important;
         border-radius: 28px !important;
-        padding: 0.95rem 0.8rem !important;
         background: rgba(255,255,255,0.06) !important;
         border: 1px solid rgba(255,255,255,0.1) !important;
-        box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        transition: transform 220ms ease, background 220ms ease, border-color 220ms ease !important;
-    }
-    [role="radiogroup"] label:hover {
-        transform: translateY(-2px);
-        background: rgba(255,255,255,0.1) !important;
-        border-color: rgba(120,255,188,0.26) !important;
-    }
-    [role="radiogroup"] label p {
+        box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12) !important;
         color: #eef6ee !important;
         font-size: 1rem !important;
         font-weight: 800 !important;
         line-height: 1.35 !important;
-        text-align: center !important;
         white-space: pre-line !important;
     }
-    [role="radiogroup"] label:has(input:checked) {
+    .feature-launcher [data-testid="stButton"] button:hover {
+        background: rgba(255,255,255,0.1) !important;
+        border-color: rgba(120,255,188,0.26) !important;
+    }
+    .feature-launcher [data-testid="stButton"] button[kind="primary"] {
         background: linear-gradient(180deg, rgba(118,255,184,0.18), rgba(38,122,81,0.18)) !important;
         border-color: rgba(118,255,184,0.34) !important;
-        box-shadow: 0 18px 34px rgba(8, 31, 24, 0.22);
+        box-shadow: 0 18px 34px rgba(8, 31, 24, 0.22) !important;
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] small,
@@ -3290,11 +3316,11 @@ st.markdown(
         .hero-grid {
             grid-template-columns: 1fr;
         }
-        [role="radiogroup"] {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .hero-headline {
+            white-space: normal;
         }
-        [role="radiogroup"] label {
-            min-height: 92px;
+        .feature-launcher [data-testid="stButton"] button {
+            min-height: 92px !important;
         }
     }
     @media (prefers-color-scheme: light) {
@@ -3487,42 +3513,55 @@ with header_left:
     st.markdown(
         f"""
         <div class="hero-minimal">
-            <div class="hero-badge">Leaf intelligence for modern farming</div>
+            <div class="hero-badge">{t("hero_badge", lang)}</div>
             <h1 class="hero-headline">{t("hero_title", lang)}</h1>
-            <p class="hero-description">{t("hero_subtitle", lang)} Diagnose plant stress, recommend the next crop, and ask follow-up questions inside one calm, precise workspace.</p>
+            <p class="hero-description">{t("hero_subtitle", lang)} {t("hero_description", lang)}</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 feature_labels = {
-    "disease": f"🌿\n{t('tab_disease', lang)}",
-    "crop": f"🌾\n{t('tab_crop', lang)}",
-    "chat": f"💬\n{t('tab_chat', lang)}",
-    "info": f"📘\n{t('tab_info', lang)}",
+    "disease": (f"🌿\n{t('tab_disease', lang)}", f"{t('tab_disease', lang)}"),
+    "crop": (f"🌾\n{t('tab_crop', lang)}", f"{t('tab_crop', lang)}"),
+    "chat": (f"💬\n{t('tab_chat', lang)}", f"{t('tab_chat', lang)}"),
+    "info": (f"📘\n{t('tab_info', lang)}", f"{t('tab_info', lang)}"),
 }
 
 if st.session_state.get("target_section") == "chat-section":
     st.session_state.active_feature = "chat"
     st.session_state.target_section = None
 
-st.markdown("<div class='feature-dock-title'>Choose a workspace</div>", unsafe_allow_html=True)
-selected_feature = st.radio(
-    "Feature",
-    options=list(feature_labels.keys()),
-    index=list(feature_labels.keys()).index(st.session_state.active_feature),
-    format_func=lambda key: feature_labels[key],
-    horizontal=True,
-    label_visibility="collapsed",
-)
-st.session_state.active_feature = selected_feature
+st.markdown(f"<div class='feature-dock-title'>{t('choose_workspace', lang)}</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='feature-launcher-note'>{t('launcher_note', lang)}</div>", unsafe_allow_html=True)
+st.markdown("<div class='feature-launcher'>", unsafe_allow_html=True)
+feature_cols = st.columns(4, gap="small")
+for col, feature_key in zip(feature_cols, feature_labels.keys()):
+    button_label, caption_label = feature_labels[feature_key]
+    is_active = st.session_state.active_feature == feature_key
+    with col:
+        st.markdown(
+            f"<div class='feature-button-caption{' active' if is_active else ''}'>{caption_label}</div>",
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            button_label,
+            key=f"feature_switch_{feature_key}",
+            use_container_width=True,
+            type="primary" if is_active else "secondary",
+        ):
+            if st.session_state.active_feature != feature_key:
+                st.session_state.active_feature = feature_key
+                st.rerun()
+st.markdown("</div>", unsafe_allow_html=True)
+selected_feature = st.session_state.active_feature
 
 if selected_feature == "disease":
     st.markdown(
         f"""
         <div class='feature-stage'>
             <h2 class='feature-stage-title'>🌿 {t('disease_heading', lang)}</h2>
-            <p class='feature-stage-subtitle'>Upload a leaf image, run the model, inspect the confidence and Grad-CAM heatmap, then export a polished report.</p>
+            <p class='feature-stage-subtitle'>{t('feature_disease_subtitle', lang)}</p>
         """,
         unsafe_allow_html=True,
     )
@@ -3705,7 +3744,7 @@ elif selected_feature == "crop":
         f"""
         <div class='feature-stage'>
             <h2 class='feature-stage-title'>🌾 {t('crop_heading', lang)}</h2>
-            <p class='feature-stage-subtitle'>Blend soil nutrients, rainfall, humidity, and temperature into a clearer crop recommendation with practical guidance.</p>
+            <p class='feature-stage-subtitle'>{t('feature_crop_subtitle', lang)}</p>
         """,
         unsafe_allow_html=True,
     )
@@ -3879,7 +3918,7 @@ elif selected_feature == "chat":
         f"""
         <div class='feature-stage'>
             <h2 class='feature-stage-title'>💬 {t('chat_heading', lang)}</h2>
-            <p class='feature-stage-subtitle'>Ask follow-up questions, simplify agronomy advice, and keep the conversation connected to the latest diagnosis.</p>
+            <p class='feature-stage-subtitle'>{t('feature_chat_subtitle', lang)}</p>
         """,
         unsafe_allow_html=True,
     )
@@ -3967,7 +4006,7 @@ elif selected_feature == "info":
         f"""
         <div class='feature-stage'>
             <h2 class='feature-stage-title'>📘 {t('about_heading', lang)}</h2>
-            <p class='feature-stage-subtitle'>A quick look at the computer vision stack, crop recommendation pipeline, and interpretability layer behind the app.</p>
+            <p class='feature-stage-subtitle'>{t('feature_info_subtitle', lang)}</p>
         """,
         unsafe_allow_html=True,
     )
