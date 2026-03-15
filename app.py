@@ -3845,6 +3845,7 @@ with tab_disease:
                 t("assistant_note", lang),
                 t("assistant_trigger", lang),
                 t("chat_spinner", lang),
+                t("tab_disease", lang),
             )
             helper_clicked = st.button(t("assistant_trigger", lang), key="assistant_trigger_button")
             if helper_clicked:
@@ -4124,10 +4125,7 @@ with tab_chat:
     remove_helper_icon()
     model_id = "gemini-2.5-flash-lite"
     api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
-
-    if api_key:
-        genai.configure(api_key=api_key)
-    else:
+    if not api_key:
         st.warning(t("api_missing", lang))
 
     if st.session_state.get("chat_language") != lang:
@@ -4141,8 +4139,7 @@ with tab_chat:
     if api_key and "chat_session" not in st.session_state:
         disease_context = st.session_state.get("last_detected_disease", t("general_farming", lang))
         system_instruction = t("system_instruction", lang).format(disease=disease_context)
-        model = genai.GenerativeModel(model_name=model_id, system_instruction=system_instruction)
-        st.session_state.chat_session = model.start_chat(history=[])
+        st.session_state.chat_session = build_chat_session(api_key, model_id, system_instruction)
 
     pending_prompt = st.session_state.get("pending_chat_prompt")
     if pending_prompt and st.session_state.get("last_auto_prompt") != pending_prompt:
@@ -4150,8 +4147,7 @@ with tab_chat:
         with st.spinner(t("chat_spinner", lang)):
             try:
                 if api_key and "chat_session" in st.session_state:
-                    response = st.session_state.chat_session.send_message(pending_prompt)
-                    ai_response = response.text
+                    ai_response = chat_session_send_message(st.session_state.chat_session, pending_prompt)
                 else:
                     ai_response = build_fallback_disease_report(st.session_state.last_detected_class, lang)
             except Exception:
@@ -4174,8 +4170,7 @@ with tab_chat:
         with st.spinner(t("chat_spinner", lang)):
             try:
                 if api_key and "chat_session" in st.session_state:
-                    response = st.session_state.chat_session.send_message(prompt)
-                    ai_response = response.text
+                    ai_response = chat_session_send_message(st.session_state.chat_session, prompt)
                 else:
                     ai_response = build_fallback_disease_report(
                         st.session_state.get("last_detected_class") or "Background_without_leaves",
