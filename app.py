@@ -75,6 +75,7 @@ LANGUAGE_LABELS = {
         "report_weather_used": "Weather Used",
         "report_email_body_intro": "Please find the report details below.",
         "crop_report_subject": "DeepCropCare Crop Recommendation Report",
+        "crop_report_heading": "Crop Recommendation Report",
         "crop_report_download": "Download Crop Report",
         "crop_report_email": "Email Crop Report",
         "report_temperature": "Temperature",
@@ -202,6 +203,7 @@ LANGUAGE_LABELS = {
         "report_weather_used": "उपयोग किया गया मौसम",
         "report_email_body_intro": "कृपया नीचे रिपोर्ट का विवरण देखें।",
         "crop_report_subject": "डीपक्रॉपकेयर फसल सिफारिश रिपोर्ट",
+        "crop_report_heading": "फसल सिफारिश रिपोर्ट",
         "crop_report_download": "फसल रिपोर्ट डाउनलोड करें",
         "crop_report_email": "फसल रिपोर्ट ईमेल करें",
         "report_temperature": "तापमान",
@@ -329,6 +331,7 @@ LANGUAGE_LABELS = {
         "report_weather_used": "ఉపయోగించిన వాతావరణం",
         "report_email_body_intro": "దయచేసి క్రింది రిపోర్ట్ వివరాలను చూడండి.",
         "crop_report_subject": "డీప్‌క్రాప్‌కేర్ పంట సిఫార్సు రిపోర్ట్",
+        "crop_report_heading": "పంట సిఫార్సు రిపోర్ట్",
         "crop_report_download": "పంట రిపోర్ట్ డౌన్‌లోడ్ చేయండి",
         "crop_report_email": "పంట రిపోర్ట్ ఈమెయిల్ చేయండి",
         "report_temperature": "ఉష్ణోగ్రత",
@@ -1716,9 +1719,10 @@ def build_crop_report_text(crop_key, lang, inputs):
     crop_name = crop_text(crop_key, "name", lang)
     lines = [
         "DeepCropCare",
-        f"{t('report_crop_name', lang)}: {crop_name}",
+        t("crop_report_heading", lang),
         "",
         f"{t('report_generated_on', lang)}: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"{t('report_crop_name', lang)}: {crop_name}",
         f"{t('report_input_summary', lang)}:",
         f"{t('nitrogen', lang)}: {inputs['nitrogen']}",
         f"{t('phosphorus', lang)}: {inputs['phosphorus']}",
@@ -3098,7 +3102,8 @@ st.markdown(
         font-weight: 700;
     }
     .feature-button-caption.active {
-        color: #f8faf5 !important;
+        color: #bfffd8 !important;
+        text-shadow: 0 0 18px rgba(118,255,184,0.24);
     }
     .feature-launcher [data-testid="stButton"] button {
         min-height: 108px !important;
@@ -3120,6 +3125,18 @@ st.markdown(
         background: linear-gradient(180deg, rgba(118,255,184,0.18), rgba(38,122,81,0.18)) !important;
         border-color: rgba(118,255,184,0.34) !important;
         box-shadow: 0 18px 34px rgba(8, 31, 24, 0.22) !important;
+        transform: translateY(-2px);
+        color: #ffffff !important;
+        position: relative;
+    }
+    .feature-launcher [data-testid="stButton"] button[kind="primary"]::after {
+        content: "";
+        position: absolute;
+        inset: auto 22% 10px 22%;
+        height: 4px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #8dffbb 0%, #ddffe8 100%);
+        box-shadow: 0 0 18px rgba(118,255,184,0.45);
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] small,
