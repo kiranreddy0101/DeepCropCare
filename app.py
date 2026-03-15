@@ -2328,15 +2328,28 @@ def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None)
     if not isinstance(base_model, tf.keras.Model):
         return None
 
+    def _unwrap_tensor(value):
+        if isinstance(value, (list, tuple)):
+            if not value:
+                return None
+            return value[0]
+        return value
+
+    base_inputs = getattr(base_model, "inputs", None)
+    target_output = _unwrap_tensor(getattr(target_layer, "output", None))
+    base_output = _unwrap_tensor(getattr(base_model, "output", None))
+    if base_inputs is None or target_output is None or base_output is None:
+        return None
+
     try:
         base_feature_model = tf.keras.models.Model(
-            base_model.inputs,
-            [target_layer.output, base_model.output],
+            base_inputs,
+            [target_output, base_output],
         )
     except Exception:
         return None
 
-    classifier_input = tf.keras.Input(shape=base_model.output.shape[1:])
+    classifier_input = tf.keras.Input(shape=base_output.shape[1:])
     x = classifier_input
     base_index = model.layers.index(base_model)
     for layer in model.layers[base_index + 1:]:
