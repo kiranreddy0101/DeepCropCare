@@ -960,6 +960,7 @@ DEFAULT_DISEASE_FALLBACK = {
 
 DEFAULT_GRADCAM_LAYER = "mobilenetv2_1.00_224/out_relu"
 GRADCAM_CACHE_VERSION = "gradcam_v3"
+PDF_OUTPUT_LANG = "en"
 
 DISEASE_METADATA_ALIASES = {
     "Bitter Gourd___Downey_mildew": "Bitter Gourd__Downy_mildew",
@@ -2875,10 +2876,18 @@ with tab1:
                 and detected_class != "Background_without_leaves"
             )
             report_images = [(t("original_scan", lang), image)]
+            pdf_report_images = [(t("original_scan", PDF_OUTPUT_LANG), image)]
             report_text = build_disease_report_text(
                 detected_class,
                 detected_confidence,
                 lang,
+                uploaded_file.name if uploaded_file else "",
+                heatmap_available,
+            )
+            pdf_report_text = build_disease_report_text(
+                detected_class,
+                detected_confidence,
+                PDF_OUTPUT_LANG,
                 uploaded_file.name if uploaded_file else "",
                 heatmap_available,
             )
@@ -2928,6 +2937,7 @@ with tab1:
                         )
                         overlay = overlay_gradcam(img_resized, heatmap)
                         report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
+                        pdf_report_images.append((t("infection_hotspots", PDF_OUTPUT_LANG), Image.fromarray(overlay)))
                         col_a, col_b = st.columns(2)
                         with col_a:
                             st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
@@ -2937,7 +2947,12 @@ with tab1:
                         st.warning("Grad-CAM returned no heatmap for this prediction.")
                 except Exception as exc:
                     st.warning(f"Grad-CAM failed while rendering the heatmap: {exc}")
-            disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
+            disease_pdf = build_pdf_report_bytes(
+                t("report_subject", PDF_OUTPUT_LANG),
+                pdf_report_text,
+                PDF_OUTPUT_LANG,
+                pdf_report_images,
+            )
             _, action_col1, _ = st.columns([1.2, 1, 1.2])
             with action_col1:
                 st.download_button(
@@ -3067,7 +3082,12 @@ with tab2:
         crop_inputs = st.session_state.crop_result["inputs"]
         crop_name = crop_text(crop, "name", lang)
         crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
-        crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
+        crop_pdf_report_text = build_crop_report_text(crop, PDF_OUTPUT_LANG, crop_inputs)
+        crop_pdf = build_pdf_report_bytes(
+            t("crop_report_subject", PDF_OUTPUT_LANG),
+            crop_pdf_report_text,
+            PDF_OUTPUT_LANG,
+        )
         crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
         st.markdown(
             f"""
