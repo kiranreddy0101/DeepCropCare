@@ -2417,6 +2417,65 @@ def remove_helper_icon():
     )
 
 
+def inject_feature_launcher_feedback(active_label, launcher_labels):
+    active_safe = active_label.replace("\\", "\\\\").replace("'", "\\'")
+    labels_json = json.dumps(list(launcher_labels))
+    components.html(
+        f"""
+        <script>
+        const parentDoc = window.parent.document;
+        const labels = {labels_json};
+        const activeLabel = '{active_safe}';
+
+        const findFeatureButtons = () => Array.from(parentDoc.querySelectorAll('button')).filter((button) => {{
+          const text = button.innerText.replace(/\\s+/g, ' ').trim();
+          return labels.some((label) => text === label);
+        }});
+
+        const applyState = (selectedText) => {{
+          const buttons = findFeatureButtons();
+          buttons.forEach((button) => {{
+            const text = button.innerText.replace(/\\s+/g, ' ').trim();
+            const isActive = text === selectedText;
+            button.style.transition = 'transform 140ms ease-out, background 140ms ease-out, border-color 140ms ease-out, box-shadow 140ms ease-out';
+            if (isActive) {{
+              button.style.background = 'linear-gradient(180deg, rgba(132,255,192,0.22), rgba(18,69,48,0.34))';
+              button.style.border = '1px solid rgba(132,255,192,0.72)';
+              button.style.boxShadow = 'inset 0 10px 24px rgba(255,255,255,0.04), inset 0 -16px 28px rgba(0,0,0,0.16), 0 0 0 1px rgba(132,255,192,0.2), 0 12px 26px rgba(8,31,24,0.22), 0 0 24px rgba(118,255,184,0.16)';
+              button.style.transform = 'scale(0.96)';
+              button.style.color = '#ffffff';
+            }} else {{
+              button.style.background = 'rgba(255,255,255,0.05)';
+              button.style.border = '1px solid rgba(255,255,255,0.12)';
+              button.style.boxShadow = '0 10px 28px rgba(5,12,28,0.12)';
+              button.style.transform = 'scale(1)';
+              button.style.color = '#eef6ee';
+            }}
+            if (!button.dataset.featureBound) {{
+              button.dataset.featureBound = '1';
+              button.addEventListener('click', () => applyState(text));
+            }}
+          }});
+        }};
+
+        let attempts = 0;
+        const timer = setInterval(() => {{
+          attempts += 1;
+          const buttons = findFeatureButtons();
+          if (buttons.length >= labels.length) {{
+            applyState(activeLabel);
+            clearInterval(timer);
+          }}
+          if (attempts > 30) {{
+            clearInterval(timer);
+          }}
+        }}, 120);
+        </script>
+        """,
+        height=0,
+    )
+
+
 def inject_input_theme():
     components.html(
         """
@@ -3590,6 +3649,10 @@ for col, feature_key in zip(feature_cols, feature_labels.keys()):
                 st.rerun()
 st.markdown("</div>", unsafe_allow_html=True)
 selected_feature = st.session_state.active_feature
+inject_feature_launcher_feedback(
+    feature_labels[selected_feature][0].replace("\n", " "),
+    [label.replace("\n", " ") for label, _ in feature_labels.values()],
+)
 
 if selected_feature == "disease":
     st.markdown(
