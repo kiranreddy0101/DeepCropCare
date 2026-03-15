@@ -958,6 +958,8 @@ DEFAULT_DISEASE_FALLBACK = {
     for key in DISEASE_METADATA
 }
 
+DEFAULT_GRADCAM_LAYER = "mobilenetv2_1.00_224/out_relu"
+
 DISEASE_METADATA_ALIASES = {
     "Bitter Gourd___Downey_mildew": "Bitter Gourd__Downy_mildew",
     "Bitter Gourd___Fresh_leaf": "Bitter Gourd__Fresh_leaf",
@@ -2304,15 +2306,23 @@ def inject_input_theme():
 
 
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
-    if model is None or not last_conv_layer_name:
+    if model is None:
         return None
+
+    if not last_conv_layer_name:
+        last_conv_layer_name = DEFAULT_GRADCAM_LAYER
 
     try:
         base_model_name, target_layer_name = last_conv_layer_name.split("/", 1)
         base_model = model.get_layer(base_model_name)
         target_layer = base_model.get_layer(target_layer_name)
     except Exception:
-        return None
+        try:
+            base_model_name, target_layer_name = DEFAULT_GRADCAM_LAYER.split("/", 1)
+            base_model = model.get_layer(base_model_name)
+            target_layer = base_model.get_layer(target_layer_name)
+        except Exception:
+            return None
 
     if not isinstance(base_model, tf.keras.Model):
         return None
@@ -2380,6 +2390,12 @@ def preprocess_disease_image(image, img_size=(224, 224)):
 
 
 def _find_last_conv_layer_in_model(model):
+    try:
+        model.get_layer("mobilenetv2_1.00_224").get_layer("out_relu")
+        return DEFAULT_GRADCAM_LAYER
+    except Exception:
+        pass
+
     for layer in reversed(model.layers):
         if isinstance(layer, tf.keras.Model):
             for nested_layer in reversed(layer.layers):
@@ -2395,11 +2411,6 @@ def _find_last_conv_layer_in_model(model):
         if isinstance(output_shape, tuple) and len(output_shape) == 4:
             if not any(token in layer.name.lower() for token in ["flatten", "gap", "pool"]):
                 return layer.name
-    try:
-        model.get_layer("mobilenetv2_1.00_224").get_layer("out_relu")
-        return "mobilenetv2_1.00_224/out_relu"
-    except Exception:
-        pass
     return None
 
 
@@ -2431,6 +2442,8 @@ def load_resources():
     detected_name = None
     if disease_model:
         detected_name = _find_last_conv_layer_in_model(disease_model)
+        if not detected_name:
+            detected_name = DEFAULT_GRADCAM_LAYER
 
     try:
         crop_model = joblib.load("rf_crop_recommendation.joblib")
@@ -2837,7 +2850,7 @@ with tab1:
             detected_confidence = st.session_state.last_detection_confidence or 0.0
             detected_class_lower = detected_class.lower()
             heatmap_available = (
-                bool(detected_conv_name)
+                bool(disease_model)
                 and "healthy" not in detected_class_lower
                 and detected_class != "Background_without_leaves"
             )
