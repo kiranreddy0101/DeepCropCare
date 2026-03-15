@@ -1006,11 +1006,6 @@ DISEASE_METADATA_ALIASES = {
     "Wheat_leaf_stripe_rust": "Wheat_leaf_leaf_stripe_rust",
 }
 
-PREDICTION_CLASS_OVERRIDES = {
-    "Wheat_leaf_stripe_rust": "Wheatleaf_septoria",
-    "Wheat_leaf_leaf_stripe_rust": "Wheatleaf_septoria",
-}
-
 
 def load_class_names():
     class_names_path = Path(__file__).resolve().parent / "training_outputs" / "class_names.json"
@@ -1607,10 +1602,6 @@ def disease_display(class_name, lang):
 def disease_advice(class_name, lang):
     meta = get_disease_meta(class_name)
     return meta["advice"].get(lang) or meta["advice"].get("en") or t("na", lang)
-
-
-def normalize_predicted_class(class_name):
-    return PREDICTION_CLASS_OVERRIDES.get(class_name, class_name)
 
 
 def crop_text(crop_key, field, lang):
@@ -2990,7 +2981,7 @@ with tab1:
                     prediction = disease_model.predict(img_arr, verbose=0)
                     idx = int(np.argmax(prediction))
                     confidence = float(np.max(prediction) * 100)
-                    full_class_name = normalize_predicted_class(CLASS_NAMES[idx])
+                    full_class_name = CLASS_NAMES[idx]
                     st.session_state.last_detected_disease = disease_display(full_class_name, lang)
                     st.session_state.last_detected_class = full_class_name
                     st.session_state.last_detection_confidence = confidence
