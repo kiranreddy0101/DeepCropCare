@@ -17,6 +17,8 @@ import streamlit.components.v1 as components
 import tensorflow as tf
 from dotenv import load_dotenv
 from fpdf import FPDF
+from fontTools.ttLib import TTFont
+from fontTools.varLib.instancer import instantiateVariableFont
 from PIL import Image, ImageDraw, ImageFont
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
@@ -1764,13 +1766,30 @@ def _pick_pdf_font_path(lang):
 def _validate_pdf_font_path(font_path, lang):
     if not font_path:
         return None
-    filename = Path(font_path).name.lower()
-    if "variablefont" in filename:
-        raise RuntimeError(
-            f"Unsupported variable font for language '{lang}': {Path(font_path).name}. "
-            "Please add a static Regular font file instead."
-        )
     return font_path
+
+
+def _ensure_static_pdf_font(font_path):
+    if not font_path:
+        return None
+
+    font_path = Path(font_path)
+    try:
+        font = TTFont(str(font_path))
+    except Exception:
+        return str(font_path)
+
+    if "fvar" not in font and "gvar" not in font:
+        return str(font_path)
+
+    static_path = font_path.with_name(f"{font_path.stem}-static.ttf")
+    if static_path.exists():
+        return str(static_path)
+
+    axes = {axis.axisTag: axis.defaultValue for axis in font["fvar"].axes}
+    static_font = instantiateVariableFont(font, axes, inplace=False)
+    static_font.save(str(static_path))
+    return str(static_path)
 
 
 def _get_pdf_font(lang, size):
@@ -2078,7 +2097,7 @@ def _configure_pdf_font(pdf, lang):
             f"Missing Unicode font for language '{lang}'. Add a compatible font file under "
             f"'{Path(__file__).resolve().parent / 'fonts'}'."
         )
-    pdf.add_font(family, fname=font_path)
+    pdf.add_font(family, fname=_ensure_static_pdf_font(font_path))
     pdf.set_text_shaping(True)
     return family
 
