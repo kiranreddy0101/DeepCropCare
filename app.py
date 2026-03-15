@@ -2350,6 +2350,8 @@ def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_te
 
         dock.addEventListener('click', () => {{
           if (!helperButton) return;
+          const existingOverlay = parentDoc.getElementById('deepcropcare-helper-overlay');
+          if (existingOverlay) existingOverlay.remove();
           const overlay = parentDoc.createElement('div');
           overlay.id = 'deepcropcare-helper-overlay';
           overlay.innerHTML = `
@@ -2359,6 +2361,10 @@ def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_te
             </div>
           `;
           parentDoc.body.appendChild(overlay);
+          window.setTimeout(() => {{
+            const staleOverlay = parentDoc.getElementById('deepcropcare-helper-overlay');
+            if (staleOverlay) staleOverlay.remove();
+          }}, 8000);
           helperButton.click();
         }});
 
@@ -2946,6 +2952,7 @@ tab1, tab2, tab3, tab4 = st.tabs(
 )
 
 if st.session_state.get("target_tab"):
+    remove_helper_icon()
     inject_tab_switch(st.session_state.target_tab)
     st.session_state.target_tab = None
 
@@ -3288,6 +3295,7 @@ with tab2:
                     st.error(f"{t('email_failed', lang)}: {error_code}")
 
 with tab3:
+    remove_helper_icon()
     st.markdown(f"## 💬 {t('chat_heading', lang)}")
     model_id = "gemini-2.5-flash-lite"
     api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
