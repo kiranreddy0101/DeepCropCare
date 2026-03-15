@@ -2263,19 +2263,34 @@ def inject_input_theme():
 
 
 def get_gradcam_heatmap(model, img_array, last_conv_layer_name, pred_index=None):
-    grad_model = tf.keras.models.Model(
-        [model.inputs],
-        [model.get_layer(last_conv_layer_name).output, model.output],
-    )
+    if model is None or not last_conv_layer_name:
+        return None
+
+    try:
+        target_layer = model.get_layer(last_conv_layer_name)
+    except Exception:
+        return None
+
+    model_inputs = getattr(model, "inputs", None)
+    model_outputs = getattr(model, "outputs", None)
+    target_output = getattr(target_layer, "output", None)
+    if not model_inputs or not model_outputs or target_output is None:
+        return None
+
+    grad_model = tf.keras.models.Model(model_inputs, [target_output, model_outputs[0]])
 
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
+        if conv_outputs is None or predictions is None:
+            return None
         predictions = tf.squeeze(predictions)
         if pred_index is None:
             pred_index = tf.argmax(predictions)
         class_channel = predictions[pred_index]
 
     grads = tape.gradient(class_channel, conv_outputs)
+    if grads is None:
+        return None
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
     conv_outputs = conv_outputs[0]
 
@@ -2785,6 +2800,8 @@ with tab1:
                     img_arr = img_to_array(img_resized) / 255.0
                     img_arr = np.expand_dims(img_arr, axis=0)
                     heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
+                    if heatmap is None:
+                        raise ValueError("Visualization is not supported for the loaded model.")
                     overlay = overlay_gradcam(img_resized, heatmap)
                     report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
                     col_a, col_b = st.columns(2)
