@@ -3023,13 +3023,15 @@ st.markdown(
     }
     .hero-headline {
         margin: 0;
-        font-size: clamp(2.6rem, 5vw, 5rem);
-        line-height: 0.92;
+        font-size: clamp(2.5rem, 4.6vw, 4.5rem);
+        line-height: 1;
         letter-spacing: -0.07em;
         color: #f8faf5 !important;
         font-weight: 900;
         max-width: none;
         white-space: nowrap;
+        word-break: keep-all;
+        overflow-wrap: normal;
     }
     .hero-description {
         margin: 1rem 0 0;
@@ -3138,17 +3140,6 @@ st.markdown(
         box-shadow: 0 0 0 0.18rem rgba(40, 167, 69, 0.28) !important;
         color: white !important;
     }
-    [data-baseweb="tab-list"] button {
-        color: rgba(236, 244, 236, 0.72) !important;
-        transition: color 220ms ease, transform 220ms ease, opacity 220ms ease !important;
-    }
-    [data-baseweb="tab-list"] button[aria-selected="true"] {
-        color: #ff6b6b !important;
-    }
-    [data-baseweb="tab-list"] button:hover {
-        transform: translateY(-1px);
-        color: #ffffff !important;
-    }
     .feature-launcher-note {
         margin: 0.15rem 0 0.85rem;
         color: rgba(233, 245, 238, 0.68) !important;
@@ -3161,36 +3152,46 @@ st.markdown(
         margin: 0.35rem 0 1rem !important;
         padding: 0 !important;
     }
+    [data-baseweb="tab-highlight"] {
+        display: none !important;
+    }
     [data-baseweb="tab-list"] button {
-        min-height: 108px !important;
+        min-height: 104px !important;
         border-radius: 28px !important;
-        background: rgba(255,255,255,0.05) !important;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.035)) !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
         box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12) !important;
-        color: #eef6ee !important;
+        color: rgba(238, 246, 238, 0.88) !important;
         font-size: 1rem !important;
         font-weight: 800 !important;
         line-height: 1.35 !important;
         white-space: pre-line !important;
-        transition: transform 120ms ease-out, background 120ms ease-out, border-color 120ms ease-out, box-shadow 120ms ease-out !important;
+        transform: scale(1) translateZ(0);
+        will-change: transform, background, box-shadow, border-color;
+        transition: transform 110ms ease-out, background 110ms ease-out, border-color 110ms ease-out, box-shadow 110ms ease-out, color 110ms ease-out !important;
+    }
+    [data-baseweb="tab-list"] button * {
+        color: inherit !important;
     }
     [data-baseweb="tab-list"] button:hover {
-        transform: scale(1.02);
+        transform: scale(1.015) translateY(-1px);
         background: rgba(255,255,255,0.1) !important;
         border-color: rgba(120,255,188,0.26) !important;
         color: #ffffff !important;
     }
     [data-baseweb="tab-list"] button[aria-selected="true"] {
-        background: linear-gradient(180deg, rgba(132,255,192,0.22), rgba(18,69,48,0.34)) !important;
-        border: 1px solid rgba(132,255,192,0.72) !important;
+        background: linear-gradient(180deg, rgba(121, 224, 110, 0.95), rgba(81, 170, 69, 0.96)) !important;
+        border: 1px solid rgba(194,255,191,0.92) !important;
         box-shadow:
-            inset 0 10px 24px rgba(255,255,255,0.04),
-            inset 0 -16px 28px rgba(0,0,0,0.16),
-            0 0 0 1px rgba(132,255,192,0.2),
-            0 12px 26px rgba(8, 31, 24, 0.22),
-            0 0 24px rgba(118,255,184,0.16) !important;
-        transform: scale(0.96);
-        color: #ffffff !important;
+            inset 0 1px 0 rgba(255,255,255,0.24),
+            inset 0 -14px 22px rgba(39, 89, 33, 0.24),
+            0 12px 28px rgba(18, 53, 16, 0.24),
+            0 0 0 1px rgba(194,255,191,0.12) !important;
+        transform: scale(0.965);
+        color: #f8fff2 !important;
+    }
+    [data-baseweb="tab-list"] button[aria-selected="true"] * {
+        color: #f8fff2 !important;
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] small,
@@ -3429,8 +3430,9 @@ st.markdown(
             color: #111111 !important;
             fill: #111111 !important;
         }
-        [data-baseweb="tab-list"] button[aria-selected="true"] {
-            color: #b31e1e !important;
+        [data-baseweb="tab-list"] button *,
+        [data-baseweb="tab-list"] button[aria-selected="true"] * {
+            color: inherit !important;
         }
         [data-testid="stFileUploader"] section,
         [data-baseweb="select"] > div,
