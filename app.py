@@ -1,8 +1,10 @@
 import os
 import smtplib
 import time
+import json
 from io import BytesIO
 from email.message import EmailMessage
+from pathlib import Path
 from urllib.parse import quote
 
 import cv2
@@ -15,6 +17,7 @@ import streamlit.components.v1 as components
 import tensorflow as tf
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
@@ -955,7 +958,44 @@ DEFAULT_DISEASE_FALLBACK = {
     for key in DISEASE_METADATA
 }
 
-CLASS_NAMES = list(DISEASE_METADATA.keys())
+DISEASE_METADATA_ALIASES = {
+    "Bitter Gourd___Downey_mildew": "Bitter Gourd__Downy_mildew",
+    "Bitter Gourd___Fresh_leaf": "Bitter Gourd__Fresh_leaf",
+    "Bitter Gourd___Fusarium_wilt": "Bitter Gourd__Fusarium_wilt",
+    "Bitter Gourd___Mosaic_virus": "Bitter Gourd__Mosaic_virus",
+    "Bottle gourd___Anthracnose": "Bottle gourd__Anthracnose",
+    "Bottle gourd___Downey_mildew": "Bottle gourd__Downey_mildew",
+    "Bottle gourd___Fresh_leaf": "Bottle gourd__Fresh_leaf",
+    "Cauliflower___Black_Rot": "Cauliflower__Black_Rot",
+    "Cauliflower___Downy_mildew": "Cauliflower__Downy_mildew",
+    "Cauliflower___Fresh_leaf": "Cauliflower__Fresh_leaf",
+    "Cucumber___Anthracnose_lesions": "Cucumber__Anthracnose_lesions",
+    "Cucumber___Downy_mildew": "Cucumber__Downy_mildew",
+    "Cucumber___Fresh_leaf": "Cucumber__Fresh_leaf",
+    "Pepper,_bell___Bacterial_spot": "Pepper_bell___Bacterial_spot",
+    "Pepper,_bell___healthy": "Pepper_bell___healthy",
+    "Sugarcae_Healthy": "Sugarcane_Healthy",
+    "Sugarcae_Mosaic": "Sugarcane_Mosaic",
+    "Sugarcae_RedRot": "Sugarcane_RedRot",
+    "Sugarcae_Rust": "Sugarcane_Rust",
+    "Sugarcae_Yellow": "Sugarcane_Yellow",
+    "Wheat_leaf_septoria": "Wheatleaf_septoria",
+    "Wheat_leaf_stripe_rust": "Wheat_leaf_leaf_stripe_rust",
+}
+
+
+def load_class_names():
+    class_names_path = Path(__file__).resolve().parent / "training_outputs" / "class_names.json"
+    if class_names_path.exists():
+        try:
+            with open(class_names_path, "r", encoding="utf-8") as file:
+                return json.load(file)
+        except Exception:
+            pass
+    return list(DISEASE_METADATA.keys())
+
+
+CLASS_NAMES = load_class_names()
 
 CROP_METADATA = {
     "rice": {
@@ -1524,7 +1564,8 @@ def t(key, lang):
 
 
 def get_disease_meta(class_name):
-    return DISEASE_METADATA.get(class_name, DEFAULT_DISEASE_FALLBACK.get(class_name, {
+    metadata_key = DISEASE_METADATA_ALIASES.get(class_name, class_name)
+    return DISEASE_METADATA.get(metadata_key, DEFAULT_DISEASE_FALLBACK.get(metadata_key, {
         "display": {"en": class_name.replace("___", " ").replace("__", " ").replace("_", " ")},
         "advice": {"en": "Follow integrated crop management practices."},
     }))
@@ -2311,6 +2352,35 @@ def overlay_gradcam(original_img, heatmap, alpha=0.4):
     return cv2.cvtColor(overlay_img, cv2.COLOR_BGR2RGB)
 
 
+def preprocess_disease_image(image, img_size=(224, 224)):
+    img_resized = image.resize(img_size)
+    img_arr = img_to_array(img_resized)
+    img_arr = preprocess_input(img_arr)
+    img_arr = np.expand_dims(img_arr, axis=0)
+    return img_resized, img_arr
+
+
+def _find_last_conv_layer_in_model(model):
+    for layer in reversed(model.layers):
+        if isinstance(layer, tf.keras.layers.Conv2D):
+            return layer.name
+        output_shape = getattr(layer, "output_shape", None)
+        if isinstance(output_shape, tuple) and len(output_shape) == 4:
+            if not any(token in layer.name.lower() for token in ["flatten", "gap", "pool"]):
+                return layer.name
+    return None
+
+
+def load_disease_model():
+    model_path = "training_outputs/plant_disease_mobilenetv2.h5"
+    if os.path.exists(model_path):
+        try:
+            return load_model(model_path, compile=False), model_path
+        except Exception:
+            pass
+    return None, None
+
+
 def get_weather(city_name, lang):
     api_key = "8c3a497f31607fe66be1f23c65538904"
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={api_key}&units=metric"
@@ -2324,32 +2394,21 @@ def get_weather(city_name, lang):
 
 @st.cache_resource
 def load_resources():
-    try:
-        disease_model = load_model("training_outputs/plant_disease_mobilenetv2.h5", compile=False)
-    except Exception:
-        disease_model = None
+    disease_model, disease_model_path = load_disease_model()
 
     detected_name = None
     if disease_model:
-        for layer in reversed(disease_model.layers):
-            try:
-                if len(layer.output.shape) == 4 and not any(
-                    token in layer.name.lower() for token in ["flatten", "gap", "pool"]
-                ):
-                    detected_name = layer.name
-                    break
-            except Exception:
-                continue
+        detected_name = _find_last_conv_layer_in_model(disease_model)
 
     try:
         crop_model = joblib.load("rf_crop_recommendation.joblib")
     except Exception:
         crop_model = None
 
-    return disease_model, crop_model, detected_name
+    return disease_model, crop_model, detected_name, disease_model_path
 
 
-disease_model, crop_model, detected_conv_name = load_resources()
+disease_model, crop_model, detected_conv_name, disease_model_path = load_resources()
 
 
 st.markdown(
@@ -2725,9 +2784,7 @@ with tab1:
 
             with st.spinner(t("identifying", lang)):
                 if disease_model:
-                    img_resized = image.resize((224, 224))
-                    img_arr = img_to_array(img_resized) / 255.0
-                    img_arr = np.expand_dims(img_arr, axis=0)
+                    _, img_arr = preprocess_disease_image(image)
 
                     prediction = disease_model.predict(img_arr, verbose=0)
                     idx = int(np.argmax(prediction))
@@ -2791,26 +2848,23 @@ with tab1:
                 st.rerun()
 
             if heatmap_available:
-                st.markdown(
-                    f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
-                    unsafe_allow_html=True,
-                )
                 try:
-                    img_resized = image.resize((224, 224))
-                    img_arr = img_to_array(img_resized) / 255.0
-                    img_arr = np.expand_dims(img_arr, axis=0)
+                    img_resized, img_arr = preprocess_disease_image(image)
                     heatmap = get_gradcam_heatmap(disease_model, img_arr, detected_conv_name)
-                    if heatmap is None:
-                        raise ValueError("Visualization is not supported for the loaded model.")
-                    overlay = overlay_gradcam(img_resized, heatmap)
-                    report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
-                    with col_b:
-                        st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
-                except Exception as exc:
-                    st.error(f"{t('visualization_error', lang)}: {exc}")
+                    if heatmap is not None:
+                        st.markdown(
+                            f"<br><h3 style='text-align: center;'>🎯 {t('heatmap_title', lang)}</h3>",
+                            unsafe_allow_html=True,
+                        )
+                        overlay = overlay_gradcam(img_resized, heatmap)
+                        report_images.append((t("infection_hotspots", lang), Image.fromarray(overlay)))
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.image(img_resized, caption=t("original_scan", lang), use_container_width=True)
+                        with col_b:
+                            st.image(overlay, caption=t("infection_hotspots", lang), use_container_width=True)
+                except Exception:
+                    pass
             disease_pdf = build_pdf_report_bytes(t("report_subject", lang), report_text, lang, report_images)
             _, action_col1, _ = st.columns([1.2, 1, 1.2])
             with action_col1:
@@ -3136,6 +3190,6 @@ with tab4:
     st.divider()
     st.markdown(f"### 🎯 {t('interpretability', lang)}")
     st.info(
-        f"**{t('target_layer', lang)}:** `{detected_conv_name}`. {t('target_layer_desc', lang)}"
+        f"**{t('target_layer', lang)}:** `{detected_conv_name or t('na', lang)}`. {t('target_layer_desc', lang)}"
     )
     st.caption(t("footer", lang))
