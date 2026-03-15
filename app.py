@@ -3536,9 +3536,10 @@ st.markdown(f"<div class='feature-dock-title'>{t('choose_workspace', lang)}</div
 st.markdown(f"<div class='feature-launcher-note'>{t('launcher_note', lang)}</div>", unsafe_allow_html=True)
 st.markdown("<div class='feature-launcher'>", unsafe_allow_html=True)
 feature_cols = st.columns(4, gap="small")
+selected_feature = st.session_state.active_feature
 for col, feature_key in zip(feature_cols, feature_labels.keys()):
     button_label, caption_label = feature_labels[feature_key]
-    is_active = st.session_state.active_feature == feature_key
+    is_active = selected_feature == feature_key
     with col:
         st.markdown(
             f"<div class='feature-button-caption{' active' if is_active else ''}'>{caption_label}</div>",
@@ -3550,11 +3551,9 @@ for col, feature_key in zip(feature_cols, feature_labels.keys()):
             use_container_width=True,
             type="primary" if is_active else "secondary",
         ):
-            if st.session_state.active_feature != feature_key:
-                st.session_state.active_feature = feature_key
-                st.rerun()
+            selected_feature = feature_key
+            st.session_state.active_feature = feature_key
 st.markdown("</div>", unsafe_allow_html=True)
-selected_feature = st.session_state.active_feature
 
 if selected_feature == "disease":
     st.markdown(
