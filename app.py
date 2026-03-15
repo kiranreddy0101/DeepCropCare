@@ -3262,11 +3262,55 @@ st.markdown(
     .upload-mode-shell {
         margin: 0.25rem 0 0.9rem;
     }
-    .upload-mode-shell [data-testid="stButton"] button {
-        min-height: 54px !important;
-        border-radius: 18px !important;
+    .upload-mode-shell [role="radiogroup"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+        width: 100%;
+    }
+    .upload-mode-shell [role="radiogroup"] > label {
+        margin: 0 !important;
+        min-height: 84px !important;
+        padding: 0.55rem 0.7rem !important;
+        border-radius: 22px !important;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.035)) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12) !important;
+        color: rgba(238, 246, 238, 0.88) !important;
+        transform: scale(1) translateZ(0);
+        transition: transform 110ms ease-out, background 110ms ease-out, border-color 110ms ease-out, box-shadow 110ms ease-out, color 110ms ease-out !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .upload-mode-shell [role="radiogroup"] > label:hover {
+        transform: scale(1.015) translateY(-1px);
+        background: rgba(255,255,255,0.1) !important;
+        border-color: rgba(120,255,188,0.26) !important;
+        color: #ffffff !important;
+    }
+    .upload-mode-shell [role="radiogroup"] > label:has(input:checked) {
+        background: linear-gradient(180deg, rgba(121, 224, 110, 0.95), rgba(81, 170, 69, 0.96)) !important;
+        border: 1px solid rgba(194,255,191,0.92) !important;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.24),
+            inset 0 -14px 22px rgba(39, 89, 33, 0.24),
+            0 12px 28px rgba(18, 53, 16, 0.24),
+            0 0 0 1px rgba(194,255,191,0.12) !important;
+        transform: scale(0.965);
+        color: #f8fff2 !important;
+    }
+    .upload-mode-shell [role="radiogroup"] > label > div:first-child {
+        display: none !important;
+    }
+    .upload-mode-shell [role="radiogroup"] > label p {
+        margin: 0 !important;
+        color: inherit !important;
         font-size: 0.96rem !important;
         font-weight: 800 !important;
+        line-height: 1.2 !important;
+        text-align: center !important;
     }
     [data-testid="stCameraInput"] > label {
         display: none !important;
@@ -3662,7 +3706,7 @@ if "last_uploaded_signature" not in st.session_state:
 if "disease_result_ready" not in st.session_state:
     st.session_state.disease_result_ready = False
 if "disease_upload_mode" not in st.session_state:
-    st.session_state.disease_upload_mode = "browse"
+    st.session_state.disease_upload_mode = None
 if "crop_result" not in st.session_state:
     st.session_state.crop_result = None
 if "disease_email_to" not in st.session_state:
@@ -3777,23 +3821,31 @@ with tab_disease:
     )
     st.markdown(f"<div class='upload-mode-label'>{t('upload_mode_label', lang)}</div>", unsafe_allow_html=True)
     st.markdown("<div class='upload-mode-shell'>", unsafe_allow_html=True)
-    mode_col1, mode_col2 = st.columns(2)
-    with mode_col1:
-        if st.button(f"📁 {t('browse_files', lang)}", key="browse_mode_button", width="stretch"):
-            st.session_state.disease_upload_mode = "browse"
-            st.session_state.last_uploaded_signature = None
-            st.session_state.disease_result_ready = False
-    with mode_col2:
-        if st.button(f"📷 {t('camera', lang)}", key="camera_mode_button", width="stretch"):
-            st.session_state.disease_upload_mode = "camera"
-            st.session_state.last_uploaded_signature = None
-            st.session_state.disease_result_ready = False
+    previous_upload_mode = st.session_state.disease_upload_mode
+    selected_upload_mode = st.radio(
+        t("upload_mode_label", lang),
+        options=["browse", "camera"],
+        index=0 if st.session_state.disease_upload_mode == "browse" else 1 if st.session_state.disease_upload_mode == "camera" else None,
+        format_func=lambda value: f"📁 {t('browse_files', lang)}" if value == "browse" else f"📷 {t('camera', lang)}",
+        horizontal=True,
+        label_visibility="collapsed",
+        key="disease_upload_mode",
+    )
     st.markdown("</div>", unsafe_allow_html=True)
+
+    if selected_upload_mode != previous_upload_mode:
+        st.session_state.last_uploaded_signature = None
+        st.session_state.disease_result_ready = False
+        st.session_state.last_disease_render_key = None
+        st.session_state.last_disease_report_text = ""
+        st.session_state.last_disease_pdf = None
+        st.session_state.last_disease_report_images = []
+        st.session_state.last_heatmap_display = None
 
     uploaded_file = None
     if st.session_state.disease_upload_mode == "camera":
         uploaded_file = st.camera_input(t("capture_leaf", lang), key="disease_camera_capture")
-    else:
+    elif st.session_state.disease_upload_mode == "browse":
         uploaded_file = st.file_uploader(
             t("upload_leaf", lang),
             type=["jpg", "png", "jpeg"],
