@@ -2637,9 +2637,9 @@ st.markdown(
     .top-header {
         position: relative;
         overflow: hidden;
-        min-height: 78vh;
-        border-radius: 34px;
-        padding: 1.3rem 1.5rem 0;
+        min-height: 56vh;
+        border-radius: 30px;
+        padding: 1.1rem 1.3rem 0;
         background:
             radial-gradient(circle at 50% 0%, rgba(255,255,255,0.14), transparent 24%),
             linear-gradient(180deg, #1f6ef2 0%, #1967eb 100%);
@@ -2651,14 +2651,14 @@ st.markdown(
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.4rem;
         position: relative;
         z-index: 3;
     }
     .hero-nav-group {
         display: flex;
         align-items: center;
-        gap: 2.3rem;
+        gap: 1.4rem;
         flex-wrap: wrap;
     }
     .hero-nav-item {
@@ -2673,9 +2673,9 @@ st.markdown(
     .hero-brand {
         position: absolute;
         left: 50%;
-        top: 1rem;
+        top: 0.6rem;
         transform: translateX(-50%) rotate(-7deg);
-        font-size: clamp(2rem, 4vw, 3.25rem);
+        font-size: clamp(1.65rem, 3vw, 2.6rem);
         font-weight: 900;
         letter-spacing: 0.05em;
         color: #f7f1e5 !important;
@@ -2686,13 +2686,13 @@ st.markdown(
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 62px;
-        padding: 0.95rem 1.5rem;
-        border-radius: 18px;
+        min-height: 52px;
+        padding: 0.8rem 1.25rem;
+        border-radius: 16px;
         background: #f5f1e7;
         color: #1e62d8 !important;
         font-family: "Courier New", monospace;
-        font-size: 1rem;
+        font-size: 0.9rem;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -2700,18 +2700,18 @@ st.markdown(
     }
     .hero-stage {
         position: relative;
-        min-height: 62vh;
+        min-height: 43vh;
         display: flex;
         align-items: flex-end;
         justify-content: center;
-        padding: 4rem 1rem 0;
+        padding: 2.8rem 1rem 0;
     }
     .hero-wordmark {
         position: absolute;
-        top: 6%;
+        top: 12%;
         left: 50%;
         transform: translateX(-50%);
-        font-size: clamp(5rem, 18vw, 15rem);
+        font-size: clamp(4rem, 14vw, 9rem);
         line-height: 0.86;
         font-weight: 900;
         letter-spacing: -0.06em;
@@ -2723,8 +2723,8 @@ st.markdown(
     }
     .hero-globe {
         position: relative;
-        width: min(92%, 980px);
-        aspect-ratio: 1.15 / 0.72;
+        width: min(74%, 760px);
+        aspect-ratio: 1.12 / 0.72;
         border-radius: 50% 50% 0 0 / 72% 72% 0 0;
         background:
             radial-gradient(circle at 30% 28%, rgba(183, 255, 95, 0.28), transparent 18%),
@@ -2761,30 +2761,30 @@ st.markdown(
     .hero-copy {
         position: absolute;
         left: 50%;
-        bottom: 7%;
+        bottom: 9%;
         transform: translateX(-50%);
-        width: min(72%, 760px);
+        width: min(52%, 620px);
         text-align: center;
         z-index: 3;
     }
     .hero-copy p {
         color: #f5f8fb !important;
-        font-size: clamp(1.05rem, 2.2vw, 1.55rem);
+        font-size: clamp(0.95rem, 1.7vw, 1.3rem);
         line-height: 1.38;
-        margin: 0 0 1.2rem;
+        margin: 0 0 0.9rem;
         text-shadow: 0 6px 18px rgba(0,0,0,0.22);
     }
     .hero-cta {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 62px;
-        padding: 0.9rem 1.7rem;
-        border-radius: 18px;
+        min-height: 52px;
+        padding: 0.8rem 1.45rem;
+        border-radius: 16px;
         background: #f5f1e7;
         color: #1b4f3f !important;
         font-family: "Courier New", monospace;
-        font-size: 1rem;
+        font-size: 0.92rem;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -2997,7 +2997,7 @@ st.markdown(
     }
     @media (max-width: 900px) {
         .top-header {
-            min-height: 64vh;
+            min-height: 48vh;
             padding: 1rem 1rem 0;
         }
         .hero-nav {
@@ -3016,16 +3016,16 @@ st.markdown(
             margin-bottom: 0.4rem;
         }
         .hero-wordmark {
-            top: 14%;
-            font-size: clamp(4rem, 24vw, 8rem);
+            top: 18%;
+            font-size: clamp(3.5rem, 22vw, 6.5rem);
         }
         .hero-globe {
-            width: 100%;
-            aspect-ratio: 1 / 0.9;
+            width: 92%;
+            aspect-ratio: 1 / 0.88;
         }
         .hero-copy {
-            width: 82%;
-            bottom: 5%;
+            width: 78%;
+            bottom: 7%;
         }
     }
     @media (prefers-color-scheme: light) {
