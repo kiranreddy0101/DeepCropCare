@@ -1002,6 +1002,10 @@ DISEASE_METADATA_ALIASES = {
     "Wheat_leaf_stripe_rust": "Wheat_leaf_leaf_stripe_rust",
 }
 
+PREDICTION_CLASS_OVERRIDES = {
+    "Wheat_leaf_stripe_rust": "Wheatleaf_septoria",
+}
+
 
 def load_class_names():
     class_names_path = Path(__file__).resolve().parent / "training_outputs" / "class_names.json"
@@ -1600,6 +1604,10 @@ def disease_advice(class_name, lang):
     return meta["advice"].get(lang) or meta["advice"].get("en") or t("na", lang)
 
 
+def normalize_predicted_class(class_name):
+    return PREDICTION_CLASS_OVERRIDES.get(class_name, class_name)
+
+
 def crop_text(crop_key, field, lang):
     return CROP_METADATA[crop_key][field].get(lang) or CROP_METADATA[crop_key][field]["en"]
 
@@ -1703,30 +1711,53 @@ def build_crop_report_text(crop_key, lang, inputs):
 
 
 def _pick_pdf_font_path(lang):
-    candidates = ["/System/Library/Fonts/Supplemental/Arial Unicode.ttf"]
+    app_dir = Path(__file__).resolve().parent
+    bundled_font_dir = app_dir / "fonts"
+    candidates = [
+        bundled_font_dir / "ArialUnicode.ttf",
+        bundled_font_dir / "Arial Unicode.ttf",
+        bundled_font_dir / "NotoSans-Regular.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
     if lang == "hi":
         candidates.extend(
             [
+                bundled_font_dir / "NotoSansDevanagari-Regular.ttf",
+                bundled_font_dir / "NotoSerifDevanagari-Regular.ttf",
                 "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc",
                 "/System/Library/Fonts/Supplemental/DevanagariMT.ttc",
+                "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSansDevanagari-Regular.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSerifDevanagari-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSerifDevanagari-Regular.ttf",
             ]
         )
     elif lang == "te":
         candidates.extend(
             [
+                bundled_font_dir / "NotoSansTelugu-Regular.ttf",
+                bundled_font_dir / "NotoSerifTelugu-Regular.ttf",
                 "/System/Library/Fonts/Supplemental/Telugu Sangam MN.ttc",
                 "/System/Library/Fonts/Supplemental/Telugu MN.ttc",
+                "/usr/share/fonts/truetype/noto/NotoSansTelugu-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSansTelugu-Regular.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSerifTelugu-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSerifTelugu-Regular.ttf",
             ]
         )
     candidates.extend(
         [
+            bundled_font_dir / "Arial.ttf",
             "/System/Library/Fonts/Supplemental/Arial.ttf",
             "/System/Library/Fonts/Supplemental/Helvetica.ttc",
         ]
     )
     for path in candidates:
         if os.path.exists(path):
-            return path
+            return str(path)
     return None
 
 
@@ -2030,14 +2061,14 @@ def _configure_pdf_font(pdf, lang):
 
     font_path = _pick_pdf_font_path(lang)
     family = f"DeepCropCare-{lang}"
-    if font_path:
-        try:
-            pdf.add_font(family, fname=font_path)
-            pdf.set_text_shaping(True)
-            return family
-        except Exception:
-            pass
-    return "Helvetica"
+    if not font_path:
+        raise RuntimeError(
+            f"Missing Unicode font for language '{lang}'. Add a compatible font file under "
+            f"'{Path(__file__).resolve().parent / 'fonts'}'."
+        )
+    pdf.add_font(family, fname=font_path)
+    pdf.set_text_shaping(True)
+    return family
 
 
 def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
@@ -2910,7 +2941,7 @@ with tab1:
                     prediction = disease_model.predict(img_arr, verbose=0)
                     idx = int(np.argmax(prediction))
                     confidence = float(np.max(prediction) * 100)
-                    full_class_name = CLASS_NAMES[idx]
+                    full_class_name = normalize_predicted_class(CLASS_NAMES[idx])
                     st.session_state.last_detected_disease = disease_display(full_class_name, lang)
                     st.session_state.last_detected_class = full_class_name
                     st.session_state.last_detection_confidence = confidence
@@ -2959,19 +2990,6 @@ with tab1:
                 """,
                 unsafe_allow_html=True,
             )
-
-            inject_helper_icon(
-                ASSISTANT_ICON,
-                t("assistant_hint", lang),
-                t("assistant_note", lang),
-                t("assistant_trigger", lang),
-                t("chat_spinner", lang),
-            )
-            helper_clicked = st.button(t("assistant_trigger", lang), key="assistant_trigger_button")
-            if helper_clicked:
-                st.session_state.pending_chat_prompt = build_disease_prompt(detected_class, lang)
-                st.session_state.target_tab = t("tab_chat", lang)
-                st.rerun()
 
             if heatmap_available:
                 try:
