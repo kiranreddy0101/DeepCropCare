@@ -52,7 +52,7 @@ LANGUAGE_LABELS = {
         "identifying": "Identifying pathogens...",
         "analysis_complete": "Analysis Complete!",
         "confidence": "Confidence",
-        "recommended_action": "Recommended Action",
+        "recommended_action": "Fertilizer Advisory",
         "report_summary": "Diagnostic Report Summary",
         "report_download": "Download Report",
         "report_email": "Email Report",
@@ -171,7 +171,7 @@ LANGUAGE_LABELS = {
         "identifying": "रोगजनकों की पहचान की जा रही है...",
         "analysis_complete": "विश्लेषण पूरा हुआ!",
         "confidence": "विश्वास स्तर",
-        "recommended_action": "अनुशंसित कार्यवाही",
+        "recommended_action": "उर्वरक सलाह",
         "report_summary": "डायग्नोस्टिक रिपोर्ट सारांश",
         "report_download": "रिपोर्ट डाउनलोड करें",
         "report_email": "रिपोर्ट ईमेल करें",
@@ -290,7 +290,7 @@ LANGUAGE_LABELS = {
         "identifying": "రోగ కారకాలను గుర్తిస్తోంది...",
         "analysis_complete": "విశ్లేషణ పూర్తైంది!",
         "confidence": "నమ్మక స్థాయి",
-        "recommended_action": "సిఫార్సు చేసిన చర్య",
+        "recommended_action": "ఎరువు సలహా",
         "report_summary": "డయాగ్నస్టిక్ రిపోర్ట్ సారాంశం",
         "report_download": "రిపోర్ట్ డౌన్‌లోడ్ చేయండి",
         "report_email": "రిపోర్ట్ ఈమెయిల్ చేయండి",
@@ -2791,11 +2791,16 @@ st.markdown(
         margin: 0 auto;
     }
     .report-summary {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(28, 131, 225, 0.12);
+        border: 1px solid rgba(28, 131, 225, 0.35);
         border-radius: 18px;
         padding: 1rem 1.1rem;
         margin: 1rem 0 1.25rem;
+        color: #dcefff;
+        box-shadow: 0 10px 30px rgba(10, 54, 95, 0.16);
+    }
+    .report-summary strong {
+        color: #6fc3ff;
     }
     .report-actions {
         display: flex;
