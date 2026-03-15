@@ -8,7 +8,6 @@ from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import quote
-
 import cv2
 import google.generativeai as genai
 import joblib
