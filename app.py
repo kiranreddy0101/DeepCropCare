@@ -1604,6 +1604,15 @@ def disease_advice(class_name, lang):
     return meta["advice"].get(lang) or meta["advice"].get("en") or t("na", lang)
 
 
+def normalize_predicted_class(class_name):
+    swap_map = {
+        "Wheat_leaf_stripe_rust": "Wheat_leaf_septoria",
+        "Wheat_leaf_septoria": "Wheat_leaf_stripe_rust",
+        "Wheatleaf_septoria": "Wheat_leaf_stripe_rust",
+    }
+    return swap_map.get(class_name, class_name)
+
+
 def crop_text(crop_key, field, lang):
     return CROP_METADATA[crop_key][field].get(lang) or CROP_METADATA[crop_key][field]["en"]
 
@@ -2981,7 +2990,7 @@ with tab1:
                     prediction = disease_model.predict(img_arr, verbose=0)
                     idx = int(np.argmax(prediction))
                     confidence = float(np.max(prediction) * 100)
-                    full_class_name = CLASS_NAMES[idx]
+                    full_class_name = normalize_predicted_class(CLASS_NAMES[idx])
                     st.session_state.last_detected_disease = disease_display(full_class_name, lang)
                     st.session_state.last_detected_class = full_class_name
                     st.session_state.last_detection_confidence = confidence
