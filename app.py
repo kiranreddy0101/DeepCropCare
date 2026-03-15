@@ -1743,6 +1743,8 @@ def _pick_pdf_font_path(lang):
     elif lang == "te":
         candidates.extend(
             [
+                bundled_font_dir / "NotoSerifTelugu-Regular-static.ttf",
+                bundled_font_dir / "Lohit-Telugu.ttf",
                 bundled_font_dir / "NotoSansTelugu-Regular.ttf",
                 bundled_font_dir / "NotoSerifTelugu-Regular.ttf",
                 "/System/Library/Fonts/Supplemental/Telugu Sangam MN.ttc",
