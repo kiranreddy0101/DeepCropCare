@@ -2844,6 +2844,82 @@ st.markdown(
     .stTextInput input {
         color: #eef6ee !important;
     }
+    @media (prefers-color-scheme: light) {
+        .stApp {
+            background: radial-gradient(circle at top right, #eef6ea, #f8fbf5) !important;
+            color: #111111 !important;
+        }
+        .stApp,
+        .stApp p,
+        .stApp label,
+        .stApp span,
+        .stApp li,
+        .stApp div,
+        .stApp h1,
+        .stApp h2,
+        .stApp h3,
+        .stApp h4,
+        .language-label,
+        .email-heading,
+        .detail-card p,
+        .stTextInput input,
+        [data-testid="stFileUploader"] label,
+        [data-testid="stFileUploader"] small,
+        [data-testid="stFileUploader"] span,
+        [data-testid="stFileUploader"] p,
+        [data-testid="stNumberInput"] label,
+        [data-testid="stTextInput"] label,
+        [data-testid="stSelectbox"] label,
+        [data-testid="stSlider"] label,
+        [data-baseweb="select"] *,
+        [data-baseweb="tab-list"] button,
+        [data-testid="stFileUploaderFileName"],
+        [data-testid="stFileUploaderFileData"] {
+            color: #111111 !important;
+            fill: #111111 !important;
+        }
+        [data-baseweb="tab-list"] button[aria-selected="true"] {
+            color: #b31e1e !important;
+        }
+        [data-testid="stFileUploader"] section,
+        [data-baseweb="select"] > div,
+        [data-testid="stNumberInput"] [data-baseweb="base-input"],
+        [data-testid="stTextInput"] [data-baseweb="base-input"],
+        [data-testid="stNumberInput"] [data-baseweb="input"],
+        [data-testid="stTextInput"] [data-baseweb="input"],
+        [data-baseweb="input"] > div,
+        .detail-card {
+            background: rgba(12, 18, 14, 0.06) !important;
+            border-color: rgba(12, 18, 14, 0.16) !important;
+            color: #111111 !important;
+        }
+        [data-testid="stNumberInput"] input,
+        [data-testid="stTextInput"] input,
+        input,
+        textarea {
+            color: #111111 !important;
+            -webkit-text-fill-color: #111111 !important;
+            background-color: transparent !important;
+        }
+        [data-testid="stNumberInput"] button,
+        [data-testid="stSelectbox"] svg,
+        [data-testid="stFileUploader"] svg,
+        [data-testid="stFileUploader"] button,
+        [data-testid="stFileUploader"] section div {
+            color: #111111 !important;
+            fill: #111111 !important;
+        }
+        [data-testid="stFileUploader"] button {
+            background: #dceedd !important;
+            border: 1px solid rgba(12, 18, 14, 0.16) !important;
+        }
+        .report-summary {
+            color: #111111 !important;
+        }
+        .report-summary strong {
+            color: #0f5f9e !important;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
