@@ -4,13 +4,13 @@ import time
 import json
 import hashlib
 import tempfile
+import warnings
 from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import quote
 
 import cv2
-import google.generativeai as genai
 import joblib
 import numpy as np
 import requests
@@ -25,6 +25,13 @@ from PIL import Image, ImageDraw, ImageFont
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
+
+try:
+    from google import genai as modern_genai
+except ImportError:
+    modern_genai = None
+
+legacy_genai = None
 
 
 load_dotenv()
@@ -2257,20 +2264,26 @@ def inject_tab_switch(tab_text):
     )
 
 
-def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_text):
+def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_text, visible_tab_text):
     safe_hint = hint_text.replace("\\", "\\\\").replace("'", "\\'")
     safe_note = note_text.replace("\\", "\\\\").replace("'", "\\'")
     safe_icon = icon_src.replace("\\", "\\\\").replace("'", "\\'")
     safe_trigger = trigger_label.replace("\\", "\\\\").replace("'", "\\'")
     safe_loading = loading_text.replace("\\", "\\\\").replace("'", "\\'")
+    safe_visible_tab = visible_tab_text.replace("\\", "\\\\").replace("'", "\\'")
     components.html(
         f"""
         <script>
         const parentDoc = window.parent.document;
+        const parentWin = window.parent;
         const oldNode = parentDoc.getElementById('deepcropcare-helper-dock');
         if (oldNode) oldNode.remove();
         const oldOverlay = parentDoc.getElementById('deepcropcare-helper-overlay');
         if (oldOverlay) oldOverlay.remove();
+        if (parentWin.deepCropCareHelperTimer) {{
+          clearInterval(parentWin.deepCropCareHelperTimer);
+          parentWin.deepCropCareHelperTimer = null;
+        }}
 
         const helperButton = Array.from(parentDoc.querySelectorAll('button')).find(
           (button) => button.innerText.trim() === '{safe_trigger}'
@@ -2398,6 +2411,15 @@ def inject_helper_icon(icon_src, hint_text, note_text, trigger_label, loading_te
         }});
 
         parentDoc.body.appendChild(dock);
+
+        const syncDockVisibility = () => {{
+          const activeTab = Array.from(parentDoc.querySelectorAll('button[role="tab"][aria-selected="true"]'))[0];
+          const activeText = activeTab ? activeTab.innerText.replace(/\\s+/g, ' ').trim() : '';
+          dock.style.display = activeText.includes('{safe_visible_tab}') ? 'flex' : 'none';
+        }};
+
+        syncDockVisibility();
+        parentWin.deepCropCareHelperTimer = setInterval(syncDockVisibility, 200);
         </script>
         """,
         height=0,
@@ -2408,6 +2430,11 @@ def remove_helper_icon():
     components.html(
         """
         <script>
+        const parentWin = window.parent;
+        if (parentWin.deepCropCareHelperTimer) {
+            clearInterval(parentWin.deepCropCareHelperTimer);
+            parentWin.deepCropCareHelperTimer = null;
+        }
         const oldNode = window.parent.document.getElementById('deepcropcare-helper-dock');
         if (oldNode) oldNode.remove();
         const oldOverlay = window.parent.document.getElementById('deepcropcare-helper-overlay');
@@ -2416,6 +2443,64 @@ def remove_helper_icon():
         """,
         height=0,
     )
+
+
+def get_gemini_backend():
+    global legacy_genai
+    if modern_genai is not None:
+        return "modern", modern_genai
+    if legacy_genai is None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*google.generativeai.*",
+                category=FutureWarning,
+            )
+            import google.generativeai as imported_legacy_genai
+
+        legacy_genai = imported_legacy_genai
+    return "legacy", legacy_genai
+
+
+def build_chat_session(api_key, model_id, system_instruction):
+    backend_name, backend = get_gemini_backend()
+    if backend_name == "modern":
+        return {
+            "backend": "modern",
+            "client": backend.Client(api_key=api_key),
+            "model_id": model_id,
+            "system_instruction": system_instruction,
+            "history": [],
+        }
+
+    backend.configure(api_key=api_key)
+    model = backend.GenerativeModel(model_name=model_id, system_instruction=system_instruction)
+    return {
+        "backend": "legacy",
+        "chat": model.start_chat(history=[]),
+    }
+
+
+def chat_session_send_message(chat_session, prompt):
+    if chat_session.get("backend") == "modern":
+        history = chat_session.setdefault("history", [])
+        transcript_lines = [f"System: {chat_session['system_instruction']}"]
+        for message in history:
+            role = "Assistant" if message["role"] == "assistant" else "User"
+            transcript_lines.append(f"{role}: {message['content']}")
+        transcript_lines.append(f"User: {prompt}")
+        transcript_lines.append("Assistant:")
+        response = chat_session["client"].models.generate_content(
+            model=chat_session["model_id"],
+            contents="\n".join(transcript_lines),
+        )
+        response_text = getattr(response, "text", "") or ""
+        history.append({"role": "user", "content": prompt})
+        history.append({"role": "assistant", "content": response_text})
+        return response_text
+
+    response = chat_session["chat"].send_message(prompt)
+    return response.text
 
 
 def inject_feature_launcher_feedback(active_label, launcher_labels):
