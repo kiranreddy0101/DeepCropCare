@@ -3148,23 +3148,24 @@ st.markdown(
     [data-baseweb="tab-list"] {
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.85rem;
-        margin: 0.35rem 0 1rem !important;
+        gap: 0.65rem;
+        margin: 0.3rem 0 0.85rem !important;
         padding: 0 !important;
     }
     [data-baseweb="tab-highlight"] {
         display: none !important;
     }
     [data-baseweb="tab-list"] button {
-        min-height: 104px !important;
-        border-radius: 28px !important;
+        min-height: 84px !important;
+        padding: 0.55rem 0.7rem !important;
+        border-radius: 22px !important;
         background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.035)) !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
         box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12) !important;
         color: rgba(238, 246, 238, 0.88) !important;
-        font-size: 1rem !important;
+        font-size: 0.9rem !important;
         font-weight: 800 !important;
-        line-height: 1.35 !important;
+        line-height: 1.25 !important;
         white-space: pre-line !important;
         transform: scale(1) translateZ(0);
         will-change: transform, background, box-shadow, border-color;
