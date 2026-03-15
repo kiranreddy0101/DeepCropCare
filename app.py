@@ -3100,10 +3100,22 @@ st.markdown(
         color: rgba(233, 245, 238, 0.76) !important;
         font-size: 0.92rem;
         font-weight: 700;
+        transition: color 220ms ease, transform 220ms ease;
     }
     .feature-button-caption.active {
-        color: #bfffd8 !important;
+        color: #f6fff9 !important;
         text-shadow: 0 0 18px rgba(118,255,184,0.24);
+        transform: translateY(-1px);
+    }
+    .feature-button-caption.active::before {
+        content: "Selected";
+        display: block;
+        margin-bottom: 0.28rem;
+        color: #89ffb8 !important;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
     }
     .feature-launcher [data-testid="stButton"] button {
         min-height: 108px !important;
@@ -3116,15 +3128,19 @@ st.markdown(
         font-weight: 800 !important;
         line-height: 1.35 !important;
         white-space: pre-line !important;
+        transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease !important;
     }
     .feature-launcher [data-testid="stButton"] button:hover {
         background: rgba(255,255,255,0.1) !important;
         border-color: rgba(120,255,188,0.26) !important;
     }
     .feature-launcher [data-testid="stButton"] button[kind="primary"] {
-        background: linear-gradient(180deg, rgba(118,255,184,0.18), rgba(38,122,81,0.18)) !important;
-        border-color: rgba(118,255,184,0.34) !important;
-        box-shadow: 0 18px 34px rgba(8, 31, 24, 0.22) !important;
+        background: linear-gradient(180deg, rgba(132,255,192,0.26), rgba(28,96,66,0.34)) !important;
+        border: 2px solid rgba(132,255,192,0.7) !important;
+        box-shadow:
+            0 0 0 2px rgba(132,255,192,0.18),
+            0 18px 34px rgba(8, 31, 24, 0.28),
+            0 0 32px rgba(118,255,184,0.2) !important;
         transform: translateY(-2px);
         color: #ffffff !important;
         position: relative;
@@ -3132,7 +3148,17 @@ st.markdown(
     .feature-launcher [data-testid="stButton"] button[kind="primary"]::after {
         content: "";
         position: absolute;
-        inset: auto 22% 10px 22%;
+        inset: 10px 10px auto auto;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #8dffbb;
+        box-shadow: 0 0 0 4px rgba(141,255,187,0.16), 0 0 16px rgba(141,255,187,0.6);
+    }
+    .feature-launcher [data-testid="stButton"] button[kind="primary"]::before {
+        content: "";
+        position: absolute;
+        inset: auto 20% 10px 20%;
         height: 4px;
         border-radius: 999px;
         background: linear-gradient(90deg, #8dffbb 0%, #ddffe8 100%);
