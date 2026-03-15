@@ -3260,37 +3260,29 @@ st.markdown(
         text-transform: uppercase;
     }
     .upload-mode-shell {
-        margin: 0.25rem 0 0.9rem;
+        margin: 0.25rem 0 0.95rem;
     }
-    .upload-mode-shell [role="radiogroup"] {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.65rem;
-        width: 100%;
-    }
-    .upload-mode-shell [role="radiogroup"] > label {
-        margin: 0 !important;
-        min-height: 84px !important;
-        padding: 0.55rem 0.7rem !important;
+    .upload-mode-shell [data-baseweb="tag"] {
+        min-height: 72px !important;
+        min-width: 0 !important;
+        flex: 1 1 0 !important;
+        justify-content: center !important;
         border-radius: 22px !important;
-        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.035)) !important;
+        padding: 0.65rem 1rem !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
-        box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12) !important;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.035)) !important;
         color: rgba(238, 246, 238, 0.88) !important;
+        box-shadow: 0 10px 28px rgba(5, 12, 28, 0.12) !important;
         transform: scale(1) translateZ(0);
         transition: transform 110ms ease-out, background 110ms ease-out, border-color 110ms ease-out, box-shadow 110ms ease-out, color 110ms ease-out !important;
-        cursor: pointer !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
     }
-    .upload-mode-shell [role="radiogroup"] > label:hover {
+    .upload-mode-shell [data-baseweb="tag"]:hover {
         transform: scale(1.015) translateY(-1px);
         background: rgba(255,255,255,0.1) !important;
         border-color: rgba(120,255,188,0.26) !important;
         color: #ffffff !important;
     }
-    .upload-mode-shell [role="radiogroup"] > label:has(input:checked) {
+    .upload-mode-shell [aria-selected="true"][data-baseweb="tag"] {
         background: linear-gradient(180deg, rgba(121, 224, 110, 0.95), rgba(81, 170, 69, 0.96)) !important;
         border: 1px solid rgba(194,255,191,0.92) !important;
         box-shadow:
@@ -3301,16 +3293,16 @@ st.markdown(
         transform: scale(0.965);
         color: #f8fff2 !important;
     }
-    .upload-mode-shell [role="radiogroup"] > label > div:first-child {
-        display: none !important;
-    }
-    .upload-mode-shell [role="radiogroup"] > label p {
-        margin: 0 !important;
+    .upload-mode-shell [data-baseweb="tag"] span {
         color: inherit !important;
-        font-size: 0.96rem !important;
+        font-size: 0.98rem !important;
         font-weight: 800 !important;
         line-height: 1.2 !important;
         text-align: center !important;
+        white-space: nowrap !important;
+    }
+    .upload-mode-shell [data-baseweb="tag"] svg {
+        display: none !important;
     }
     [data-testid="stCameraInput"] > label {
         display: none !important;
@@ -3820,18 +3812,24 @@ with tab_disease:
         unsafe_allow_html=True,
     )
     st.markdown(f"<div class='upload-mode-label'>{t('upload_mode_label', lang)}</div>", unsafe_allow_html=True)
+    browse_label = f"📁 {t('browse_files', lang)}"
+    camera_label = f"📷 {t('camera', lang)}"
+    mode_to_label = {"browse": browse_label, "camera": camera_label}
+    label_to_mode = {browse_label: "browse", camera_label: "camera"}
+    current_mode_label = mode_to_label.get(st.session_state.disease_upload_mode)
     st.markdown("<div class='upload-mode-shell'>", unsafe_allow_html=True)
-    previous_upload_mode = st.session_state.disease_upload_mode
-    selected_upload_mode = st.radio(
+    selected_upload_mode_label = st.pills(
         t("upload_mode_label", lang),
-        options=["browse", "camera"],
-        index=0 if st.session_state.disease_upload_mode == "browse" else 1 if st.session_state.disease_upload_mode == "camera" else None,
-        format_func=lambda value: f"📁 {t('browse_files', lang)}" if value == "browse" else f"📷 {t('camera', lang)}",
-        horizontal=True,
+        options=[browse_label, camera_label],
+        default=current_mode_label,
+        selection_mode="single",
         label_visibility="collapsed",
-        key="disease_upload_mode",
+        key="disease_upload_mode_pills",
     )
     st.markdown("</div>", unsafe_allow_html=True)
+    previous_upload_mode = st.session_state.disease_upload_mode
+    selected_upload_mode = label_to_mode.get(selected_upload_mode_label)
+    st.session_state.disease_upload_mode = selected_upload_mode
 
     if selected_upload_mode != previous_upload_mode:
         st.session_state.last_uploaded_signature = None
