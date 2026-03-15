@@ -11,5 +11,8 @@ python-dotenv
 requests
 google-generativeai
 googletrans==4.0.0-rc1
+fpdf2
+uharfbuzz
+fonttools
 
 
