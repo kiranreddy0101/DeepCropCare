@@ -2110,6 +2110,26 @@ def _configure_pdf_font(pdf, lang):
     return family
 
 
+def get_pdf_font_debug_info(lang):
+    if lang == "en":
+        return {"lang": lang, "font_path": "Times", "static_font_path": "Times"}
+
+    font_path = _pick_pdf_font_path(lang)
+    if not font_path:
+        return {"lang": lang, "font_path": None, "static_font_path": None}
+
+    try:
+        static_font_path = _ensure_static_pdf_font(font_path)
+    except Exception as exc:
+        static_font_path = f"ERROR: {exc}"
+
+    return {
+        "lang": lang,
+        "font_path": font_path,
+        "static_font_path": static_font_path,
+    }
+
+
 def build_pdf_report_bytes(title, body_text, lang, image_blocks=None):
     page_width, page_height = 612, 792
     left_margin = 72
@@ -3193,6 +3213,7 @@ with tab2:
         crop_inputs = st.session_state.crop_result["inputs"]
         crop_name = crop_text(crop, "name", lang)
         crop_report_text = build_crop_report_text(crop, lang, crop_inputs)
+        pdf_font_debug = get_pdf_font_debug_info(lang)
         crop_pdf = build_pdf_report_bytes(t("crop_report_subject", lang), crop_report_text, lang)
         crop_email_body = f"{t('report_email_body_intro', lang)}\n\n{crop_report_text}"
         st.markdown(
@@ -3233,6 +3254,11 @@ with tab2:
         st.markdown(
             f"<br><h3 style='text-align: center;'>✅ {t('crop_analysis_complete', lang)}</h3>",
             unsafe_allow_html=True,
+        )
+        st.caption(
+            f"PDF font debug: lang={pdf_font_debug['lang']}, "
+            f"font={pdf_font_debug['font_path']}, "
+            f"static={pdf_font_debug['static_font_path']}"
         )
         _, crop_action_col1, _ = st.columns([1.2, 1, 1.2])
         with crop_action_col1:
