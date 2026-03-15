@@ -127,7 +127,7 @@ LANGUAGE_LABELS = {
         "generic_error": "Error",
         "reset_chat": "Reset Chat",
         "system_instruction": "You are a professional Agronomist AI. The user's plant has {disease}. Reply in English. Be concise, use bullet points, and provide expert farming advice.",
-        "assistant_hint": "Tap the helper bot for a simple explanation, cure, prevention, and care plan.",
+        "assistant_hint": "Tap the helper bot for more details.",
         "assistant_note": "Agronomist helper",
         "assistant_trigger": "Open agronomist helper",
         "assistant_auto_prompt": "Explain the detected disease {disease} in simple words. Give a detailed but easy-to-understand answer with these sections: 1. What this disease is. 2. Main symptoms farmers can notice. 3. Cure or treatment steps to follow now. 4. Prevention tips for the next few days and next season. 5. Fertilizer and plant care advice. 6. Simple do and don't points. Keep the tone practical and farmer-friendly.",
@@ -255,7 +255,7 @@ LANGUAGE_LABELS = {
         "generic_error": "त्रुटि",
         "reset_chat": "चैट रीसेट करें",
         "system_instruction": "आप एक पेशेवर कृषि विशेषज्ञ एआई हैं। उपयोगकर्ता के पौधे में {disease} है। केवल हिंदी में उत्तर दें। संक्षिप्त रहें, बुलेट पॉइंट्स का उपयोग करें और विशेषज्ञ कृषि सलाह दें।",
-        "assistant_hint": "सरल विवरण, उपचार, बचाव और देखभाल योजना के लिए सहायक बॉट पर टैप करें।",
+        "assistant_hint": "अधिक जानकारी के लिए सहायक बॉट पर टैप करें।",
         "assistant_note": "कृषि सहायक",
         "assistant_trigger": "कृषि सहायक खोलें",
         "assistant_auto_prompt": "पता चली हुई बीमारी {disease} को बहुत आसान हिंदी में समझाइए। उत्तर को इन भागों में दीजिए: 1. यह बीमारी क्या है। 2. किसान कौन से मुख्य लक्षण देख सकते हैं। 3. अभी कौन सा उपचार करना चाहिए। 4. अगले कुछ दिनों और अगले सीजन के लिए बचाव के तरीके। 5. उर्वरक और पौध देखभाल सलाह। 6. आसान क्या करें और क्या न करें। उत्तर व्यावहारिक और किसान-मित्र होना चाहिए।",
@@ -383,7 +383,7 @@ LANGUAGE_LABELS = {
         "generic_error": "లోపం",
         "reset_chat": "చాట్ రీసెట్ చేయండి",
         "system_instruction": "మీరు ఒక ప్రొఫెషనల్ వ్యవసాయ నిపుణుడు ఏఐ. వినియోగదారుడి మొక్కకు {disease} ఉంది. తెలుగు లో మాత్రమే జవాబివ్వండి. సంక్షిప్తంగా, బుల్లెట్ పాయింట్లలో నిపుణుల వ్యవసాయ సలహా ఇవ్వండి.",
-        "assistant_hint": "సులభమైన వివరణ, చికిత్స, నివారణ, సంరక్షణ కోసం సహాయక బాట్‌పై ట్యాప్ చేయండి.",
+        "assistant_hint": "మరిన్ని వివరాల కోసం సహాయక బాట్‌పై ట్యాప్ చేయండి.",
         "assistant_note": "వ్యవసాయ సహాయకుడు",
         "assistant_trigger": "వ్యవసాయ సహాయకుడిని తెరవండి",
         "assistant_auto_prompt": "గుర్తించిన వ్యాధి {disease} ను చాలా సులభమైన తెలుగులో వివరించండి. జవాబును ఈ భాగాలుగా ఇవ్వండి: 1. ఈ వ్యాధి ఏమిటి. 2. రైతు గమనించే ప్రధాన లక్షణాలు. 3. ఇప్పుడు చేయాల్సిన చికిత్స. 4. వచ్చే కొన్ని రోజులు మరియు వచ్చే సీజన్‌కు నివారణ సూచనలు. 5. ఎరువు మరియు మొక్క సంరక్షణ సలహా. 6. సులభమైన చేయాల్సినవి, చేయకూడనివి. జవాబు రైతులకు సులభంగా అర్థమయ్యేలా ఉండాలి.",
@@ -3866,7 +3866,7 @@ with tab_crop:
 
     with col_weather:
         st.write(f"### 🌦️ {t('weather_heading', lang)}")
-        city = st.text_input(t("city_input", lang), "Kothur, Rangareddy")
+        city = st.text_input(t("city_input", lang), "Hyderabad")
         if st.button(t("fetch_weather", lang), use_container_width=True):
             temp, hum, err = get_weather(city, lang)
             if not err:
