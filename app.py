@@ -2395,6 +2395,11 @@ def _find_last_conv_layer_in_model(model):
         if isinstance(output_shape, tuple) and len(output_shape) == 4:
             if not any(token in layer.name.lower() for token in ["flatten", "gap", "pool"]):
                 return layer.name
+    try:
+        model.get_layer("mobilenetv2_1.00_224").get_layer("out_relu")
+        return "mobilenetv2_1.00_224/out_relu"
+    except Exception:
+        pass
     return None
 
 
@@ -2830,7 +2835,7 @@ with tab1:
         if st.session_state.disease_result_ready and st.session_state.last_detected_class:
             detected_class = st.session_state.last_detected_class
             detected_confidence = st.session_state.last_detection_confidence or 0.0
-            heatmap_available = "healthy" not in detected_class.lower() and bool(detected_conv_name)
+            heatmap_available = bool(detected_conv_name)
             report_images = [(t("original_scan", lang), image)]
             report_text = build_disease_report_text(
                 detected_class,
