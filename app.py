@@ -2,6 +2,8 @@ import os
 import smtplib
 import time
 import json
+import hashlib
+import tempfile
 from io import BytesIO
 from email.message import EmailMessage
 from pathlib import Path
@@ -1006,6 +1008,7 @@ DISEASE_METADATA_ALIASES = {
 
 PREDICTION_CLASS_OVERRIDES = {
     "Wheat_leaf_stripe_rust": "Wheatleaf_septoria",
+    "Wheat_leaf_leaf_stripe_rust": "Wheatleaf_septoria",
 }
 
 
@@ -1782,7 +1785,10 @@ def _ensure_static_pdf_font(font_path):
     if "fvar" not in font and "gvar" not in font:
         return str(font_path)
 
-    static_path = font_path.with_name(f"{font_path.stem}-static.ttf")
+    temp_dir = Path(tempfile.gettempdir()) / "deepcropcare-fonts"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    font_hash = hashlib.sha1(str(font_path).encode("utf-8")).hexdigest()[:12]
+    static_path = temp_dir / f"{font_path.stem}-{font_hash}-static.ttf"
     if static_path.exists():
         return str(static_path)
 
