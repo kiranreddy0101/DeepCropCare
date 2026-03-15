@@ -4,6 +4,7 @@ import time
 from io import BytesIO
 from email.message import EmailMessage
 from urllib.parse import quote
+
 import cv2
 import google.generativeai as genai
 import joblib
@@ -2309,7 +2310,7 @@ def get_weather(city_name, lang):
 @st.cache_resource
 def load_resources():
     try:
-        disease_model = load_model("training_outputs/plant_disease_mobilenetv2.h5", compile=False)
+        disease_model = load_model("plant_disease_model_final4.h5", compile=False)
     except Exception:
         disease_model = None
 
